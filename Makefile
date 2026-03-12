@@ -4,7 +4,9 @@ BUILD_DIR = build
 WAVES_DIR = waves
 LOGS_DIR = logs
 
-SOURCES = $(wildcard $(RTL_DIR)/*.v $(wildcard $(SIM_DIR)/*.v))
+RTL_SRCS = $(shell find $(RTL_DIR) -name "*.v")
+TB_SRCS = $(wildcard $(SIM_DIR)/tb/*.v)
+SOURCES = $(RTL_SRCS) $(TB_SRCS)
 TARGET = $(BUILD_DIR)/simv
 WAVES = $(wildcard waves/*.vcd)
 LOG_FILE = $(LOGS_DIR)/compile.log
@@ -15,7 +17,7 @@ $(TARGET): $(SOURCES)
 	iverilog -o $(TARGET) $(SOURCES) > $(LOG_FILE) 2>&1
 
 run: $(TARGET)
-	vvp $(TARGET) +vcd=$(WAVES)
+	vvp $(TARGET)
 
 wave: $(WAVES)
 	gtkwave $(WAVES)
