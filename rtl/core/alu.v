@@ -2,11 +2,26 @@ module ALU (
     input [31:0] alu_src1,
     input [31:0] alu_src2,
     input [3:0] alu_op,
-    output [31:0] result,
+    output reg [31:0] alu_out,
     output zero_f,
-    output neg_f,
-    output overflow_f,
-    output carry_f
+    output neg_f, //TODO: 预留
+    output overflow_f, //TODO: 预留
+    output carry_f //TODO: 预留
 );
-    
+    localparam OP_ADD = 4'b0001;
+    localparam OP_SUB = 4'b0010;
+
+    always @(*) begin
+        case (alu_op)
+            OP_ADD: alu_out = alu_src1 + alu_src2;
+            OP_SUB: alu_out = alu_src1 - alu_src2;
+            default: alu_out = 32'b0;
+        endcase
+    end
+
+    assign zero_f = (alu_out == 32'b0);
+    assign neg_f = 1'b0; //TODO: 待实现
+    assign overflow_f = 1'b0; //TODO: 待实现
+    assign carry_f = 1'b0; //TODO: 待实现
+
 endmodule
