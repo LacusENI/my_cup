@@ -1,5 +1,5 @@
 module RF (
-    input clk
+    input clk,
     input [4:0] reg_src1,
     input [4:0] reg_src2,
     input [4:0] reg_dst,
