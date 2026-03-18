@@ -4,9 +4,9 @@ module ALU (
     input [3:0] alu_op,
     output reg [31:0] alu_out,
     output zero_f,
-    output neg_f, //TODO: 预留
-    output overflow_f, //TODO: 预留
-    output carry_f //TODO: 预留
+    output neg_f,
+    output overflow_f,
+    output carry_f
 );
     localparam OP_ADD = 4'b0001;
     localparam OP_SUB = 4'b0010;

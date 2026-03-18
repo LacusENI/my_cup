@@ -1,4 +1,4 @@
-module COND (
+module Cond (
     input zero_f,
     input neg_f,
     input overflow_f,

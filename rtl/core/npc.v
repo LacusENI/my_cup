@@ -8,10 +8,10 @@ module NPC (
 );
     always @(*) begin
         if (jmp)
-            next_pc = jmp_target
+            next_pc = jmp_target;
         else if (cond_jmp)
-            next_pc = curr_pc + jmp_offset
+            next_pc = curr_pc + jmp_offset;
         else
-            next_pc = curr_pc + 4
+            next_pc = curr_pc + 4;
     end
 endmodule
