@@ -3,12 +3,14 @@ module Cond (
     input neg_f,
     input overflow_f,
     input carry_f,
-    input [2:0] cond_type,
+    input [1:0] cond_type,
     output reg cond_jmp
 );
 
-    localparam CMP_EQ = 3'b001;
-    localparam CMP_NEQ = 3'b010;
+    localparam CMP_EQ = 2'b00;
+    localparam CMP_NEQ = 2'b01;
+    localparam CMP_LT = 2'b10;
+    localparam CMP_LTU = 2'b11;
 
     always @(*) begin
         case (cond_type)
