@@ -2,15 +2,17 @@ module NPC (
     input [31:0] curr_pc,
     input jmp,
     input cond_jmp,
-    input [31:0] jmp_target,
-    input [31:0] jmp_offset,
+    input [25:0] jmp_target,
+    input [15:0] jmp_offset,
     output reg [31:0] next_pc
 );
+    wire [31:0] pc_target = {curr_pc[31:28], jmp_target, 2'b00};
+    wire [31:0] pc_offset = {14{jmp_offset[15]}, jmp_offset, 2'b00};
     always @(*) begin
         if (jmp)
-            next_pc = jmp_target;
+            next_pc = pc_target;
         else if (cond_jmp)
-            next_pc = curr_pc + jmp_offset;
+            next_pc = curr_pc + pc_offset;
         else
             next_pc = curr_pc + 4;
     end
