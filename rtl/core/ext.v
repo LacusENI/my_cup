@@ -1,4 +1,4 @@
-module ImmXtd (
+module EXT (
     input [15:0] imm16,
     input extend_type,
     output [31:0] imm32
