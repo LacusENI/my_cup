@@ -5,7 +5,7 @@ module InstrDecoder (
     output [4:0] shamt,
     output [4:0] rs, rt, rd,
     output [15:0] imm16,
-    output [25:0] instr_index,
+    output [25:0] instr_index
 );
     assign op = instr[31:26];
 

@@ -1,3 +1,8 @@
+`define COND_TYPE_EQ  2'b00
+`define COND_TYPE_NEQ 2'b01
+`define COND_TYPE_LT  2'b10
+`define COND_TYPE_LTU 2'b11
+
 module Cond (
     input zero_f,
     input neg_f,
@@ -7,15 +12,12 @@ module Cond (
     output reg cond_jmp
 );
 
-    localparam CMP_EQ = 2'b00;
-    localparam CMP_NEQ = 2'b01;
-    localparam CMP_LT = 2'b10;
-    localparam CMP_LTU = 2'b11;
-
     always @(*) begin
         case (cond_type)
-            CMP_EQ: cond_jmp = zero_f;
-            default: cond_jmp = 1'b0;
+            COND_TYPE_EQ: 
+                cond_jmp = zero_f;
+            default: 
+                cond_jmp = 1'b0;
         endcase
     end
 endmodule

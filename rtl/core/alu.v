@@ -1,3 +1,6 @@
+`define ALU_OP_ADD 4'b0001
+`define ALU_OP_SUB 4'b0010
+
 module ALU (
     input [31:0] alu_src1,
     input [31:0] alu_src2,
@@ -8,13 +11,11 @@ module ALU (
     output overflow_f,
     output carry_f
 );
-    localparam OP_ADD = 4'b0001;
-    localparam OP_SUB = 4'b0010;
-
+    
     always @(*) begin
         case (alu_op)
-            OP_ADD: alu_out = alu_src1 + alu_src2;
-            OP_SUB: alu_out = alu_src1 - alu_src2;
+            ALU_OP_ADD: alu_out = alu_src1 + alu_src2;
+            ALU_OP_SUB: alu_out = alu_src1 - alu_src2;
             default: alu_out = 32'b0;
         endcase
     end

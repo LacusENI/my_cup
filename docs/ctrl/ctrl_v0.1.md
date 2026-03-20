@@ -1,7 +1,6 @@
 
 | instr |   op    |  funct  | npc_op | src2_sel | reg_write | rd_sel | wb_sel  | alu_op | cond_type | ext_type | mem_read | mem_write |
 | :---: | :-----: | :-----: | :----: | :------: | :-------: | :----: | :-----: | :----: | :-------: | :------: | :------: | :-------: |
-| instr |   op    |  funct  | npc_op | src2_sel | reg_write | rd_sel | wb_sel  | alu_op | cond_type | ext_type | mem_read | mem_write |
 | addu  | 00 0000 | 10 0001 | plus4  |   rs2    |     1     |   rd   | alu_out |  add   |     x     |    x     |    0     |     0     |
 | addiu | 00 1001 |    x    | plus4  |   imm    |     1     |   rt   | alu_out |  add   |     x     |  z_ext   |    0     |     0     |
 |  beq  | 00 0100 |    x    | branch |   rs2    |     0     |   x    |    x    |  sub   |    eq     |    x     |    0     |     0     |
