@@ -7,7 +7,7 @@ date: 2026/03/12
 
 ## 端口
 input
-- cond_type(3) : 比较条件的类型
+- cond_type(2) : 比较条件的类型
 - zero_f : 条件码 - 结果为零
 - negative_f : 条件码 - 结果为负
 - overflow_f : 条件码 - 结果溢出
