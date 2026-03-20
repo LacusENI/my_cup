@@ -72,7 +72,7 @@ date: 2026/03/12
 - IF : reg_src1 = rs, reg_src2 = rt, jmp_offset = offset
 - ID : src1 = R[reg_src1], src2 = R[reg_src2]
 - EX : zero_f = (src1 - src2 == 0)
-- if (cond_jmp): PC = PC + jmp_offset
+- if (cond_jmp): PC = PC + jmp_offset << 2
 - else:          PC = PC + 4
 
 ## 6. j target
@@ -82,5 +82,5 @@ date: 2026/03/12
 | [31:26] |     [25:0]      |
 | 00 0010 |        -        |
 
-- jmp_target = instr_index
+- jmp_target[27:0] = instr_index << 2
 - PC = jmp_target
