@@ -14,7 +14,7 @@ module Cond (
 
     always @(*) begin
         case (cond_type)
-            COND_TYPE_EQ: 
+            `COND_TYPE_EQ: 
                 cond_jmp = zero_f;
             default: 
                 cond_jmp = 1'b0;

@@ -14,8 +14,8 @@ module ALU (
     
     always @(*) begin
         case (alu_op)
-            ALU_OP_ADD: alu_out = alu_src1 + alu_src2;
-            ALU_OP_SUB: alu_out = alu_src1 - alu_src2;
+            `ALU_OP_ADD: alu_out = alu_src1 + alu_src2;
+            `ALU_OP_SUB: alu_out = alu_src1 - alu_src2;
             default: alu_out = 32'b0;
         endcase
     end
