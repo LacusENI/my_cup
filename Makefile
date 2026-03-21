@@ -27,4 +27,12 @@ wave: $(WAVES)
 clean:
 	rm -rf $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR)
 
-.PHONY: tb_% run-% wave clean 
+help:
+	@echo "Commands:"
+	@echo " make tb_[module]  - build specific module testbench (e.g. make tb_alu)"
+	@echo " make run-[module] - run specific module testbench (e.g. make run-alu)"
+	@echo " make all          - run all testbenches"
+	@echo " make wave         - launch gtkwave"
+	@echo " make clean        - clean all generated files"
+
+.PHONY: tb_% run-% wave clean help
