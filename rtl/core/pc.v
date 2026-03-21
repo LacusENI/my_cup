@@ -1,3 +1,5 @@
+`include "rtl/core/defines.v"
+
 module PC (
     input clk,
     input rst,

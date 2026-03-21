@@ -1,3 +1,5 @@
+`include "rtl/core/defines.v"
+
 module DM (
     input clk,
     input mem_read,

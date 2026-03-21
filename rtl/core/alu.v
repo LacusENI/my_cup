@@ -1,5 +1,4 @@
-`define ALU_OP_ADD 4'b0001
-`define ALU_OP_SUB 4'b0010
+`include "rtl/core/defines.v"
 
 module ALU (
     input [31:0] alu_src1,

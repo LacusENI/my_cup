@@ -1,6 +1,4 @@
-`define NPC_OP_PLUS4  2'b00
-`define NPC_OP_BRANCH 2'b01
-`define NPC_OP_DIRECT 2'b10
+`include "rtl/core/defines.v"
 
 module NPC (
     input [31:0] curr_pc,

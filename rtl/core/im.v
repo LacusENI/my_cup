@@ -1,3 +1,5 @@
+`include "rtl/core/defines.v"
+
 module IM (
     input [31:0] instr_addr,
     output [31:0] instr

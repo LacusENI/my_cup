@@ -1,3 +1,5 @@
+`include "rtl/core/defines.v"
+
 module Ext (
     input [15:0] imm16,
     input ext_type,

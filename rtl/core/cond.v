@@ -1,7 +1,4 @@
-`define COND_TYPE_EQ  2'b00
-`define COND_TYPE_NEQ 2'b01
-`define COND_TYPE_LT  2'b10
-`define COND_TYPE_LTU 2'b11
+`include "rtl/core/defines.v"
 
 module Cond (
     input zero_f,
