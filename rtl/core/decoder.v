@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module InstrDecoder (
+module decoder (
     input [31:0] instr,
     output [5:0] op,
     output [5:0] funct,

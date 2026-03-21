@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module NPC (
+module npc (
     input [31:0] curr_pc,
     input [1:0] npc_op,
     input cond_jmp,

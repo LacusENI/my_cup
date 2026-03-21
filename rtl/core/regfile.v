@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module RF (
+module regfile (
     input clk,
     input [4:0] reg_src1,
     input [4:0] reg_src2,

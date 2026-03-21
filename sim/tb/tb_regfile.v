@@ -10,7 +10,7 @@ module tb_regfile ();
     wire [31:0] rs1_data;
     wire [31:0] rs2_data;
 
-    RF dut (.*);
+    regfile dut (.*);
 
     always #5 clk = ~clk;
 

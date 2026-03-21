@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module ALU (
+module alu (
     input [31:0] alu_src1,
     input [31:0] alu_src2,
     input [3:0] alu_op,

@@ -13,7 +13,7 @@ module tb_alu ();
     localparam OP_ADD = 4'd0;
     localparam OP_SUB = 4'd1;
 
-    ALU dut (
+    alu dut (
         .alu_src1(src_a),
         .alu_src2(src_b),
         .alu_op(opcode),

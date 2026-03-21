@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module PC (
+module pc (
     input clk,
     input rst,
     input [31:0] next_pc,

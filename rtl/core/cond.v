@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module Cond (
+module cond (
     input zero_f,
     input neg_f,
     input overflow_f,

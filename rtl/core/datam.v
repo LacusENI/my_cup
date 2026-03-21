@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module DM (
+module datam (
     input clk,
     input mem_read,
     input mem_write,

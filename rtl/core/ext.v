@@ -1,6 +1,6 @@
 `include "rtl/core/defines.v"
 
-module Ext (
+module ext (
     input [15:0] imm16,
     input ext_type,
     output [31:0] imm32
