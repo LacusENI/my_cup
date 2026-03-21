@@ -1,3 +1,6 @@
+`ifndef DEFINES_V
+`define DEFINES_V
+
 `define ALU_OP_ADD 4'b0001
 `define ALU_OP_SUB 4'b0010
 
@@ -16,3 +19,5 @@
 `define WB_SEL_R_DATA  1'b1
 `define SRC2_SEL_RS2   1'b0
 `define SRC2_SEL_IMM   1'b1
+
+`endif
