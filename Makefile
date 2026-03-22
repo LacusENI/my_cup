@@ -2,7 +2,7 @@ RTL_DIR = rtl
 SIM_DIR = sim
 TB_DIR = sim/tb
 BUILD_DIR = build
-WAVES_DIR = $(BUILD_DIR)/waves
+WAVES_DIR = waves
 LOGS_DIR = logs
 
 BUILD_LOG = $(LOGS_DIR)/compile.log
@@ -21,18 +21,18 @@ run-%: tb_%
 
 all: $(addprefix run-,$(TESTS))
 
-wave: $(WAVES)
-	gtkwave $(WAVES)
+wave-%: $(WAVES_DIR)/tb_%.vcd
+	gtkwave $^
 
 clean:
 	rm -rf $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR)
 
 help:
 	@echo "Commands:"
-	@echo " make tb_[module]  - build specific module testbench (e.g. make tb_alu)"
-	@echo " make run-[module] - run specific module testbench (e.g. make run-alu)"
-	@echo " make all          - run all testbenches"
-	@echo " make wave         - launch gtkwave"
-	@echo " make clean        - clean all generated files"
+	@echo " make tb_[module]   - build specific module testbench (e.g. make tb_alu)"
+	@echo " make run-[module]  - run specific module testbench (e.g. make run-alu)"
+	@echo " make all           - run all testbenches"
+	@echo " make wave-[module] - display wave for specific module (e.g. make wave-alu)"
+	@echo " make clean         - clean all generated files"
 
-.PHONY: tb_% run-% wave clean help
+.PHONY: tb_% run-% wave-% clean help
