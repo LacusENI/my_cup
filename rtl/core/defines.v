@@ -20,4 +20,4 @@
 `define SRC2_SEL_RS2   1'b0
 `define SRC2_SEL_IMM   1'b1
 
-`endif
+`endif // DEFINES_V
