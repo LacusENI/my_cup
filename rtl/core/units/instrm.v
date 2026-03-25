@@ -6,5 +6,5 @@ module instrm (
 );
     reg [31:0] mem [0:2047];
 
-    assign instr = mem[instr_addr];
+    assign instr = mem[instr_addr[31:2]];
 endmodule
