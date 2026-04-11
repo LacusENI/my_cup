@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+`include "rtl/core/defines.v"
 
 module tb_alu ();
     reg [31:0] src_a, src_b;
@@ -9,9 +10,6 @@ module tb_alu ();
     integer pass_count = 0;
     integer fail_count = 0;
     integer test_id = 0;
-
-    localparam OP_ADD = 4'd0;
-    localparam OP_SUB = 4'd1;
 
     alu dut (
         .alu_src1(src_a),
@@ -26,12 +24,12 @@ module tb_alu ();
         $dumpfile("waves/tb_alu.vcd");
         $dumpvars(0, tb_alu);
 
-        opcode = OP_ADD;
+        opcode = `ALU_OP_ADD;
         src_a = 5; src_b = 3;
         #10;
         $display("5 + 3 = %d (zero=%b)", result, zero);
 
-        opcode = OP_SUB;
+        opcode = `ALU_OP_SUB;
         src_a = 8; src_b = 8;
         #10;
         $display("8 - 8 = %d (zero=%b)", result, zero);

@@ -15,11 +15,19 @@ TIME := $(shell date "+%Y-%m-%d %H:%M:%S")
 
 $(shell mkdir -p $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR))
 
-tb_%: $(RTL_SRCS) $(TB_DIR)/tb_%.v
+tb_instr_%: $(RTL_SRCS) $(TB_DIR)/instr/tb_%.v
 	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
 	@iverilog -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
 
-run-%: tb_%
+tb_unit_%: $(RTL_SRCS) $(TB_DIR)/unit/tb_%.v
+	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
+	@iverilog -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
+
+run-instr-%: tb_instr_%
+	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
+	@vvp $(BUILD_DIR)/$^ > $(LOGS_DIR)/$^.log && echo "OK" || (echo "FAILED"; exit 1)
+
+run-unit-%: tb_unit_%
 	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
 	@vvp $(BUILD_DIR)/$^ > $(LOGS_DIR)/$^.log && echo "OK" || (echo "FAILED"; exit 1)
 
