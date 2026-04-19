@@ -8,7 +8,7 @@ module tb_j ();
         .rst(rst)
     );
 
-    always #5 clk = ~clk;
+    always #5 clk <= ~clk;
 
     initial begin
         $dumpfile("waves/tb_j.vcd");

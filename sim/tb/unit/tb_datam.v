@@ -8,7 +8,7 @@ module tb_datam ();
 
     datam dut (.*);
 
-    always #5 clk = ~clk;
+    always #5 clk <= ~clk;
 
     initial begin
         $dumpfile("waves/tb_datam.vcd");

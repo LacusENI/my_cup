@@ -12,7 +12,7 @@ module tb_regfile ();
 
     regfile dut (.*);
 
-    always #5 clk = ~clk;
+    always #5 clk <= ~clk;
 
     initial begin
         $dumpfile("waves/tb_regfile.vcd");
