@@ -6,7 +6,7 @@ module cpu_top (
 );
     wire [31:0] instr_addr;
     wire [31:0] instr;
-    wire [31:0] curr_pc, next_pc, pc_plus4;
+    wire [31:0] curr_pc, next_pc, pc_plus4, ra;
     wire [1:0] npc_op;
     wire [25:0] jmp_target;
     wire [15:0] jmp_offset;
