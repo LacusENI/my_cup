@@ -7,7 +7,7 @@ module tb_npc ();
     reg cond_jmp;
     reg [25:0] jmp_target;
     reg [15:0] jmp_offset;
-    wire [31:0] next_pc;
+    wire [31:0] next_pc, pc_plus4;
 
     npc dut(.*);
 

@@ -4,6 +4,7 @@ module datam (
     input clk,
     input mem_read,
     input mem_write,
+    /* verilator lint_off UNUSED */
     input [31:0] addr,
     input [31:0] w_data,
     output reg [31:0] r_data

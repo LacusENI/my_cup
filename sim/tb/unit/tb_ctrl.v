@@ -12,7 +12,7 @@ module tb_ctrl ();
     wire       mem_read;
     wire [1:0] cond_type;
     wire       ext_type;
-    wire       rd_sel;
+    wire [1:0] rd_sel;
     wire       wb_sel;
     wire       src2_sel;
 

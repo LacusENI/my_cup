@@ -7,10 +7,6 @@ module tb_alu ();
     wire [31:0] result;
     wire zero;
 
-    integer pass_count = 0;
-    integer fail_count = 0;
-    integer test_id = 0;
-
     alu dut (
         .alu_src1(src_a),
         .alu_src2(src_b),

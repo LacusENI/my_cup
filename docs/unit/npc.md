@@ -16,3 +16,4 @@ input
 
 output
 - next_pc : 下次的PC值
+- pc_plus4 : 当前PC值加4
