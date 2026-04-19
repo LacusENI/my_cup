@@ -14,7 +14,7 @@ module ctrl (
     output [1:0] wb_sel,
     output       src2_sel
 );
-    wire addu, addiu, beq, lw, sw, j, jal;
+    wire addu, addiu, beq, lw, sw, j, jal, jr;
     assign addu = (op == `OP_R_INSTR) && (funct == `FUNCT_ADDU);
     assign addiu = (op == `OP_ADDIU);
     assign beq = (op == `OP_BEQ);
@@ -22,11 +22,13 @@ module ctrl (
     assign sw = (op == `OP_SW);
     assign j = (op == `OP_J);
     assign jal = (op == `OP_JAL);
+    assign jr = (op == `OP_R_INSTR) && (funct == `FUNCT_JR);
 
     // IF
     assign npc_op = beq ? `NPC_OP_BRANCH :
                     j ? `NPC_OP_DIRECT :
                     jal ? `NPC_OP_DIRECT :
+                    jr ? `NPC_OP_RA :
                     `NPC_OP_PLUS4;
 
     // ID

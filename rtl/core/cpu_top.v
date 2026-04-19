@@ -52,7 +52,8 @@ module cpu_top (
     assign instr_addr = curr_pc;
     assign jmp_target = instr_index;
     assign jmp_offset = imm16;
-    
+    assign ra = rs1_data;
+
     assign reg_src1 = rs;
     assign reg_src2 = rt;
     assign reg_dst = rd_sel == `RD_SEL_RD ? rd : 
