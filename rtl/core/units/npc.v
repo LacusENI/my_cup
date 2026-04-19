@@ -6,6 +6,7 @@ module npc (
     input        cond_jmp,
     input [25:0] jmp_target,
     input [15:0] jmp_offset,
+    input [31:0] ra,
     output [31:0] pc_plus4,
     output reg [31:0] next_pc
 );
@@ -18,6 +19,8 @@ module npc (
             next_pc = pc_target;
         else if ((npc_op == `NPC_OP_BRANCH) && cond_jmp)
             next_pc = curr_pc + pc_offset;
+        else if (npc_op == `NPC_OP_RA)
+            next_pc = ra;
         else
             next_pc = pc_plus4;
     end

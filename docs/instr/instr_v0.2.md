@@ -26,8 +26,8 @@ data: 2026/04/19
 |  [31:26]   | [25:21] | [20:16] | [15:11] |  [10:6]  |   [5:0]  |
 |   00 0000  |    -    |    -    |    -    |  0 0000  | 00 1000  |
 
-- IF : PC = jmp_target
-- ID : reg_src1 = rs, jmp_target = R[reg_src1]
+- IF : PC = R[reg_src1]
+- ID : reg_src1 = rs
 - EX :
 - MEM:
 - WB :

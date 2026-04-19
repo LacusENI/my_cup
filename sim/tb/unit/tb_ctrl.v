@@ -13,7 +13,7 @@ module tb_ctrl ();
     wire [1:0] cond_type;
     wire       ext_type;
     wire [1:0] rd_sel;
-    wire       wb_sel;
+    wire [1:0] wb_sel;
     wire       src2_sel;
 
     reg        correct;

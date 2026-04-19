@@ -15,6 +15,7 @@
 `define NPC_OP_PLUS4  2'b00
 `define NPC_OP_BRANCH 2'b01
 `define NPC_OP_DIRECT 2'b10
+`define NPC_OP_RA     2'b11
 
 `define RD_SEL_RT      2'b00
 `define RD_SEL_RD      2'b01
@@ -34,5 +35,6 @@
 `define OP_JAL     6'b00_0011
 
 `define FUNCT_ADDU 6'b10_0001
+`define FUNCT_JR   6'b00_1000
 
 `endif // DEFINES_V
