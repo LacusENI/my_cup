@@ -22,7 +22,7 @@ module tb_jal ();
         cpu.u_regfile.regs[4]  = 32'd0; // 用于验证跳转目标后的结果
 
         cpu.u_instrm.mem[0] = 32'h0C000003; // jal 3 (opcode = 0x0C, target = 3)
-        cpu.u_instrm.mem[1] = 32'h00000000; // nop
+        cpu.u_instrm.mem[1] = 32'h00000021; // addu $0, $0, $0 (nop)
         cpu.u_instrm.mem[3] = 32'h03E02021; // addu $4, $31, $0 -> 将 $ra 的值传给 $4
 
         #10;
