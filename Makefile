@@ -7,8 +7,10 @@ LOGS_DIR = logs
 
 BUILD_LOG := $(LOGS_DIR)/compile.log
 RTL_SRCS := $(shell find $(RTL_DIR) -name "*.v")
-TB_FILES := $(wildcard $(TB_DIR)/tb_*.v)
-TESTS := $(patsubst $(TB_DIR)/tb_%.v,%,$(TB_FILES))
+UNIT_TB_FILES := $(wildcard $(TB_DIR)/unit/tb_*.v)
+INSTR_TB_FILES := $(wildcard $(TB_DIR)/instr/tb_*.v)
+UNIT_TB_LIST := $(patsubst $(TB_DIR)/unit/tb_%.v,%,$(UNIT_TB_FILES))
+INSTR_TB_LIST := $(patsubst $(TB_DIR)/instr/tb_%.v,%,$(INSTR_TB_FILES))
 WAVES := $(wildcard $(WAVES_DIR)/*.vcd)
 
 LINT_FLAGS = --lint-only -Wall --timing --bbox-sys
@@ -34,7 +36,7 @@ run-unit-%: tb_unit_%
 	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
 	@vvp $(BUILD_DIR)/$^ > $(LOGS_DIR)/$^.log && echo "OK" || (echo "FAILED"; exit 1)
 
-all: $(addprefix run-,$(TESTS))
+all: $(addprefix run-instr-,$(INSTR_TB_LIST)) $(addprefix run-unit-,$(UNIT_TB_LIST))
 
 wave-%: $(WAVES_DIR)/tb_%.vcd
 	gtkwave $^
