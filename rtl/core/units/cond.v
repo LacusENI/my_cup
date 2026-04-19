@@ -2,6 +2,7 @@
 
 module cond (
     input zero_f,
+    /* verilator lint_off UNUSED */
     input neg_f,
     input overflow_f,
     input carry_f,

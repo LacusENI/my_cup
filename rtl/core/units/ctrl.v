@@ -11,7 +11,7 @@ module ctrl (
     output [1:0] cond_type,
     output       ext_type,
     output [1:0] rd_sel,
-    output       wb_sel,
+    output [1:0] wb_sel,
     output       src2_sel
 );
     wire addu, addiu, beq, lw, sw, j;
@@ -57,5 +57,5 @@ module ctrl (
     assign wb_sel = addu ? `WB_SEL_ALU_OUT :
                     addiu ? `WB_SEL_ALU_OUT :
                     lw ? `WB_SEL_R_DATA :
-                    1'bx;
+                    2'bx;
 endmodule
