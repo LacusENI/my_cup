@@ -34,7 +34,8 @@ module cpu_top (
     wire mem_read, mem_write;
     wire [31:0] addr, r_data, w_data;
 
-    wire rd_sel, src2_sel, wb_sel;
+    wire [1:0] rd_sel;
+    wire src2_sel, wb_sel;
 
     instrm u_instrm (.*);
     pc u_pc (.*);
@@ -53,7 +54,10 @@ module cpu_top (
     
     assign reg_src1 = rs;
     assign reg_src2 = rt;
-    assign reg_dst = rd_sel ? rd : rt;
+    assign reg_dst = rd_sel == `RD_SEL_RD ? rd : 
+                     rd_sel == `RD_SEL_RT ? rt : 
+                     rd_sel == `RD_SEL_REG_RA ? 5'd31 : 
+                     5'd0;
     assign wb_data = wb_sel ? r_data : alu_out;
 
     assign alu_src1 = rs1_data;

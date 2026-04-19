@@ -7,10 +7,12 @@ LOGS_DIR = logs
 
 BUILD_LOG := $(LOGS_DIR)/compile.log
 RTL_SRCS := $(shell find $(RTL_DIR) -name "*.v")
+
 UNIT_TB_FILES := $(wildcard $(TB_DIR)/unit/tb_*.v)
 INSTR_TB_FILES := $(wildcard $(TB_DIR)/instr/tb_*.v)
 UNIT_TB_LIST := $(patsubst $(TB_DIR)/unit/tb_%.v,%,$(UNIT_TB_FILES))
 INSTR_TB_LIST := $(patsubst $(TB_DIR)/instr/tb_%.v,%,$(INSTR_TB_FILES))
+
 WAVES := $(wildcard $(WAVES_DIR)/*.vcd)
 
 LINT_FLAGS = --lint-only -Wall --timing --bbox-sys

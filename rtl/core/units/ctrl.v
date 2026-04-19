@@ -10,7 +10,7 @@ module ctrl (
     output       mem_read,
     output [1:0] cond_type,
     output       ext_type,
-    output       rd_sel,
+    output [1:0] rd_sel,
     output       wb_sel,
     output       src2_sel
 );
@@ -31,7 +31,7 @@ module ctrl (
     assign rd_sel = lw ? `RD_SEL_RT :
                     addiu ? `RD_SEL_RT :
                     addu ? `RD_SEL_RD : 
-                    1'bx;
+                    2'bx;
     assign ext_type = addiu ? `EXT_TYPE_SIGN_EXT :
                       lw ? `EXT_TYPE_SIGN_EXT :
                       sw ? `EXT_TYPE_SIGN_EXT :

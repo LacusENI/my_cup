@@ -16,8 +16,9 @@
 `define NPC_OP_BRANCH 2'b01
 `define NPC_OP_DIRECT 2'b10
 
-`define RD_SEL_RT      1'b0
-`define RD_SEL_RD      1'b1
+`define RD_SEL_RT      2'b00
+`define RD_SEL_RD      2'b01
+`define RD_SEL_REG_RA  2'b10
 `define WB_SEL_ALU_OUT 1'b0
 `define WB_SEL_R_DATA  1'b1
 `define SRC2_SEL_RS2   1'b0
