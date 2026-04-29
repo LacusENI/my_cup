@@ -17,6 +17,10 @@
 `define NPC_OP_DIRECT 2'b10
 `define NPC_OP_RA     2'b11
 
+`define MEM_SIZE_WORD 2'b00
+`define MEM_SIZE_HALF 2'b01
+`define MEM_SIZE_BYTE 2'b10
+
 `define RD_SEL_RT      2'b00
 `define RD_SEL_RD      2'b01
 `define RD_SEL_REG_RA  2'b10
