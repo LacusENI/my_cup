@@ -10,6 +10,7 @@ module tb_ctrl ();
     wire [3:0] alu_op;
     wire       mem_write;
     wire       mem_read;
+    wire [1:0] mem_size;
     wire [1:0] cond_type;
     wire       ext_type;
     wire [1:0] rd_sel;
