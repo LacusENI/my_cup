@@ -3,6 +3,7 @@
 module tb_datam ();
     reg clk;
     reg mem_read, mem_write;
+    reg [1:0] mem_size;
     reg [31:0] addr, w_data;
     wire [31:0] r_data;
 

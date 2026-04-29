@@ -33,6 +33,7 @@ module cpu_top (
     wire cond_jmp;
 
     wire mem_read, mem_write;
+    wire [1:0] mem_size;
     wire [31:0] addr, r_data, w_data;
 
     wire [1:0] rd_sel, wb_sel;

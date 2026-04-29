@@ -6,6 +6,7 @@ module datam (
     input mem_write,
     /* verilator lint_off UNUSED */
     input [31:0] addr,
+    input [1:0] mem_size,
     input [31:0] w_data,
     output reg [31:0] r_data
 );
