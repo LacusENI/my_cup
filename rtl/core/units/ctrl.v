@@ -8,18 +8,21 @@ module ctrl (
     output [3:0] alu_op,
     output       mem_write,
     output       mem_read,
+    output [1:0] mem_size,
     output [1:0] cond_type,
     output       ext_type,
     output [1:0] rd_sel,
     output [1:0] wb_sel,
     output       src2_sel
 );
-    wire addu, addiu, beq, lw, sw, j, jal, jr;
+    wire addu, addiu, beq, lw, sw, sb, sh, j, jal, jr;
     assign addu = (op == `OP_R_INSTR) && (funct == `FUNCT_ADDU);
     assign addiu = (op == `OP_ADDIU);
     assign beq = (op == `OP_BEQ);
     assign lw = (op == `OP_LW);
     assign sw = (op == `OP_SW);
+    assign sb = (op == `OP_SB);
+    assign sh = (op == `OP_SH);
     assign j = (op == `OP_J);
     assign jal = (op == `OP_JAL);
     assign jr = (op == `OP_R_INSTR) && (funct == `FUNCT_JR);
@@ -40,6 +43,8 @@ module ctrl (
     assign ext_type = addiu ? `EXT_TYPE_SIGN_EXT :
                       lw ? `EXT_TYPE_SIGN_EXT :
                       sw ? `EXT_TYPE_SIGN_EXT :
+                      sb ? `EXT_TYPE_SIGN_EXT :
+                      sh ? `EXT_TYPE_SIGN_EXT :
                       1'bx;
     assign reg_write = (addu | addiu | lw | jal);
 
@@ -49,6 +54,8 @@ module ctrl (
                       addiu ? `SRC2_SEL_IMM :
                       lw ? `SRC2_SEL_IMM :
                       sw ? `SRC2_SEL_IMM :
+                      sb ? `SRC2_SEL_IMM :
+                      sh ? `SRC2_SEL_IMM :
                       1'bx;
     assign alu_op = beq ? `ALU_OP_SUB :
                     `ALU_OP_ADD;
@@ -57,8 +64,14 @@ module ctrl (
 
     // MEM
     assign mem_read = lw;
-    assign mem_write = sw;
+    assign mem_write = sw | sb | sh;
+    assign mem_size = lw ? `MEM_SIZE_WORD :
+                      sw ? `MEM_SIZE_WORD :
+                      sb ? `MEM_SIZE_BYTE :
+                      sh ? `MEM_SIZE_HALF :
+                      2'bx;
 
+    // WB
     assign wb_sel = addu ? `WB_SEL_ALU_OUT :
                     addiu ? `WB_SEL_ALU_OUT :
                     lw ? `WB_SEL_R_DATA :

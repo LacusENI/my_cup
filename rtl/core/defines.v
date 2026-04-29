@@ -35,6 +35,8 @@
 `define OP_BEQ     6'b00_0100
 `define OP_LW      6'b10_0011
 `define OP_SW      6'b10_1011
+`define OP_SB      6'b10_1000
+`define OP_SH      6'b10_1001
 `define OP_J       6'b00_0010
 `define OP_JAL     6'b00_0011
 

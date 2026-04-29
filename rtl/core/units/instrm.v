@@ -7,5 +7,7 @@ module instrm (
 );
     reg [31:0] mem [0:2047];
 
-    assign instr = mem[instr_addr[31:2]];
+    wire [10:0] mem_addr = instr_addr[12:2];
+
+    assign instr = mem[mem_addr];
 endmodule
