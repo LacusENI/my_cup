@@ -5,31 +5,37 @@ BUILD_DIR = build
 WAVES_DIR = waves
 LOGS_DIR = logs
 
-BUILD_LOG := $(LOGS_DIR)/compile.log
-RTL_SRCS := $(shell find $(RTL_DIR) -name "*.v")
+# Rtl
+RTL_FILES := $(shell find $(RTL_DIR) -name "*.v")
 
+# Build
+BUILD_LOG := $(LOGS_DIR)/compile.log
+BUILD_FLAGS = -g2012
+
+# Testbench
 UNIT_TB_FILES := $(wildcard $(TB_DIR)/unit/tb_*.v)
 INSTR_TB_FILES := $(wildcard $(TB_DIR)/instr/tb_*.v)
 UNIT_TB_LIST := $(patsubst $(TB_DIR)/unit/tb_%.v,%,$(UNIT_TB_FILES))
 INSTR_TB_LIST := $(patsubst $(TB_DIR)/instr/tb_%.v,%,$(INSTR_TB_FILES))
 
-WAVES := $(wildcard $(WAVES_DIR)/*.vcd)
-
-COMPILE_FLAGS = -g2012
+# Lint
 LINT_FLAGS = --lint-only -Wall --timing --bbox-sys
 LINT_LOG := $(LOGS_DIR)/lint.log
 V_DIRS := $(shell find . -name "*.v" -exec dirname {} + | sort -u)
 INC_PATH := $(addprefix -I,$(V_DIRS))
 
+# Dump
+DUMP_FILES := $(wildcard $(WAVES_DIR)/*.vcd)
+
 $(shell mkdir -p $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR))
 
-tb_instr_%: $(RTL_SRCS) $(TB_DIR)/instr/tb_%.v
+tb_instr_%: $(RTL_FILES) $(TB_DIR)/instr/tb_%.v
 	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
-	@iverilog -o $(COMPILE_FLAGS) $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
+	@iverilog -o $(BUILD_FLAGS) $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
 
-tb_unit_%: $(RTL_SRCS) $(TB_DIR)/unit/tb_%.v
+tb_unit_%: $(RTL_FILES) $(TB_DIR)/unit/tb_%.v
 	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
-	@iverilog $(COMPILE_FLAGS) -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
+	@iverilog $(BUILD_FLAGS) -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
 
 run-instr-%: tb_instr_%
 	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
@@ -49,7 +55,7 @@ clean:
 
 lint:
 	@echo "Linting: $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(LINT_LOG)
-	@verilator $(LINT_FLAGS) $(RTL_SRCS) >> $(LINT_LOG) 2>&1 | tee -a $(LINT_LOG)
+	@verilator $(LINT_FLAGS) $(RTL_FILES) >> $(LINT_LOG) 2>&1 | tee -a $(LINT_LOG)
 
 help:
 	@echo "Commands:"
