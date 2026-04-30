@@ -1,3 +1,4 @@
+`include "lib/vtest.vh"
 `include "rtl/core/defines.v"
 `timescale 1ns/1ps
 
@@ -21,39 +22,39 @@ module tb_ctrl ();
 
     ctrl dut(.*);
 
+    `VTEST_INIT
+
     initial begin
-        $dumpfile("waves/tb_ctrl.v");
+        $dumpfile("waves/tb_ctrl.vcd");
         $dumpvars(0, tb_ctrl);
 
-        op = `OP_R_INSTR;
-        funct = `FUNCT_ADDU;
-        #10;
-        $display("instr: addu");
+        `VTEST_BOOT
 
-        correct = (rd_sel == `RD_SEL_RD);
-        #10;
-        $display("rd_sel=%b(%s)", rd_sel, correct ? "yes" : "no");
+        // 测试1: addu 指令
+        `TEST(addu_test)
+            op = `OP_R_INSTR;
+            funct = `FUNCT_ADDU;
+            #10;
+            
+            `EXPECT("rd_sel", rd_sel, `RD_SEL_RD);
+            `EXPECT("wb_sel", wb_sel, `WB_SEL_ALU_OUT);
+            `EXPECT("src2_sel", src2_sel, `SRC2_SEL_RS2);
+            `EXPECT("npc_op", npc_op, `NPC_OP_PLUS4);
+            `EXPECT("alu_op", alu_op, `ALU_OP_ADD);
+            `EXPECT("mem_read", mem_read, 1'b0);
+            `EXPECT("mem_write", mem_write, 1'b0);
+        `TEST_END
+        
+        // 测试2: lw 指令
+        `TEST(lw_test);
+            op = `OP_LW;
+            #10;
 
-        correct = (wb_sel == `WB_SEL_ALU_OUT);
-        #10;
-        $display("wb_sel=%b(%s)", wb_sel, correct ? "yes" : "no");
-
-        correct = (src2_sel == `SRC2_SEL_RS2);
-        #10;
-        $display("src2_sel=%b(%s)", src2_sel, correct ? "yes" : "no");
-
-        correct = (npc_op == `NPC_OP_PLUS4);
-        #10;
-        $display("npc_op=%b(%s)", npc_op, correct ? "yes" : "no");
-
-        correct = (alu_op == `ALU_OP_ADD);
-        #10;
-        $display("alu_op=%b(%s)", alu_op, correct ? "yes" : "no");
-
-        correct = (mem_read == 1'b0);
-        #10;
-        $display("mem_read=%b(%s)", mem_read, correct ? "yes" : "no");
-
+            `EXPECT("mem_read", mem_read, 1'b1);
+            `EXPECT("mem_write", mem_write, 1'b0);
+        `TEST_END
+        
+        `VTEST_FINISH
         $finish;
     end
 endmodule

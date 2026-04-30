@@ -15,6 +15,7 @@ INSTR_TB_LIST := $(patsubst $(TB_DIR)/instr/tb_%.v,%,$(INSTR_TB_FILES))
 
 WAVES := $(wildcard $(WAVES_DIR)/*.vcd)
 
+COMPILE_FLAGS = -g2012
 LINT_FLAGS = --lint-only -Wall --timing --bbox-sys
 LINT_LOG := $(LOGS_DIR)/lint.log
 V_DIRS := $(shell find . -name "*.v" -exec dirname {} + | sort -u)
@@ -24,11 +25,11 @@ $(shell mkdir -p $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR))
 
 tb_instr_%: $(RTL_SRCS) $(TB_DIR)/instr/tb_%.v
 	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
-	@iverilog -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
+	@iverilog -o $(COMPILE_FLAGS) $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
 
 tb_unit_%: $(RTL_SRCS) $(TB_DIR)/unit/tb_%.v
 	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
-	@iverilog -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
+	@iverilog $(COMPILE_FLAGS) -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
 
 run-instr-%: tb_instr_%
 	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"

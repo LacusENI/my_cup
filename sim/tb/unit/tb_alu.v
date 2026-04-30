@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+`include "lib/vtest.vh"
 `include "rtl/core/defines.v"
 
 module tb_alu ();
@@ -16,9 +17,13 @@ module tb_alu ();
         .neg_f(), .overflow_f(), .carry_f()
     );
 
+    `VTEST_INIT
+
     initial begin
         $dumpfile("waves/tb_alu.vcd");
         $dumpvars(0, tb_alu);
+
+        `VTEST_BOOT
 
         opcode = `ALU_OP_ADD;
         src_a = 5; src_b = 3;
@@ -30,6 +35,7 @@ module tb_alu ();
         #10;
         $display("8 - 8 = %d (zero=%b)", result, zero);
 
+        `VTEST_FINISH
         $finish;
     end
 endmodule
