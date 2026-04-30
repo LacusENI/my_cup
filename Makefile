@@ -32,11 +32,11 @@ tb_unit_%: $(RTL_SRCS) $(TB_DIR)/unit/tb_%.v
 
 run-instr-%: tb_instr_%
 	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
-	@vvp $(BUILD_DIR)/$^ > $(LOGS_DIR)/$^.log && echo "OK" || (echo "FAILED"; exit 1)
+	@vvp $(BUILD_DIR)/$^ || (echo "FAILED"; exit 1)
 
 run-unit-%: tb_unit_%
 	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
-	@vvp $(BUILD_DIR)/$^ > $(LOGS_DIR)/$^.log && echo "OK" || (echo "FAILED"; exit 1)
+	@vvp $(BUILD_DIR)/$^ || (echo "FAILED"; exit 1)
 
 all: $(addprefix run-instr-,$(INSTR_TB_LIST)) $(addprefix run-unit-,$(UNIT_TB_LIST))
 
@@ -44,7 +44,7 @@ wave-%: $(WAVES_DIR)/tb_%.vcd
 	gtkwave $^
 
 clean:
-	rm -rf $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR) $(LOGS_DIR)
+	rm -rf $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR)
 
 lint:
 	@echo "Linting: $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(LINT_LOG)
