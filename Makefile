@@ -1,22 +1,20 @@
-RTL_DIR = rtl
-SIM_DIR = sim
-TB_DIR = sim/tb
-BUILD_DIR = build
-WAVES_DIR = waves
-LOGS_DIR = logs
+RTL_DIR    = rtl
+SIM_DIR    = sim
+TB_DIR     = sim/tb
+BUILD_DIR  = build
+F_DIR      = build/filelists
+TARGET_DIR = build/targets
+WAVES_DIR  = waves
+LOGS_DIR   = logs
 
 # Rtl
 RTL_FILES := $(shell find $(RTL_DIR) -name "*.v")
 
 # Build
-BUILD_LOG := $(LOGS_DIR)/compile.log
+BUILD_LOG := $(LOGS_DIR)/build.log
 BUILD_FLAGS = -g2012
-
-# Testbench
-UNIT_TB_FILES := $(wildcard $(TB_DIR)/unit/tb_*.v)
-INSTR_TB_FILES := $(wildcard $(TB_DIR)/instr/tb_*.v)
-UNIT_TB_LIST := $(patsubst $(TB_DIR)/unit/tb_%.v,%,$(UNIT_TB_FILES))
-INSTR_TB_LIST := $(patsubst $(TB_DIR)/instr/tb_%.v,%,$(INSTR_TB_FILES))
+F_FILES := $(shell find $(F_DIR) -name "*.f")
+TASKS := $(basename $(notdir $(F_FILES))) 
 
 # Lint
 LINT_FLAGS = --lint-only -Wall --timing --bbox-sys
@@ -29,25 +27,26 @@ DUMP_FILES := $(wildcard $(WAVES_DIR)/*.vcd)
 
 $(shell mkdir -p $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR))
 
-tb_instr_%: $(RTL_FILES) $(TB_DIR)/instr/tb_%.v
-	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
-	@iverilog -o $(BUILD_FLAGS) $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
+.PHONY: init list all clean lint help
 
-tb_unit_%: $(RTL_FILES) $(TB_DIR)/unit/tb_%.v
-	@echo "Build(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
-	@iverilog $(BUILD_FLAGS) -o $(BUILD_DIR)/$@ $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
+init:
+	./chore/gen_tb_dep.sh
 
-run-instr-%: tb_instr_%
-	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
-	@vvp $(BUILD_DIR)/$^ || (echo "FAILED"; exit 1)
+list:
+	$(foreach task,$(TASKS),$(info $(task)))
 
-run-unit-%: tb_unit_%
-	@echo "Run(tb_$*): $(shell date '+%Y-%m-%d %H:%M:%S')"
-	@vvp $(BUILD_DIR)/$^ || (echo "FAILED"; exit 1)
+build-%: $(F_DIR)/%.f
+	@echo "Build($*): $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(BUILD_LOG)
+	@iverilog $(BUILD_FLAGS) -o $(TARGET_DIR)/$* -f $^ >> $(BUILD_LOG) 2>&1 && echo "OK" | tee -a $(BUILD_LOG) || (echo "FAILED"; exit 1)
 
-all: $(addprefix run-instr-,$(INSTR_TB_LIST)) $(addprefix run-unit-,$(UNIT_TB_LIST))
+run-%: build-%
+	@echo "Run($*): $(shell date '+%Y-%m-%d %H:%M:%S')"
+	@vvp $(TARGET_DIR)/$* || (echo "FAILED"; exit 1)
 
-wave-%: $(WAVES_DIR)/tb_%.vcd
+all: $(addprefix run-,$(TASKS))
+	@echo ""
+
+wave-%: $(WAVES_DIR)/%.vcd
 	gtkwave $^
 
 clean:
@@ -59,11 +58,11 @@ lint:
 
 help:
 	@echo "Commands:"
-	@echo " make tb_[module]   - build specific module testbench (e.g. make tb_alu)"
-	@echo " make run-[module]  - run specific module testbench (e.g. make run-alu)"
-	@echo " make all           - run all testbenches"
-	@echo " make wave-[module] - display wave for specific module (e.g. make wave-alu)"
-	@echo " make clean         - clean all generated files"
-	@echo " make lint  	       - run linting on all RTL files"
-
-.PHONY: tb_% run-% all wave-% clean lint help
+	@echo " make init         - initialize dependencies"
+	@echo " make list         - list all build tasks"
+	@echo " make build-[name] - build (e.g. build-tb_alu)"
+	@echo " make run-[name]   - run (e.g. run-tb_alu)"
+	@echo " make all          - run all"
+	@echo " make wave-[name]  - display wave (e.g. wave-alu)"
+	@echo " make clean        - clean all generated files"
+	@echo " make lint  	      - run linting on all RTL files"

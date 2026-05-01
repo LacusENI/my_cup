@@ -64,16 +64,16 @@
     end \
 
 /**
- * EXPECT(name, got, expected)
+ * EXPECT(name, actual, expect)
  * 断言两个值是否相等，不相等时输出断言失败信息
  * @param name (字符串)用于标识此断言的名字
- * @param got 要断言的值
- * @param expected 断言期望值
+ * @param actual 要断言的值
+ * @param expect 断言期望值
  */
-`define EXPECT(name, got, expected) \
-    if (got !== expected) begin \
+`define EXPECT(name, actual, expect) \
+    if (actual !== expect) begin \
         current_test_passed = 0; \
-        $display("%0s[  FAILED  ]%0s EXPECT %0s: got %h, expected %h", `COLOR_RED, `COLOR_RESET, name, got, expected); \
+        $display("assert failed (%0s): got %h, expected %h", name, actual, expect); \
     end \
 
 /**
