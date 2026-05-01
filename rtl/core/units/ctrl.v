@@ -1,4 +1,4 @@
-`include "rtl/core/defines.v"
+`include "defines.vh"
 
 module ctrl (
     input [5:0] op,

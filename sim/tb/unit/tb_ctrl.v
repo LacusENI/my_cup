@@ -1,6 +1,6 @@
-`include "lib/vtest.vh"
-`include "rtl/core/defines.v"
 `timescale 1ns/1ps
+`include "vtest.vh"
+`include "defines.vh"
 
 module tb_ctrl ();
     reg [5:0] op;
@@ -53,6 +53,5 @@ module tb_ctrl ();
         `TEST_END
         
         `VTEST_FINISH
-        $finish;
     end
 endmodule

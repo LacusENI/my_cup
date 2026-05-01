@@ -1,41 +1,40 @@
 `timescale 1ns/1ps
-`include "lib/vtest.vh"
-`include "rtl/core/defines.v"
+`include "vtest.vh"
+`include "defines.vh"
 
 module tb_alu ();
-    reg [31:0] src_a, src_b;
-    reg [3:0] opcode;
-    wire [31:0] result;
-    wire zero;
+    reg [31:0] alu_src1, alu_src2;
+    reg [3:0] alu_op;
+    wire [31:0] alu_out;
+    wire zero_f, neg_f, overflow_f, carry_f;
 
-    alu dut (
-        .alu_src1(src_a),
-        .alu_src2(src_b),
-        .alu_op(opcode),
-        .alu_out(result),
-        .zero_f(zero),
-        .neg_f(), .overflow_f(), .carry_f()
-    );
+    alu dut (.*);
 
     `VTEST_INIT
 
     initial begin
         $dumpfile("waves/tb_alu.vcd");
         $dumpvars(0, tb_alu);
-
         `VTEST_BOOT
 
-        opcode = `ALU_OP_ADD;
-        src_a = 5; src_b = 3;
-        #10;
-        $display("5 + 3 = %d (zero=%b)", result, zero);
+        // 测试1: 测试加法
+        `TEST(alu_add_test)
+            alu_op = `ALU_OP_ADD;
+            alu_src1 = 5; alu_src2 = 3;
+            #10;
+            `EXPECT("alu_out", alu_out, 8);
+            `EXPECT("zero_f", zero_f, 1'b0);
+        `TEST_END
 
-        opcode = `ALU_OP_SUB;
-        src_a = 8; src_b = 8;
-        #10;
-        $display("8 - 8 = %d (zero=%b)", result, zero);
+        // 测试2: 测试减法
+        `TEST(alu_sub_test)
+            alu_op = `ALU_OP_SUB;
+            alu_src1 = 8; alu_src2 = 8;
+            #10;
+            `EXPECT("alu_out", alu_out, 0);
+            `EXPECT("zero_f", zero_f, 1);
+        `TEST_END
 
         `VTEST_FINISH
-        $finish;
     end
 endmodule

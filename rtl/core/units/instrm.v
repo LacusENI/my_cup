@@ -1,4 +1,4 @@
-`include "rtl/core/defines.v"
+`include "defines.vh"
 
 module instrm (
     /* verilator lint_off UNUSED */

@@ -90,5 +90,6 @@
         end \
     end \
     end \
+    $finish(0); \
 
 `endif

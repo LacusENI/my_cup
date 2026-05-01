@@ -1,4 +1,4 @@
-`include "rtl/core/defines.v"
+`include "defines.vh"
 
 module datam (
     input clk,

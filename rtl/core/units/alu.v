@@ -1,4 +1,4 @@
-`include "rtl/core/defines.v"
+`include "defines.vh"
 
 module alu (
     input [31:0] alu_src1,

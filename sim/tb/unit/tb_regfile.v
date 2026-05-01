@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+`include "vtest.vh"
 
 module tb_regfile ();
     reg clk;
@@ -14,34 +15,37 @@ module tb_regfile ();
 
     always #5 clk <= ~clk;
 
+    `VTEST_INIT
+
     initial begin
         $dumpfile("waves/tb_regfile.vcd");
         $dumpvars(0, tb_regfile);
-
+        
+        `VTEST_BOOT
         clk = 0;
 
-        reg_write = 1;
-        reg_dst = 0;
-        wb_data = 32'b1001;
-        #10;
-        $display("write $0 %b", wb_data);
+        `TEST(regfile_r0_test)
+            reg_write = 1;
+            reg_dst = 0;
+            wb_data = 32'b1001;
+            #10;
+            reg_write = 0;
+            reg_src1 = 0;
+            #10;
+            `EXPECT("R[0]", rs1_data, 0)
+        `TEST_END
+        
+        `TEST(regfile_src2_test)
+            reg_write = 1;
+            reg_dst = 2;
+            wb_data = 32'b1100;
+            #10;
+            reg_write = 0;
+            reg_src2 = 2;
+            #10
+            `EXPECT("R[2]", rs2_data, 32'b1100)
+        `TEST_END
 
-        reg_write = 0;
-        reg_src1 = 0;
-        #10;
-        $display("read $0 %b", rs1_data);
-
-        reg_write = 1;
-        reg_dst = 2;
-        wb_data = 32'b1100;
-        #10;
-        $display("write $2 %b", wb_data);
-
-        reg_write = 0;
-        reg_src2 = 2;
-        #10
-        $display("read $2 %b", rs2_data);
-        $display("tb_regfile 测试完毕");
-        $finish;
+        `VTEST_FINISH
     end
 endmodule
