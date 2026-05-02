@@ -1,10 +1,11 @@
 `include "defines.vh"
+`include "ext.vh"
 
 module datam (
     input clk,
     input mem_read,
     input mem_write,
-    /* verilator lint_off UNUSED */
+    input read_signed,
     input [31:0] addr,
     input [1:0] mem_size,
     input [31:0] w_data,
@@ -16,12 +17,34 @@ module datam (
 
     // 读操作
     always @(*) begin
-        if (mem_read)
-            r_data = mem[mem_addr];
+        if (mem_read) begin
+            case (mem_size)
+                `MEM_SIZE_WORD: begin
+                    r_data = mem[mem_addr];
+                end
+                `MEM_SIZE_HALF: begin
+                    if (addr[1] == 1'b0)
+                        r_data = ext_16_32(mem[mem_addr][31:16], read_signed);
+                    else
+                        r_data = ext_16_32(mem[mem_addr][15:0], read_signed);
+                end
+                `MEM_SIZE_BYTE: begin
+                    case (addr[1:0])
+                        2'b00: r_data = ext_8_32(mem[mem_addr][31:24], read_signed);
+                        2'b01: r_data = ext_8_32(mem[mem_addr][23:16], read_signed);
+                        2'b10: r_data = ext_8_32(mem[mem_addr][15:8], read_signed);
+                        2'b11: r_data = ext_8_32(mem[mem_addr][7:0], read_signed);
+                    endcase
+                end
+                default: begin
+                    r_data = 32'b0;
+                end
+            endcase
+        end
         else
             r_data = 32'b0;
     end
- 
+
     // 写操作
     always @(posedge clk) begin
         if (mem_write) begin
