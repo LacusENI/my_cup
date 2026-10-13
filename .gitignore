@@ -2,5 +2,6 @@ build/
 waves/
 logs/
 
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .github/

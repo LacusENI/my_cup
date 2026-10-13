@@ -63,7 +63,10 @@ my_cup/
 │   └── vtest.vh               # 统一测试框架（宏：TEST / EXPECT / ...）
 ├── docs/                 # 设计与文档（见 docs/README.md）
 ├── chore/                # 辅助脚本
-│   └── gen_tb_dep.sh          # 扫描 tb 生成 .f 清单与 .d 依赖
+│   ├── gen_tb_dep.sh          # 扫描 tb 生成 .f 清单与 .d 依赖
+│   └── gen_lint_f.sh          # 生成 verilator.f（lint 文件清单）
+├── verilator.f           # Verilator lint 文件清单（make lint 与 IDE 共用）
+├── .vscode/settings.json # IDE lint 配置（与项目 lint 对齐）
 ├── programs/             # 仿真用机器码程序 (*.hex) 与用法说明
 ├── build/                # 生成物：filelists / deps / 可执行目标 (gitignore)
 ├── waves/                # 生成的 VCD 波形 (gitignore)
@@ -92,6 +95,38 @@ make run-tb_prog PROG=programs/demo.hex
 
 > 工作流：**新增 testbench 后需要先重新执行 `make init`**，让脚本重新生成清单文件。
 > 详见 [`chore/gen_tb_dep.sh`](chore/gen_tb_dep.sh) 与 [架构说明](docs/arch/architecture.md#构建与测试流程)。
+
+---
+
+## IDE lint 配置（VS Code）
+
+目标：让编辑器里看到的告警/错误与命令行 `make lint` **完全一致**。
+
+项目 lint 的「文件清单 + 参数」统一由 [`chore/gen_lint_f.sh`](chore/gen_lint_f.sh) 生成到
+[`verilator.f`](verilator.f)，作为**单一事实来源**：
+
+- `make lint` 直接 `verilator -f verilator.f`；
+- IDE（[`mshr-h.veriloghdl`](https://marketplace.visualstudio.com/items?itemName=mshr-h.veriloghdl) 扩展）
+  通过 [`.vscode/settings.json`](.vscode/settings.json) 复用同一个 `-f verilator.f`。
+
+```jsonc
+// .vscode/settings.json
+{
+  "verilog.linting.linter": "verilator",
+  "verilog.linting.verilator.runAtFileLocation": false,
+  "verilog.linting.verilator.arguments": "-f verilator.f -Wno-MODDUP -Wno-TIMESCALEMOD -Wno-MULTITOP"
+}
+```
+
+几点说明：
+
+- 扩展是**针对“当前打开的文件”**单独调用 verilator 的，且会把该文件**额外追加一次**
+  （清单里已有它 → 重复）。用 `-f verilator.f` 让它同时载入整个工程，再用 `-Wno-MODDUP`
+  容忍这次重复，从而使输出与项目 lint 对齐。
+- `-Wno-TIMESCALEMOD` / `-Wno-MULTITOP` 只在**打开 testbench** 时才会出现（此时会把 tb 与全部 RTL
+  一起 lint），项目 lint 仅针对 RTL，不会产生这些告警。
+- **新增/删除 RTL 文件后**执行 `make filelist`（或 `make init`）刷新 `verilator.f`，`make lint` 也会自动刷新。
+- 若 `verilator` 不在 `PATH` 中，可在 `verilog.linting.path` 指定其安装目录。
 
 ---
 

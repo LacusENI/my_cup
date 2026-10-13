@@ -157,7 +157,10 @@ sim/tb/**/tb_*.v  ──(chore/gen_tb_dep.sh)──►  build/filelists/tb_*.f  
 - `make init` 扫描 `sim/tb` 下所有 `tb_*.v`，为每个 testbench 生成 `.f` / `.d`；
 - `make build-<name>` 用 `iverilog` 编译成 `build/targets/<name>`；
 - `make run-<name>` 用 `vvp` 运行，生成 `waves/<name>.vcd`；
-- `make all` 运行全部测试；`make lint` 用 Verilator 做静态检查。
+- `make all` 运行全部测试；
+- `make lint` 通过 `verilator -f verilator.f` 做静态检查；`verilator.f` 是由 `chore/gen_lint_f.sh`
+  生成的文件清单（含 `-Wall --timing --bbox-sys` 与 include 路径），`make lint` 会先刷新它，
+  **IDE 的 Verilog lint 也复用同一清单**，从而与命令行保持一致（详见 [README](../README.md#ide-lint-配置vs-code)）。
 
 测试框架为 [`lib/vtest.vh`](../../lib/vtest.vh)，提供 `VTEST_INIT / VTEST_BOOT / TEST / EXPECT / TEST_END / VTEST_FINISH` 宏，
 输出风格类似 GoogleTest（`[ RUN ]` / `[ OK ]` / `[ FAILED ]`）。

@@ -1,3 +1,4 @@
+SHELL      := /bin/bash
 RTL_DIR    = rtl
 SIM_DIR    = sim
 TB_DIR     = sim/tb
@@ -23,8 +24,8 @@ BUILD_FLAGS = -g2012
 F_FILES := $(shell find $(F_DIR) -name "*.f")
 TASKS := $(basename $(notdir $(F_FILES))) 
 
-# Lint
-LINT_FLAGS = --lint-only -Wall --timing --bbox-sys
+# Lint  (文件清单与参数由 chore/gen_lint_f.sh 统一生成，IDE 亦复用该清单)
+LINT_F   := verilator.f
 LINT_LOG := $(LOGS_DIR)/lint.log
 
 # Dump
@@ -32,10 +33,13 @@ DUMP_FILES := $(wildcard $(WAVES_DIR)/*.vcd)
 
 $(shell mkdir -p $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR))
 
-.PHONY: init list all clean lint help
+.PHONY: init list all clean lint filelist help
 
-init:
+init: filelist
 	chore/gen_tb_dep.sh
+
+filelist:
+	@chore/gen_lint_f.sh
 
 list:
 	$(foreach task,$(TASKS),$(info $(task)))
@@ -57,13 +61,14 @@ wave-%: $(WAVES_DIR)/%.vcd
 clean:
 	rm -rf $(BUILD_DIR) $(WAVES_DIR) $(LOGS_DIR)
 
-lint:
+lint: filelist
 	@echo "Linting: $(shell date '+%Y-%m-%d %H:%M:%S')" | tee -a $(LINT_LOG)
-	@verilator $(LINT_FLAGS) $(RTL_FILES) >> $(LINT_LOG) 2>&1 | tee -a $(LINT_LOG)
+	@set -o pipefail; verilator -f $(LINT_F) 2>&1 | tee -a $(LINT_LOG)
 
 help:
 	@echo "Commands:"
-	@echo " make init         - initialize dependencies"
+	@echo " make init         - initialize dependencies (filelist + testbench deps)"
+	@echo " make filelist     - regenerate verilator.f (lint filelist, shared with IDE)"
 	@echo " make list         - list all build tasks"
 	@echo " make build-[name] - build (e.g. build-tb_alu)"
 	@echo " make run-[name]   - run (e.g. run-tb_alu)"

@@ -1,0 +1,12 @@
+{
+  // 让 IDE 的 Verilog lint 与项目 `make lint` 保持一致（single source of truth: verilator.f）
+  // 详细说明见 README.md 的「IDE lint 配置」一节。
+  "verilog.linting.linter": "verilator",
+  "verilog.linting.verilator.runAtFileLocation": false,
+
+  // -Wall --timing --bbox-sys         : 与项目 lint 相同的 flags
+  // -f verilator.f                    : 复用项目 lint 的**文件清单**（这样跨模块实例化才不会误报）
+  // -Wno-MODDUP                       : 扩展会把当前打开的文件额外追加一次，与清单重复
+  // -Wno-TIMESCALEMOD/-Wno-MULTITOP   : 仅当打开 testbench 时才会出现，项目 lint(RTL) 不产生
+  "verilog.linting.verilator.arguments": "-Wall --timing --bbox-sys -f verilator.f -Wno-MODDUP -Wno-TIMESCALEMOD -Wno-MULTITOP"
+}
