@@ -8,6 +8,12 @@ WAVES_DIR  = waves
 LOGS_DIR   = logs
 INC_PATH   = lib rtl/core/include sim/tb/include 
 
+# 仿真期程序装载 (可选)
+#   make run-tb_xxx PROG=programs/demo.hex [DATA=programs/data.hex]
+PROG ?=
+DATA ?=
+SIM_ARGS = $(if $(PROG),+instr=$(PROG)) $(if $(DATA),+data=$(DATA))
+
 # Rtl
 RTL_FILES := $(shell find $(RTL_DIR) -name "*.v")
 
@@ -40,7 +46,7 @@ build-%: $(F_DIR)/%.f
 
 run-%: build-%
 	@echo "Run($*): $(shell date '+%Y-%m-%d %H:%M:%S')"
-	@vvp $(TARGET_DIR)/$* || (echo "FAILED"; exit 1)
+	@vvp $(TARGET_DIR)/$* $(SIM_ARGS) || (echo "FAILED"; exit 1)
 
 all: $(addprefix run-,$(TASKS))
 	@echo ""
@@ -65,3 +71,7 @@ help:
 	@echo " make wave-[name]  - display wave (e.g. wave-alu)"
 	@echo " make clean        - clean all generated files"
 	@echo " make lint  	      - run linting on all RTL files"
+	@echo ""
+	@echo "Program loading (simulation only):"
+	@echo "   make run-[name] PROG=programs/demo.hex   - load instruction memory (+instr=)"
+	@echo "   make run-[name] DATA=programs/data.hex   - load data memory (+data=)"

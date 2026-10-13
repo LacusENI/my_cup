@@ -15,6 +15,14 @@ module datam (
 
     wire [10:0] mem_addr = addr[12:2];
 
+    // 仿真期数据装载 (仅仿真有效, 综合时忽略)
+    // 用法: vvp <target> +data=<path/to/data.hex>
+    reg [1023:0] init_file;
+    initial begin
+        if ($value$plusargs("data=%s", init_file))
+            $readmemh(init_file, mem);
+    end
+
     // 读操作
     always @(*) begin
         if (mem_read) begin
