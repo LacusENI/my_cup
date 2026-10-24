@@ -2,6 +2,14 @@ build/
 waves/
 logs/
 
+# Python (cocotb + pytest)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.result.xml
+*.log
+
 .vscode/*
 !.vscode/settings.json
 .github/
