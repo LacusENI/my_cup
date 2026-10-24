@@ -41,7 +41,7 @@ WAVES_DIR = ROOT / "waves"
 LOGS_DIR = ROOT / "logs"
 
 VERILATOR_F = ROOT / "verilator.f"
-VERILATOR_FLAGS = ["--lint-only", "-Wall", "--timing", "--bbox-sys"]
+VERILATOR_FLAGS = ["--lint-only", "-Wall", "--timing", "--bbox-sys", "-Wno-MULTITOP"]
 LINT_LOG = LOGS_DIR / "lint.log"
 
 

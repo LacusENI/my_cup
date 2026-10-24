@@ -3,8 +3,13 @@
 -Wall
 --timing
 --bbox-sys
+-Wno-MULTITOP
 rtl/core/include/cpu_pkg.sv
 rtl/core/cpu_top.v
+rtl/core/pipe/ex_mem_reg.v
+rtl/core/pipe/id_ex_reg.v
+rtl/core/pipe/if_id_reg.v
+rtl/core/pipe/mem_wb_reg.v
 rtl/core/units/alu.v
 rtl/core/units/cond.v
 rtl/core/units/ctrl.v

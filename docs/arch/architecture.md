@@ -60,17 +60,22 @@
 
 | 模块 | 文件 | 职责 |
 | :-- | :-- | :-- |
-| `cpu_top` | `rtl/core/cpu_top.v` | 顶层：实例化所有单元、隐式连线、实现多路选择器 |
+| `cpu_top` | `rtl/core/cpu_top.v` | 顶层：实例化所有单元、显式连线、实现多路选择器 |
 | `pc` | `units/pc.v` | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
 | `npc` | `units/npc.v` | 下一 PC 决策：`PLUS4` / `BRANCH`(条件偏移) / `DIRECT`(区域跳转) / `RA`(寄存器跳转)；同时输出 `pc_plus4` |
 | `instrm` | `units/instrm.v` | 指令存储器（IMEM），默认 2048 字，组合读 |
-| `decoder` | `units/decoder.v` | 从 32 位指令中拆出 `op/funct/shamt/rs/rt/rd/imm16/instr_index` |
-| `ctrl` | `units/ctrl.v` | 控制器：由 `op/funct` 产生**全部控制信号** |
+| `decoder` | `units/decoder.v` | 把 32 位指令拆成 `instr_t`（op/rs/rt/rd/shamt/funct）+ `imm16` / `instr_index` |
+| `ctrl` | `units/ctrl.v` | 控制器：由 `op/funct` 产生打包好的 `ctrl_t` |
 | `regfile` | `units/regfile.v` | 32×32 寄存器堆；`$0` 恒 0；上升沿写 |
 | `ext` | `units/ext.v` | 立即数 16→32 位扩展（符号/零扩展由 `ext_type` 选择） |
 | `alu` | `units/alu.v` | 算术逻辑运算，输出结果与标志 `zero_f/neg_f/overflow_f/carry_f` |
 | `cond` | `units/cond.v` | 依据 `cond_type` 将 ALU 标志折算为分支条件 `cond_jmp` |
 | `datam` | `units/datam.v` | 数据存储器（DMEM），默认 2048 字，**仅整字访问**（子字访问延后） |
+
+> **流水线寄存器（已就位，尚未接入）**：`rtl/core/pipe/` 下有
+> `if_id_reg` / `id_ex_reg` / `ex_mem_reg` / `mem_wb_reg`，
+> 使用 `cpu_pkg` 的 `if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`，支持 `rst/flush/stall`。
+> 当前 `cpu_top` 仍是单周期，还没有把它们接进去。
 
 ---
 

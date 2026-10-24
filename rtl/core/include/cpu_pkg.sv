@@ -101,6 +101,43 @@ package cpu_pkg;
         src2_sel_t  src2_sel;
     } ctrl_t;
 
+    // ---- 流水线级间数据 ----
+    typedef struct packed {
+        logic  valid;
+        word_t pc;
+        word_t pc_plus4;
+        word_t instr;
+    } if_id_t;
+
+    typedef struct packed {
+        logic   valid;
+        word_t  pc;
+        word_t  pc_plus4;
+        instr_t instr;
+        word_t  rs1_data;
+        word_t  rs2_data;
+        word_t  imm32;
+        ctrl_t  ctrl;
+    } id_ex_t;
+
+    typedef struct packed {
+        logic   valid;
+        word_t  pc_plus4;
+        word_t  alu_out;
+        word_t  rs2_data;
+        instr_t instr;
+        ctrl_t  ctrl;
+    } ex_mem_t;
+
+    typedef struct packed {
+        logic   valid;
+        word_t  pc_plus4;
+        word_t  alu_out;
+        word_t  r_data;
+        instr_t instr;
+        ctrl_t  ctrl;
+    } mem_wb_t;
+
     // ---- 位宽扩展函数 ----
     function automatic word_t s_ext_16_32(input logic [15:0] in);
         return {{16{in[15]}}, in};

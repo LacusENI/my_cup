@@ -29,6 +29,8 @@ tests/
 ├── test_npc.py
 ├── tb_regfile.py      # cocotb 用例：寄存器堆
 ├── test_regfile.py
+├── tb_pipe_regs.py    # cocotb 用例：四个流水线级间寄存器
+├── test_pipe_regs.py
 ├── tb_instr.py        # 指令级：8 条指令 + 程序装载
 └── test_instr.py
 ```
@@ -47,9 +49,13 @@ tests/
 | `test_datam.py` | 整字读写、写禁用、读禁用 | 3 |
 | `test_npc.py` | plus4 / 分支 / 回跳 / 直接跳 / jr | 6 |
 | `test_regfile.py` | 读写、`$0`、双读端口、写禁用 | 4 |
+| `test_pipe_regs.py` | IF/ID、ID/EX、EX/MEM、MEM/WB 的复位/装载/停顿/冲刷 | 4 |
 | `test_instr.py` | addu / addiu / lw / sw / beq / j / jal / jr / 程序装载 | 9 |
 
-合计 **32 个用例**。
+合计 **36 个用例**。
+
+> 流水线寄存器用 `struct packed`（`if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`）承载数据；
+> 由于 Icarus VPI 不暴露 struct 字段，测试里把 struct 当成一个整数来读写。
 
 ## 怎么写一个新测试（3 步）
 

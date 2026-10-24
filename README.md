@@ -17,7 +17,7 @@
 | 指令集 | MIPS32 子集 |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
-| 测试 | 32 个 cocotb/pytest 用例 |
+| 测试 | 36 个 cocotb/pytest 用例 |
 
 ### 已支持指令（最小集，已冻结）
 
@@ -46,7 +46,7 @@ my_cup/
 │       ├── cpu_top.v          # 顶层：实例化各单元并连线
 │       ├── include/           # 共享常量与函数
 │       │   └── cpu_pkg.sv         # package：opcode、控制编码、扩展函数
-│       └── units/             # 各功能单元
+│       ├── units/             # 各功能单元
 │           ├── pc.v / npc.v       # 程序计数器 / 下一 PC 逻辑
 │           ├── instrm.v           # 指令存储器 (IMEM)
 │           ├── decoder.v          # 指令字段拆分
@@ -56,6 +56,11 @@ my_cup/
 │           ├── alu.v              # 算术逻辑单元
 │           ├── cond.v             # 条件判断（分支）
 │           └── datam.v            # 数据存储器 (DMEM)
+│       └── pipe/              # 流水线级间寄存器（已就位，尚未接入 cpu_top）
+│           ├── if_id_reg.v
+│           ├── id_ex_reg.v
+│           ├── ex_mem_reg.v
+│           └── mem_wb_reg.v
 ├── tests/                # 全部验证（cocotb + pytest）
 │   ├── conftest.py            # session 级 build fixture
 │   ├── cocotb_utils.py        # 时钟 / 复位 / 程序装载的小工具

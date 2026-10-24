@@ -94,6 +94,30 @@ def regfile_sim():
     return _build("regfile", [PKG, RTL / "core" / "units" / "regfile.v"], "regfile")
 
 
+@pytest.fixture(scope="session")
+def if_id_sim():
+    """流水线寄存器：IF/ID。"""
+    return _build("if_id_reg", [PKG, RTL / "core" / "pipe" / "if_id_reg.v"], "if_id_reg")
+
+
+@pytest.fixture(scope="session")
+def id_ex_sim():
+    """流水线寄存器：ID/EX。"""
+    return _build("id_ex_reg", [PKG, RTL / "core" / "pipe" / "id_ex_reg.v"], "id_ex_reg")
+
+
+@pytest.fixture(scope="session")
+def ex_mem_sim():
+    """流水线寄存器：EX/MEM。"""
+    return _build("ex_mem_reg", [PKG, RTL / "core" / "pipe" / "ex_mem_reg.v"], "ex_mem_reg")
+
+
+@pytest.fixture(scope="session")
+def mem_wb_sim():
+    """流水线寄存器：MEM/WB。"""
+    return _build("mem_wb_reg", [PKG, RTL / "core" / "pipe" / "mem_wb_reg.v"], "mem_wb_reg")
+
+
 # --------------------------------------------------------------------------- #
 # 把一次 pytest 用例变成一次 cocotb 仿真
 # --------------------------------------------------------------------------- #
