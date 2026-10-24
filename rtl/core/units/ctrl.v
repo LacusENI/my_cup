@@ -1,68 +1,100 @@
+`default_nettype none
+
 module ctrl (
-    input [5:0] op,
-    input [5:0] funct,
-    output [1:0] npc_op,
-    output       reg_write,
-    output [3:0] alu_op,
-    output       mem_write,
-    output       mem_read,
-    output [1:0] cond_type,
-    output       ext_type,
-    output [1:0] rd_sel,
-    output [1:0] wb_sel,
-    output       src2_sel
+    input  logic [5:0] op,
+    input  logic [5:0] funct,
+    output logic [1:0] npc_op,
+    output logic       reg_write,
+    output logic [3:0] alu_op,
+    output logic       mem_write,
+    output logic       mem_read,
+    output logic [1:0] cond_type,
+    output logic       ext_type,
+    output logic [1:0] rd_sel,
+    output logic [1:0] wb_sel,
+    output logic       src2_sel
 );
     import cpu_pkg::*;
 
-    wire addu, addiu, beq, lw, sw, j, jal, jr;
-    assign addu = (op == OP_R) && (funct == FUNCT_ADDU);
-    assign addiu = (op == OP_ADDIU);
-    assign beq = (op == OP_BEQ);
-    assign lw = (op == OP_LW);
-    assign sw = (op == OP_SW);
-    assign j = (op == OP_J);
-    assign jal = (op == OP_JAL);
-    assign jr = (op == OP_R) && (funct == FUNCT_JR);
+    // 用 always_comb + unique case 写控制逻辑：
+    //   - 先给所有输出一个安全默认值（避免 latch / x 传播）；
+    //   - 再按 opcode（必要时按 funct）覆盖；
+    //   - 未定义的指令保持默认值（相当于“不写回、不访存、顺序执行”）。
+    always_comb begin
+        npc_op    = NPC_OP_PLUS4;
+        reg_write = 1'b0;
+        alu_op    = ALU_OP_ADD;
+        mem_write = 1'b0;
+        mem_read  = 1'b0;
+        cond_type = COND_TYPE_EQ;
+        ext_type  = EXT_TYPE_SIGN_EXT;
+        rd_sel    = RD_SEL_RT;
+        wb_sel    = WB_SEL_ALU_OUT;
+        src2_sel  = SRC2_SEL_RS2;
 
-    // IF
-    assign npc_op = beq ? NPC_OP_BRANCH :
-                    j ? NPC_OP_DIRECT :
-                    jal ? NPC_OP_DIRECT :
-                    jr ? NPC_OP_RA :
-                    NPC_OP_PLUS4;
+        unique case (op)
+            OP_R: begin
+                unique case (funct)
+                    FUNCT_ADDU: begin
+                        reg_write = 1'b1;
+                        rd_sel    = RD_SEL_RD;
+                        wb_sel    = WB_SEL_ALU_OUT;
+                        alu_op    = ALU_OP_ADD;
+                    end
+                    FUNCT_JR: begin
+                        npc_op = NPC_OP_RA;
+                    end
+                    default: ;  // 未定义的 R 型指令
+                endcase
+            end
 
-    // ID
-    assign rd_sel = lw ? RD_SEL_RT :
-                    addiu ? RD_SEL_RT :
-                    addu ? RD_SEL_RD :
-                    jal ? RD_SEL_REG_RA :
-                    2'bx;
-    assign ext_type = addiu ? EXT_TYPE_SIGN_EXT :
-                      lw ? EXT_TYPE_SIGN_EXT :
-                      sw ? EXT_TYPE_SIGN_EXT :
-                      1'bx;
-    assign reg_write = (addu | addiu | lw | jal);
+            OP_ADDIU: begin
+                reg_write = 1'b1;
+                rd_sel    = RD_SEL_RT;
+                wb_sel    = WB_SEL_ALU_OUT;
+                src2_sel  = SRC2_SEL_IMM;
+                ext_type  = EXT_TYPE_SIGN_EXT;
+                alu_op    = ALU_OP_ADD;
+            end
 
-    // EX
-    assign src2_sel = addu ? SRC2_SEL_RS2 :
-                      beq ? SRC2_SEL_RS2 :
-                      addiu ? SRC2_SEL_IMM :
-                      lw ? SRC2_SEL_IMM :
-                      sw ? SRC2_SEL_IMM :
-                      1'bx;
-    assign alu_op = beq ? ALU_OP_SUB :
-                    ALU_OP_ADD;
-    assign cond_type = beq ? COND_TYPE_EQ :
-                       2'bx;
+            OP_BEQ: begin
+                npc_op    = NPC_OP_BRANCH;
+                cond_type = COND_TYPE_EQ;
+                alu_op    = ALU_OP_SUB;
+                src2_sel  = SRC2_SEL_RS2;
+            end
 
-    // MEM
-    assign mem_read = lw;
-    assign mem_write = sw;
+            OP_LW: begin
+                reg_write = 1'b1;
+                rd_sel    = RD_SEL_RT;
+                wb_sel    = WB_SEL_R_DATA;
+                src2_sel  = SRC2_SEL_IMM;
+                ext_type  = EXT_TYPE_SIGN_EXT;
+                alu_op    = ALU_OP_ADD;
+                mem_read  = 1'b1;
+            end
 
-    // WB
-    assign wb_sel = addu ? WB_SEL_ALU_OUT :
-                    addiu ? WB_SEL_ALU_OUT :
-                    lw ? WB_SEL_R_DATA :
-                    jal ? WB_SEL_PC_P4 :
-                    2'bx;
+            OP_SW: begin
+                src2_sel  = SRC2_SEL_IMM;
+                ext_type  = EXT_TYPE_SIGN_EXT;
+                alu_op    = ALU_OP_ADD;
+                mem_write = 1'b1;
+            end
+
+            OP_J: begin
+                npc_op = NPC_OP_DIRECT;
+            end
+
+            OP_JAL: begin
+                npc_op    = NPC_OP_DIRECT;
+                reg_write = 1'b1;
+                rd_sel    = RD_SEL_REG_RA;
+                wb_sel    = WB_SEL_PC_P4;
+            end
+
+            default: ;  // 未定义的 opcode
+        endcase
+    end
 endmodule
+
+`default_nettype wire
