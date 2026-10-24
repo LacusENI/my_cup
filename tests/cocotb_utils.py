@@ -9,6 +9,8 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ReadOnly, RisingEdge, Timer
 
+from dut_api import CpuTop, HasClock, write_instr, write_mem, write_reg
+
 
 async def settle():
     """等待 1ns，让组合逻辑完成计算。
@@ -19,7 +21,7 @@ async def settle():
     await Timer(1, unit="ns")
 
 
-async def start_clock(dut, period_ns=10):
+async def start_clock(dut: HasClock, period_ns=10):
     """启动一个周期为 period_ns 的时钟。
 
     Clock(...).start() 是一个协程（可以理解成“一直运行的时钟任务”）。
@@ -28,7 +30,7 @@ async def start_clock(dut, period_ns=10):
     cocotb.start_soon(Clock(dut.clk, period_ns, unit="ns").start())
 
 
-async def reset_and_wait(dut):
+async def reset_and_wait(dut: CpuTop):
     """给 DUT 一个复位脉冲，然后释放复位。
 
     步骤：
@@ -41,13 +43,19 @@ async def reset_and_wait(dut):
     dut.rst.value = 0
 
 
-async def wait_cycles(dut, count):
+async def wait_cycles(dut: HasClock, count: int):
     """等待 count 个时钟上升沿。"""
     for _ in range(count):
         await RisingEdge(dut.clk)
 
 
-async def run_program(dut, instructions, registers=None, memory=None, extra_cycles=2):
+async def run_program(
+    dut: CpuTop,
+    instructions,
+    registers=None,
+    memory=None,
+    extra_cycles=2,
+):
     """装载一个“小程序”，复位，然后跑若干周期。
 
     参数：
@@ -62,15 +70,15 @@ async def run_program(dut, instructions, registers=None, memory=None, extra_cycl
     """
     await start_clock(dut)
 
-    # 预置寄存器和数据内存（相当于旧 TB 里直接改 regs/mem）
+    # 预置寄存器和数据内存（具体路径收口在 dut_api 里）
     for reg_index, value in (registers or {}).items():
-        dut.u_regfile.regs[reg_index].value = value
+        write_reg(dut, reg_index, value)
     for word_index, value in (memory or {}).items():
-        dut.u_datam.mem[word_index].value = value
+        write_mem(dut, word_index, value)
 
     # 装载指令
     for index, instruction in enumerate(instructions):
-        dut.u_instrm.mem[index].value = instruction
+        write_instr(dut, index, instruction)
 
     # 复位，然后跑 len(instructions) + extra_cycles 个周期
     await reset_and_wait(dut)
@@ -80,7 +88,9 @@ async def run_program(dut, instructions, registers=None, memory=None, extra_cycl
     await ReadOnly()
 
 
-async def run_one_instruction(dut, instruction, registers=None, memory=None):
+async def run_one_instruction(
+    dut: CpuTop, instruction, registers=None, memory=None
+):
     """执行“一条”指令，然后停在只读阶段。
 
     这是 ISA 级测试的基础：

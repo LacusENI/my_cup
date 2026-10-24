@@ -15,13 +15,16 @@ import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
 from cocotb_utils import settle, start_clock
+from dut_api import PipeRegisterDut
 
 # 两个有辨识度的位模式
 PATTERN = 0x1234_5678_9ABC_DEF0
 NEW_PATTERN = 0x0FED_CBA9_8765_4321
 
 
-async def check_pipe_register(dut, input_name: str, output_name: str):
+async def check_pipe_register(
+    dut: PipeRegisterDut, input_name: str, output_name: str
+):
     """通用的流水线寄存器测试。
 
     参数：
@@ -69,24 +72,24 @@ async def check_pipe_register(dut, input_name: str, output_name: str):
 
 
 @cocotb.test()
-async def if_id_register_test(dut):
+async def if_id_register_test(dut: PipeRegisterDut):
     """IF/ID：复位 / 装载 / 停顿 / 冲刷。"""
     await check_pipe_register(dut, "if_id_in", "if_id_out")
 
 
 @cocotb.test()
-async def id_ex_register_test(dut):
+async def id_ex_register_test(dut: PipeRegisterDut):
     """ID/EX：复位 / 装载 / 停顿 / 冲刷。"""
     await check_pipe_register(dut, "id_ex_in", "id_ex_out")
 
 
 @cocotb.test()
-async def ex_mem_register_test(dut):
+async def ex_mem_register_test(dut: PipeRegisterDut):
     """EX/MEM：复位 / 装载 / 停顿 / 冲刷。"""
     await check_pipe_register(dut, "ex_mem_in", "ex_mem_out")
 
 
 @cocotb.test()
-async def mem_wb_register_test(dut):
+async def mem_wb_register_test(dut: PipeRegisterDut):
     """MEM/WB：复位 / 装载 / 停顿 / 冲刷。"""
     await check_pipe_register(dut, "mem_wb_in", "mem_wb_out")

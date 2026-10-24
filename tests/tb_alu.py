@@ -3,12 +3,12 @@
 import cocotb
 from cocotb.triggers import Timer
 
-ALU_OP_ADD = 0b0001
-ALU_OP_SUB = 0b0010
+from dut_api import AluDut
+from rtl_consts import ALU_OP_ADD, ALU_OP_SUB
 
 
 @cocotb.test()
-async def alu_add_test(dut):
+async def alu_add_test(dut: AluDut):
     dut.alu_op.value = ALU_OP_ADD
     dut.alu_src1.value = 5
     dut.alu_src2.value = 3
@@ -18,7 +18,7 @@ async def alu_add_test(dut):
 
 
 @cocotb.test()
-async def alu_sub_test(dut):
+async def alu_sub_test(dut: AluDut):
     dut.alu_op.value = ALU_OP_SUB
     dut.alu_src1.value = 8
     dut.alu_src2.value = 8

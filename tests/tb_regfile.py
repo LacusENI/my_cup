@@ -14,10 +14,11 @@ import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
 from cocotb_utils import start_clock
+from dut_api import RegfileDut
 
 
 @cocotb.test()
-async def write_read_test(dut):
+async def write_read_test(dut: RegfileDut):
     """写 R5，再从读端口 1 读回来。"""
     await start_clock(dut)
 
@@ -36,7 +37,7 @@ async def write_read_test(dut):
 
 
 @cocotb.test()
-async def zero_register_test(dut):
+async def zero_register_test(dut: RegfileDut):
     """$0 永远读 0，即使尝试写它也不会改变。"""
     await start_clock(dut)
 
@@ -57,7 +58,7 @@ async def zero_register_test(dut):
 
 
 @cocotb.test()
-async def two_read_ports_test(dut):
+async def two_read_ports_test(dut: RegfileDut):
     """两个读端口可以同时读出不同的寄存器。"""
     await start_clock(dut)
 
@@ -83,7 +84,7 @@ async def two_read_ports_test(dut):
 
 
 @cocotb.test()
-async def write_disable_test(dut):
+async def write_disable_test(dut: RegfileDut):
     """reg_write=0 时，不能改写寄存器。"""
     await start_clock(dut)
 

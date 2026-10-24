@@ -15,16 +15,12 @@ npc 是纯组合逻辑：
 import cocotb
 
 from cocotb_utils import settle
-
-# 与 cpu_pkg.sv 保持一致
-NPC_OP_PLUS4  = 0b00
-NPC_OP_BRANCH = 0b01
-NPC_OP_DIRECT = 0b10
-NPC_OP_RA     = 0b11
+from dut_api import NpcDut
+from rtl_consts import NPC_OP_BRANCH, NPC_OP_DIRECT, NPC_OP_PLUS4, NPC_OP_RA
 
 
 @cocotb.test()
-async def plus4_test(dut):
+async def plus4_test(dut: NpcDut):
     """普通情况：下一条指令在旁边，PC = PC + 4。"""
     dut.curr_pc.value = 0x0000_0010
     dut.npc_op.value = NPC_OP_PLUS4
@@ -36,7 +32,7 @@ async def plus4_test(dut):
 
 
 @cocotb.test()
-async def branch_taken_test(dut):
+async def branch_taken_test(dut: NpcDut):
     """beq 成立：PC = PC + (offset << 2)。"""
     dut.curr_pc.value = 0x0000_0100
     dut.npc_op.value = NPC_OP_BRANCH
@@ -49,7 +45,7 @@ async def branch_taken_test(dut):
 
 
 @cocotb.test()
-async def branch_not_taken_test(dut):
+async def branch_not_taken_test(dut: NpcDut):
     """beq 不成立：即使给了偏移，也还是 PC + 4。"""
     dut.curr_pc.value = 0x0000_0100
     dut.npc_op.value = NPC_OP_BRANCH
@@ -61,7 +57,7 @@ async def branch_not_taken_test(dut):
 
 
 @cocotb.test()
-async def branch_backward_test(dut):
+async def branch_backward_test(dut: NpcDut):
     """向后跳：offset 是负数时，要正确做符号扩展。"""
     dut.curr_pc.value = 0x0000_0100
     dut.npc_op.value = NPC_OP_BRANCH
@@ -74,7 +70,7 @@ async def branch_backward_test(dut):
 
 
 @cocotb.test()
-async def direct_jump_test(dut):
+async def direct_jump_test(dut: NpcDut):
     """j / jal：目标地址由 PC 高 4 位和 26 位 instr_index 拼出来。"""
     dut.curr_pc.value = 0x8000_0000
     dut.npc_op.value = NPC_OP_DIRECT
@@ -86,7 +82,7 @@ async def direct_jump_test(dut):
 
 
 @cocotb.test()
-async def jump_register_test(dut):
+async def jump_register_test(dut: NpcDut):
     """jr：直接跳到寄存器里的地址。"""
     dut.npc_op.value = NPC_OP_RA
     dut.jmp_reg.value = 0x1234_5678

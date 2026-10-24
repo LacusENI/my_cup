@@ -15,13 +15,14 @@ import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
 from cocotb_utils import settle, start_clock
+from dut_api import DatamDut
 
 # 地址 0x80 是 4 的倍数，对应 mem[0x80 / 4] = mem[32]
 ADDR = 0x0000_0080
 
 
 @cocotb.test()
-async def write_read_word_test(dut):
+async def write_read_word_test(dut: DatamDut):
     """写一个整字，再读回来，应该得到同样的值。"""
     await start_clock(dut)
 
@@ -41,7 +42,7 @@ async def write_read_word_test(dut):
 
 
 @cocotb.test()
-async def write_disable_test(dut):
+async def write_disable_test(dut: DatamDut):
     """mem_write=0 时，即使改 w_data，也不应该改写内存。"""
     await start_clock(dut)
 
@@ -64,7 +65,7 @@ async def write_disable_test(dut):
 
 
 @cocotb.test()
-async def read_disable_test(dut):
+async def read_disable_test(dut: DatamDut):
     """mem_read=0 时，r_data 固定输出 0。"""
     dut.addr.value = ADDR
     dut.mem_read.value = 0
