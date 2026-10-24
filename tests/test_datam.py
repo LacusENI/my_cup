@@ -1,6 +1,11 @@
 """datam 的 pytest 包装：每个函数对应 tb_datam.py 里的一个用例。"""
 
 
+def test_contract(datam_sim, run_cocotb_case):
+    """datam 的公开字段契约。"""
+    run_cocotb_case(datam_sim, "tb_datam", "contract_test")
+
+
 def test_datam_write_read_word(datam_sim, run_cocotb_case):
     """整字写入再读出。"""
     run_cocotb_case(datam_sim, "tb_datam", "write_read_word_test")

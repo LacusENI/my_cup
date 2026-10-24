@@ -12,11 +12,42 @@ ISA 级测试：**每个用例只执行一条指令**。
 机器码由 `mips_asm` 里的编码器生成，不再手写十六进制。
 """
 
+from typing import Protocol
+
 import cocotb
 
-from cocotb_utils import run_one_instruction
-from dut_api import CpuTop, read_mem, read_pc, read_reg
+from cocotb_utils import (
+    CpuAccess,
+    assert_fields,
+    read_mem,
+    read_pc,
+    read_reg,
+    run_one_instruction,
+)
 from mips_asm import addu, addiu, beq, j, jal, jr, lw, sw
+
+
+# cpu_top 的公开接口：在 cpu_top 自己的 tb 里声明。
+class CpuTop(CpuAccess, Protocol):
+    """cpu_top 供 ISA 测试使用的字段。"""
+
+
+# cpu_top 的公开字段：ISA 测试依赖哪些，就列哪些。
+CPU_TOP_FIELDS = (
+    "clk",
+    "rst",
+    "u_pc.curr_pc",
+    "u_pc.next_pc",
+    "u_regfile.regs",
+    "u_instrm.mem",
+    "u_datam.mem",
+)
+
+
+@cocotb.test()
+async def contract_test(dut: CpuTop):
+    """契约：cpu_top 仍然暴露 ISA 测试依赖的架构状态。"""
+    assert_fields(dut, CPU_TOP_FIELDS, "cpu_top")
 
 
 # --------------------------------------------------------------------------- #

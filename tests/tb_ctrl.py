@@ -11,10 +11,11 @@ ctrl 是“纯组合逻辑”：
 解析 ctrl_t 的字段顺序和位宽，RTL 改了布局，测试会自动跟着变。
 """
 
+from typing import Protocol
+
 import cocotb
 
-from cocotb_utils import settle
-from dut_api import CtrlDut
+from cocotb_utils import Signal, assert_fields, settle
 from rtl_consts import (
     ALU_OP_ADD,
     ALU_OP_SUB,
@@ -44,13 +45,23 @@ from rtl_consts import (
     struct_layout,
 )
 
-# 每个字段：(最高位, 位宽)
-CTRL_FIELDS = struct_layout("ctrl_t")
+# ctrl_t 的字段布局：(最高位, 位宽)
+CTRL_LAYOUT = struct_layout("ctrl_t")
+
+
+# ctrl 的公开字段：测试依赖哪些，就列哪些。
+class CtrlDut(Protocol):
+    op: Signal
+    funct: Signal
+    ctrl: Signal
+
+
+REQUIRED_FIELDS = ("op", "funct", "ctrl")
 
 
 def field(dut: CtrlDut, name: str) -> int:
     """从打包的 ctrl_t 里取出一个字段的整数值。"""
-    msb, width = CTRL_FIELDS[name]
+    msb, width = CTRL_LAYOUT[name]
     shift = msb - width + 1
     mask = (1 << width) - 1
     return (int(dut.ctrl.value) >> shift) & mask
@@ -59,6 +70,12 @@ def field(dut: CtrlDut, name: str) -> int:
 # --------------------------------------------------------------------------- #
 # 测试
 # --------------------------------------------------------------------------- #
+@cocotb.test()
+async def contract_test(dut: CtrlDut):
+    """契约：ctrl 仍然暴露 op / funct / ctrl。"""
+    assert_fields(dut, REQUIRED_FIELDS, "ctrl")
+
+
 @cocotb.test()
 async def addu_control_test(dut: CtrlDut):
     """addu $rd, $rs, $rt：两个寄存器相加，结果写回 rd。"""

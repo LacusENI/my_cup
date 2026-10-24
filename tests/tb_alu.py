@@ -1,10 +1,36 @@
 """cocotb 测试模块：ALU（由 test_alu.py 通过 simulator 调起，pytest 不直接收集）"""
 
+from typing import Protocol
+
 import cocotb
 from cocotb.triggers import Timer
 
-from dut_api import AluDut
+from cocotb_utils import Signal, assert_fields
 from rtl_consts import ALU_OP_ADD, ALU_OP_SUB
+
+
+# ALU 的公开字段：测试依赖哪些，就列哪些。
+class AluDut(Protocol):
+    alu_op: Signal
+    alu_src1: Signal
+    alu_src2: Signal
+    alu_out: Signal
+    zero_f: Signal
+
+
+REQUIRED_FIELDS = (
+    "alu_op",
+    "alu_src1",
+    "alu_src2",
+    "alu_out",
+    "zero_f",
+)
+
+
+@cocotb.test()
+async def contract_test(dut: AluDut):
+    """契约：ALU 仍然暴露测试依赖的端口。"""
+    assert_fields(dut, REQUIRED_FIELDS, "alu")
 
 
 @cocotb.test()

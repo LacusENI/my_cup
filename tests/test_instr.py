@@ -1,6 +1,11 @@
 """ISA 级测试的 pytest 入口：每个函数对应 tb_instr.py 里的一个单指令用例。"""
 
 
+def test_contract(cpu_sim, run_cocotb_case):
+    """cpu_top 的公开字段契约。"""
+    run_cocotb_case(cpu_sim, "tb_instr", "contract_test")
+
+
 def test_addu(cpu_sim, run_cocotb_case):
     """addu：5 + 3 = 8。"""
     run_cocotb_case(cpu_sim, "tb_instr", "addu_test")

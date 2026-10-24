@@ -12,11 +12,42 @@ npc 是纯组合逻辑：
   NPC_OP_RA     : jr，PC = 寄存器里的地址
 """
 
+from typing import Protocol
+
 import cocotb
 
-from cocotb_utils import settle
-from dut_api import NpcDut
+from cocotb_utils import Signal, assert_fields, settle
 from rtl_consts import NPC_OP_BRANCH, NPC_OP_DIRECT, NPC_OP_PLUS4, NPC_OP_RA
+
+
+# npc 的公开字段：测试依赖哪些，就列哪些。
+class NpcDut(Protocol):
+    curr_pc: Signal
+    npc_op: Signal
+    cond_jmp: Signal
+    jmp_target: Signal
+    jmp_offset: Signal
+    jmp_reg: Signal
+    pc_plus4: Signal
+    next_pc: Signal
+
+
+REQUIRED_FIELDS = (
+    "curr_pc",
+    "npc_op",
+    "cond_jmp",
+    "jmp_target",
+    "jmp_offset",
+    "jmp_reg",
+    "pc_plus4",
+    "next_pc",
+)
+
+
+@cocotb.test()
+async def contract_test(dut: NpcDut):
+    """契约：npc 仍然暴露 PC / 跳转控制和下一 PC。"""
+    assert_fields(dut, REQUIRED_FIELDS, "npc")
 
 
 @cocotb.test()

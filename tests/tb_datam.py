@@ -11,14 +11,43 @@ datam 的行为很简单：
   - mem_read=0 时，r_data 固定为 0。
 """
 
+from typing import Protocol, Sequence
+
 import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
-from cocotb_utils import settle, start_clock
-from dut_api import DatamDut
+from cocotb_utils import Signal, assert_fields, settle, start_clock
 
 # 地址 0x80 是 4 的倍数，对应 mem[0x80 / 4] = mem[32]
 ADDR = 0x0000_0080
+
+
+# datam 的公开字段：测试依赖哪些，就列哪些。
+class DatamDut(Protocol):
+    clk: Signal
+    mem_read: Signal
+    mem_write: Signal
+    addr: Signal
+    w_data: Signal
+    r_data: Signal
+    mem: Sequence[Signal]
+
+
+REQUIRED_FIELDS = (
+    "clk",
+    "mem_read",
+    "mem_write",
+    "addr",
+    "w_data",
+    "r_data",
+    "mem",
+)
+
+
+@cocotb.test()
+async def contract_test(dut: DatamDut):
+    """契约：datam 仍然暴露读写端口和内部 mem。"""
+    assert_fields(dut, REQUIRED_FIELDS, "datam")
 
 
 @cocotb.test()

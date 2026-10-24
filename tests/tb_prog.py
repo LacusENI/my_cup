@@ -10,15 +10,14 @@ import os
 
 import cocotb
 
-from cocotb_utils import run_program
-from dut_api import CpuTop, read_reg
+from cocotb_utils import CpuAccess, read_reg, run_program
 
 # 程序跑完后等待的周期数；mycup prog 可以通过环境变量覆盖
 PROGRAM_CYCLES = int(os.environ.get("MYCUP_PROG_CYCLES", "4"))
 
 
 @cocotb.test()
-async def prog_demo_test(dut: CpuTop):
+async def prog_demo_test(dut: CpuAccess):
     """装载 programs/demo.hex，检查 R1=8、R2=5、R3=13。
 
     这个测试需要 pytest 包装层传入 +instr=<绝对路径>；

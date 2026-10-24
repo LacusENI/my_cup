@@ -1,6 +1,11 @@
 """npc 的 pytest 包装：每个函数对应 tb_npc.py 里的一个用例。"""
 
 
+def test_contract(npc_sim, run_cocotb_case):
+    """npc 的公开字段契约。"""
+    run_cocotb_case(npc_sim, "tb_npc", "contract_test")
+
+
 def test_npc_plus4(npc_sim, run_cocotb_case):
     """顺序执行：PC + 4。"""
     run_cocotb_case(npc_sim, "tb_npc", "plus4_test")

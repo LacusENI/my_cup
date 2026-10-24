@@ -10,11 +10,44 @@ regfile 的行为：
   - 读是组合逻辑，等一会儿就能读到。
 """
 
+from typing import Protocol, Sequence
+
 import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
-from cocotb_utils import start_clock
-from dut_api import RegfileDut
+from cocotb_utils import Signal, assert_fields, start_clock
+
+
+# regfile 的公开字段：测试依赖哪些，就列哪些。
+class RegfileDut(Protocol):
+    clk: Signal
+    reg_src1: Signal
+    reg_src2: Signal
+    reg_dst: Signal
+    wb_data: Signal
+    reg_write: Signal
+    rs1_data: Signal
+    rs2_data: Signal
+    regs: Sequence[Signal]
+
+
+REQUIRED_FIELDS = (
+    "clk",
+    "reg_src1",
+    "reg_src2",
+    "reg_dst",
+    "wb_data",
+    "reg_write",
+    "rs1_data",
+    "rs2_data",
+    "regs",
+)
+
+
+@cocotb.test()
+async def contract_test(dut: RegfileDut):
+    """契约：regfile 仍然暴露读写端口和内部 regs。"""
+    assert_fields(dut, REQUIRED_FIELDS, "regfile")
 
 
 @cocotb.test()

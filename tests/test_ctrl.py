@@ -9,6 +9,11 @@
 """
 
 
+def test_contract(ctrl_sim, run_cocotb_case):
+    """ctrl 的公开字段契约。"""
+    run_cocotb_case(ctrl_sim, "tb_ctrl", "contract_test")
+
+
 def test_addu_control(ctrl_sim, run_cocotb_case):
     """addu 的控制信号。"""
     run_cocotb_case(ctrl_sim, "tb_ctrl", "addu_control_test")

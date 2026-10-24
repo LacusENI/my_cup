@@ -1,6 +1,11 @@
 """regfile 的 pytest 包装：每个函数对应 tb_regfile.py 里的一个用例。"""
 
 
+def test_contract(regfile_sim, run_cocotb_case):
+    """regfile 的公开字段契约。"""
+    run_cocotb_case(regfile_sim, "tb_regfile", "contract_test")
+
+
 def test_regfile_write_read(regfile_sim, run_cocotb_case):
     """写入后能正确读回。"""
     run_cocotb_case(regfile_sim, "tb_regfile", "write_read_test")

@@ -1,6 +1,26 @@
 """流水线寄存器的 pytest 入口。"""
 
 
+def test_if_id_contract(if_id_sim, run_cocotb_case):
+    """IF/ID 的公开字段契约。"""
+    run_cocotb_case(if_id_sim, "tb_pipe_regs", "if_id_contract_test")
+
+
+def test_id_ex_contract(id_ex_sim, run_cocotb_case):
+    """ID/EX 的公开字段契约。"""
+    run_cocotb_case(id_ex_sim, "tb_pipe_regs", "id_ex_contract_test")
+
+
+def test_ex_mem_contract(ex_mem_sim, run_cocotb_case):
+    """EX/MEM 的公开字段契约。"""
+    run_cocotb_case(ex_mem_sim, "tb_pipe_regs", "ex_mem_contract_test")
+
+
+def test_mem_wb_contract(mem_wb_sim, run_cocotb_case):
+    """MEM/WB 的公开字段契约。"""
+    run_cocotb_case(mem_wb_sim, "tb_pipe_regs", "mem_wb_contract_test")
+
+
 def test_if_id_register(if_id_sim, run_cocotb_case):
     """IF/ID：复位 / 装载 / 停顿 / 冲刷。"""
     run_cocotb_case(if_id_sim, "tb_pipe_regs", "if_id_register_test")

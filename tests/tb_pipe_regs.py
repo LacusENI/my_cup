@@ -11,15 +11,57 @@
 验证“复位 / 装载 / 保持 / 冲刷”四种行为。
 """
 
+from typing import Protocol
+
 import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
-from cocotb_utils import settle, start_clock
-from dut_api import PipeRegisterDut
+from cocotb_utils import Signal, assert_fields, settle, start_clock
 
 # 两个有辨识度的位模式
 PATTERN = 0x1234_5678_9ABC_DEF0
 NEW_PATTERN = 0x0FED_CBA9_8765_4321
+
+
+# 四个流水线寄存器共用这套控制信号；输入/输出字段名按实例不同。
+class PipeRegisterDut(Protocol):
+    clk: Signal
+    rst: Signal
+    flush: Signal
+    stall: Signal
+
+
+# 每个寄存器的公开字段：控制信号 + 自己的输入/输出。
+PIPE_FIELDS = {
+    "if_id_reg": ("clk", "rst", "flush", "stall", "if_id_in", "if_id_out"),
+    "id_ex_reg": ("clk", "rst", "flush", "stall", "id_ex_in", "id_ex_out"),
+    "ex_mem_reg": ("clk", "rst", "flush", "stall", "ex_mem_in", "ex_mem_out"),
+    "mem_wb_reg": ("clk", "rst", "flush", "stall", "mem_wb_in", "mem_wb_out"),
+}
+
+
+@cocotb.test()
+async def if_id_contract_test(dut: PipeRegisterDut):
+    """契约：IF/ID 寄存器仍然暴露控制信号和 if_id_in / if_id_out。"""
+    assert_fields(dut, PIPE_FIELDS["if_id_reg"], "if_id_reg")
+
+
+@cocotb.test()
+async def id_ex_contract_test(dut: PipeRegisterDut):
+    """契约：ID/EX 寄存器仍然暴露控制信号和 id_ex_in / id_ex_out。"""
+    assert_fields(dut, PIPE_FIELDS["id_ex_reg"], "id_ex_reg")
+
+
+@cocotb.test()
+async def ex_mem_contract_test(dut: PipeRegisterDut):
+    """契约：EX/MEM 寄存器仍然暴露控制信号和 ex_mem_in / ex_mem_out。"""
+    assert_fields(dut, PIPE_FIELDS["ex_mem_reg"], "ex_mem_reg")
+
+
+@cocotb.test()
+async def mem_wb_contract_test(dut: PipeRegisterDut):
+    """契约：MEM/WB 寄存器仍然暴露控制信号和 mem_wb_in / mem_wb_out。"""
+    assert_fields(dut, PIPE_FIELDS["mem_wb_reg"], "mem_wb_reg")
 
 
 async def check_pipe_register(
