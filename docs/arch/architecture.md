@@ -2,7 +2,7 @@
 
 本文描述 `my_cup` 的整体框架、数据通路与模块职责，作为阅读代码的入口。
 
-- 顶层模块：[`rtl/core/cpu_top.v`](../../rtl/core/cpu_top.v)
+- 顶层模块：[`rtl/core/cpu_top.sv`](../../rtl/core/cpu_top.sv)
 - 控制信号编码：[`rtl/core/include/cpu_pkg.sv`](../../rtl/core/include/cpu_pkg.sv)
 
 ---
@@ -60,17 +60,17 @@
 
 | 模块 | 文件 | 职责 |
 | :-- | :-- | :-- |
-| `cpu_top` | `rtl/core/cpu_top.v` | 顶层：实例化所有单元、显式连线、实现多路选择器 |
-| `pc` | `units/pc.v` | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
-| `npc` | `units/npc.v` | 下一 PC 决策：`PLUS4` / `BRANCH`(条件偏移) / `DIRECT`(区域跳转) / `RA`(寄存器跳转)；同时输出 `pc_plus4` |
-| `instrm` | `units/instrm.v` | 指令存储器（IMEM），默认 2048 字，组合读 |
-| `decoder` | `units/decoder.v` | 把 32 位指令拆成 `instr_t`（op/rs/rt/rd/shamt/funct）+ `imm16` / `instr_index` |
-| `ctrl` | `units/ctrl.v` | 控制器：由 `op/funct` 产生打包好的 `ctrl_t` |
-| `regfile` | `units/regfile.v` | 32×32 寄存器堆；`$0` 恒 0；上升沿写 |
-| `ext` | `units/ext.v` | 立即数 16→32 位扩展（符号/零扩展由 `ext_type` 选择） |
-| `alu` | `units/alu.v` | 算术逻辑运算，输出结果与标志 `zero_f/neg_f/overflow_f/carry_f` |
-| `cond` | `units/cond.v` | 依据 `cond_type` 将 ALU 标志折算为分支条件 `cond_jmp` |
-| `datam` | `units/datam.v` | 数据存储器（DMEM），默认 2048 字，**仅整字访问**（子字访问延后） |
+| `cpu_top` | `rtl/core/cpu_top.sv` | 顶层：实例化所有单元、显式连线、实现多路选择器 |
+| `pc` | `units/pc.sv` | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
+| `npc` | `units/npc.sv` | 下一 PC 决策：`PLUS4` / `BRANCH`(条件偏移) / `DIRECT`(区域跳转) / `RA`(寄存器跳转)；同时输出 `pc_plus4` |
+| `instrm` | `units/instrm.sv` | 指令存储器（IMEM），默认 2048 字，组合读 |
+| `decoder` | `units/decoder.sv` | 把 32 位指令拆成 `instr_t`（op/rs/rt/rd/shamt/funct）+ `imm16` / `instr_index` |
+| `ctrl` | `units/ctrl.sv` | 控制器：由 `op/funct` 产生打包好的 `ctrl_t` |
+| `regfile` | `units/regfile.sv` | 32×32 寄存器堆；`$0` 恒 0；上升沿写 |
+| `ext` | `units/ext.sv` | 立即数 16→32 位扩展（符号/零扩展由 `ext_type` 选择） |
+| `alu` | `units/alu.sv` | 算术逻辑运算，输出结果与标志 `zero_f/neg_f/overflow_f/carry_f` |
+| `cond` | `units/cond.sv` | 依据 `cond_type` 将 ALU 标志折算为分支条件 `cond_jmp` |
+| `datam` | `units/datam.sv` | 数据存储器（DMEM），默认 2048 字，**仅整字访问**（子字访问延后） |
 
 > **流水线寄存器（已就位，尚未接入）**：`rtl/core/pipe/` 下有
 > `if_id_reg` / `id_ex_reg` / `ex_mem_reg` / `mem_wb_reg`，
@@ -188,13 +188,12 @@ uv run mycup prog programs/demo.hex --data programs/data.hex --cycles 8
    （见 [roadmap.md](roadmap.md#明确延后deferred)）。`datam` 收敛为整字访问，
    `read_signed` / `mem_size` 已删除。
 
-2. **`ctrl.v` 大量使用 `2'bx` / `1'bx` 作为默认值**
-   仿真可行，但对综合不友好，且掩盖"某条指令未定义该信号"的真实问题。建议改为显式默认值 + `default` 分支。
+2. ~~**`ctrl.sv` 大量使用 `2'bx` / `1'bx` 作为默认值**~~ ✅ 已改为 `always_comb` + 显式默认值 + `unique case`。
 
 3. ~~**`defines.vh` 与 `instr.vh` 职责重叠**~~ ✅ 已合并为 `cpu_pkg.sv`（package），用 `import` 使用。
 
-4. **`alu.v` 与 `cond.v` 功能远未覆盖设计意图**
-   ALU 仅实现 `ADD`/`SUB`，`neg_f/overflow_f/carry_f` 是常量 0（TODO）；`cond.v` 仅实现相等比较。
+4. **`alu.sv` 与 `cond.sv` 功能远未覆盖设计意图**
+   ALU 仅实现 `ADD`/`SUB`，`neg_f/overflow_f/carry_f` 是常量 0（TODO）；`cond.sv` 仅实现相等比较。
    现有 `docs/unit/alu.md`、`docs/unit/cond.md` 描述的是**目标形态**，与实现存在差距。
 
 5. **`npc` 的 `ra` 命名易误导**

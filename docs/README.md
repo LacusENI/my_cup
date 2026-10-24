@@ -46,7 +46,7 @@
 2. **`instr/instr_v0.3.md`**：`sb/sh` 的 opcode 写法有误；该文档已整体标记为**延后**，保留作为未来参考。
 3. **`unit/npc.md`**：端口仍写作 `jmp/jmp_target/jmp_offset/...`，当前实现为 `npc_op` 枚举 + `ra` 输入。
 4. **`unit/cond.md`**：比较类型描述的是完整规划（EQ/NE/LT/LTU），但当前实现只用到 `COND_TYPE_EQ`，文档与实现不一致。
-5. **`unit/alu.md`**：列出了 MUL/DIV/AND/... 等操作码，但当前 `alu.v` 只实现了 `ADD`/`SUB`。
+5. **`unit/alu.md`**：列出了 MUL/DIV/AND/... 等操作码，但当前 `alu.sv` 只实现了 `ADD`/`SUB`。
 6. ~~**`unit/datam.md`**：未反映 `mem_size` / `read_signed` 与字节/半字能力~~ ✅ 已改为字访问描述。
 
 > 处理建议：修订时**按版本新增**（如 `ctrl_v0.4.md`）或直接更新并在提交信息中说明，二选一即可，避免文档与实现长期漂移。

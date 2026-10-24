@@ -43,24 +43,24 @@ my_cup/
 │   └── veridian-lsp.py   # veridian LSP 代理
 ├── rtl/                  # 可综合的 RTL 源码
 │   └── core/
-│       ├── cpu_top.v          # 顶层：实例化各单元并连线
+│       ├── cpu_top.sv          # 顶层：实例化各单元并连线
 │       ├── include/           # 共享常量与函数
 │       │   └── cpu_pkg.sv         # package：opcode、控制编码、扩展函数
 │       ├── units/             # 各功能单元
-│           ├── pc.v / npc.v       # 程序计数器 / 下一 PC 逻辑
-│           ├── instrm.v           # 指令存储器 (IMEM)
-│           ├── decoder.v          # 指令字段拆分
-│           ├── ctrl.v             # 控制器（产生全部控制信号）
-│           ├── regfile.v          # 通用寄存器堆
-│           ├── ext.v              # 立即数扩展
-│           ├── alu.v              # 算术逻辑单元
-│           ├── cond.v             # 条件判断（分支）
-│           └── datam.v            # 数据存储器 (DMEM)
+│           ├── pc.sv / npc.sv       # 程序计数器 / 下一 PC 逻辑
+│           ├── instrm.sv           # 指令存储器 (IMEM)
+│           ├── decoder.sv          # 指令字段拆分
+│           ├── ctrl.sv             # 控制器（产生全部控制信号）
+│           ├── regfile.sv          # 通用寄存器堆
+│           ├── ext.sv              # 立即数扩展
+│           ├── alu.sv              # 算术逻辑单元
+│           ├── cond.sv             # 条件判断（分支）
+│           └── datam.sv            # 数据存储器 (DMEM)
 │       └── pipe/              # 流水线级间寄存器（已就位，尚未接入 cpu_top）
-│           ├── if_id_reg.v
-│           ├── id_ex_reg.v
-│           ├── ex_mem_reg.v
-│           └── mem_wb_reg.v
+│           ├── if_id_reg.sv
+│           ├── id_ex_reg.sv
+│           ├── ex_mem_reg.sv
+│           └── mem_wb_reg.sv
 ├── tests/                # 全部验证（cocotb + pytest）
 │   ├── conftest.py            # session 级 build fixture
 │   ├── cocotb_utils.py        # 时钟 / 复位 / 程序装载的小工具
@@ -154,7 +154,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py    # 导出波形
 - 编辑器：[`.vscode/settings.json`](.vscode/settings.json)
   - `verilog.languageServer.veridian.enabled: true`
   - `verilog.languageServer.veridian.path: "veridian-lsp"`（代理）
-  - `files.associations`: 把 `*.v` / `*.vh` 识别为 `systemverilog`（veridian 客户端只绑定该语言；代码本身兼容 SV2012）
+  - `files.associations`: `.sv` / `.svh` 会被识别为 `systemverilog`（veridian 客户端绑定该语言）
 - 项目：[`veridian.yml`](veridian.yml)
   - `include_dirs`: `[]`（没有头文件）
   - `source_dirs`: `rtl`
@@ -171,7 +171,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py    # 导出波形
 #   手动格式化：Shift+Alt+F（verible-verilog-format）
 
 # 格式化（默认不自动保存格式化，避免大面积 diff）
-verible-verilog-format rtl/core/units/alu.v
+verible-verilog-format rtl/core/units/alu.sv
 ```
 
 ### slang（可选，当前未接入）
@@ -180,8 +180,7 @@ verible-verilog-format rtl/core/units/alu.v
 Verilator + cocotb 已经足够；如果以后需要更严格的语义检查，可手动运行：
 
 ```bash
-slang --lint-only --timescale 1ns/1ps \
-  rtl/core/include/cpu_pkg.sv $(find rtl -name '*.v')
+slang --lint-only --timescale 1ns/1ps $(find rtl -name '*.sv')
 ```
 
 ### 换机器时如何安装

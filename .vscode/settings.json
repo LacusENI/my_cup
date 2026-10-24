@@ -21,11 +21,10 @@
   "verilog.languageServer.veridian.path": "veridian-lsp",
   "verilog.languageServer.svls.enabled": false,
 
-  // veridian 客户端只绑定 systemverilog 语言；本项目代码兼容 SV2012，
-  // 因此把 .v/.vh 也识别为 systemverilog，让 LSP 生效。
+  // veridian 客户端只绑定 systemverilog 语言；项目文件统一使用 .sv/.svh。
   "files.associations": {
-    "*.v": "systemverilog",
-    "*.vh": "systemverilog"
+    "*.sv": "systemverilog",
+    "*.svh": "systemverilog"
   },
 
   // ---------------------------------------------------------------------------

@@ -67,7 +67,7 @@ tests/
 @pytest.fixture(scope="session")
 def npc_sim():
     """单元级：npc（纯组合逻辑）。"""
-    return _build("npc", [PKG, RTL / "core" / "units" / "npc.v"], "npc")
+    return _build("npc", [PKG, RTL / "core" / "units" / "npc.sv"], "npc")
 ```
 
 `_build` 会调用 `iverilog` 编译，并记录 build 目录；`session` 表示整个测试会话只编译一次。
@@ -83,11 +83,11 @@ from cocotb_utils import settle
 @cocotb.test()
 async def plus4_test(dut):
     """普通情况：PC = PC + 4。"""
-    dut.curr_pc.value = 0x10
+    dut.curr_pc.svalue = 0x10
     dut.npc_op.value = 0b00
     dut.cond_jmp.value = 0
     await settle()
-    assert int(dut.next_pc.value) == 0x14
+    assert int(dut.next_pc.svalue) == 0x14
 ```
 
 - `@cocotb.test()` 注册用例；

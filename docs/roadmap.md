@@ -48,7 +48,7 @@
 
 ### 1.2 清理控制逻辑
 
-- [ ] 把 `ctrl.v` 的 `2'bx/1'bx` 默认值改为**显式默认 + `default` 分支**；
+- [x] 把 `ctrl.sv` 的 `2'bx/1'bx` 默认值改为**显式默认 + `unique case`**；
 - [ ] 收敛 `npc` 的 `ra` 命名为 `jmp_reg`，消除与 `jal` 的 `$ra` 的歧义。
 
 ### 1.3 验证最小闭环
@@ -105,7 +105,7 @@ IF ──► ID ──► EX ──► MEM ──► WB
 
 - **前递（forwarding）**：`EX` 的操作数可从 `EX/MEM`（上一条的 ALU 结果）或 `MEM/WB`（写回值）旁路过来；
 - **load-use 停顿**：`lw` 后紧跟使用其结果的指令，需停顿 1 拍（无法纯前递解决）；
-- 引入 `hazard.v` 统一产生**前递选择**与**停顿/冲刷**信号，避免散落在顶层。
+- 引入 `hazard.sv` 统一产生**前递选择**与**停顿/冲刷**信号，避免散落在顶层。
 
 **(c) 控制冒险**
 
@@ -171,6 +171,6 @@ IF ──► ID ──► EX ──► MEM ──► WB
 ## 建议的近期动作清单
 
 1. 放行 `.github/` 并加 CI，跑 `mycup init && mycup test && mycup lint`；
-2. 清理 `ctrl.v` 的 `x` 默认值与 `npc.ra` 命名；
+2. 清理 `ctrl.sv` 的 `x` 默认值与 `npc.ra` 命名；
 3. 补指令 trace + Python ISS 差分测试；
 4. 开始阶段 2：新建 `rtl/core/pipe/` 与流水线版 `cpu_top`，先跑通"无冒险"程序，再加前递/停顿/冲刷。

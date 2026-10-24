@@ -78,7 +78,7 @@ def rtl_files() -> list[Path]:
     SystemVerilog 的 package 必须先于使用它的模块被编译，
     而 iverilog / verilator 不会自动解析依赖，所以这里手动排序。
     """
-    files = sorted(p for p in RTL_DIR.rglob("*") if p.suffix in (".v", ".sv"))
+    files = sorted(p for p in RTL_DIR.rglob("*") if p.suffix == ".sv")
     package = [p for p in files if p.name == "cpu_pkg.sv"]
     others = [p for p in files if p.name != "cpu_pkg.sv"]
     return package + others
