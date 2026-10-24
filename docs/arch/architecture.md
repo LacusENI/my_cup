@@ -148,33 +148,30 @@ assign jmp_offset = imm16;
 
 ## 7. 构建与测试流程
 
+验证全部走 **cocotb + pytest**：
+
 ```
-sim/tb/**/tb_*.v  ──(mycup/cli.py)──►  build/filelists/tb_*.f   (iverilog 清单)
+tests/tb_*.py   ──(cocotb runner)──►  iverilog 编译  ──►  vvp 仿真
+tests/test_*.py ──(pytest)──────────►  收集 / 报告 / 参数化
 ```
 
-- `mycup init` 扫描 `sim/tb` 下所有 `tb_*.v`，为每个 testbench 生成 `.f`，并生成 `verilator.f`；
-- `mycup build <name>` 用 `iverilog` 编译成 `build/targets/<name>`；
-- `mycup run <name>` 用 `vvp` 运行，生成 `waves/<name>.vcd`；
-- `mycup all` 运行全部测试；
-- `mycup lint` 通过 `verilator -f verilator.f` 做静态检查；`verilator.f` 由 `mycup/cli.py`
-  生成（含 `-Wall --timing --bbox-sys` 与 include 路径），`mycup lint` 会先刷新它，
-  **IDE 的 Verilog lint 也复用同一清单**，从而与命令行保持一致（详见 [README](../README.md#ide-lint-配置vs-code)）；
-- `mycup test` 运行 cocotb + pytest。
+- `mycup test`：运行全部 cocotb + pytest 用例；
+- `mycup lint`：生成 `verilator.f`，再运行 `verilator -f verilator.f`；
+- `mycup prog <hex>`：用 `+instr=` 装载程序，运行 `tests/test_instr.py::test_prog_demo`；
+- `mycup clean`：清理 `build/`、`waves/`、`logs/` 等生成物。
 
-测试框架为 [`lib/vtest.vh`](../../lib/vtest.vh)，提供 `VTEST_INIT / VTEST_BOOT / TEST / EXPECT / TEST_END / VTEST_FINISH` 宏，
-输出风格类似 GoogleTest（`[ RUN ]` / `[ OK ]` / `[ FAILED ]`）。
+`verilator.f` 由 [`mycup/cli.py`](../../mycup/cli.py) 生成（含 `-Wall --timing --bbox-sys`），
+**IDE 的 Verilog lint 也复用同一清单**，从而与命令行保持一致（详见 [README](../README.md#ide-lint-配置vs-code)）。
 
 ### 程序装载（仿真）
 
 ```bash
-uv run mycup run tb_prog --prog programs/demo.hex            # 装载指令存储器 (+instr=)
-uv run mycup run tb_prog --prog programs/demo.hex --data ...  # 额外装载数据存储器 (+data=)
+uv run mycup prog programs/demo.hex
+uv run mycup prog programs/demo.hex --data programs/data.hex --cycles 8
 ```
 
-`--prog` / `--data` 会被转成 vvp 的 `+instr=` / `+data=`；`instrm`/`datam` 中的 `initial` 据此调用 `$readmemh`。
-未提供参数时 `tb_prog` 打印 `[ SKIP ]` 并退出，因此 `mycup all` 始终可通过。
-
-> 约定：`build` / `run` / `all` 会自动发现 testbench 并生成所需清单，**新增 testbench 无需手动注册**。
+`hex` 通过 `+instr=`、`--data` 通过 `+data=` 传给 vvp；`instrm` / `datam` 中的 `initial` 据此调用 `$readmemh`。
+`--cycles` 控制程序跑完后等待的周期数（默认 4）。
 
 ---
 
@@ -205,7 +202,7 @@ uv run mycup run tb_prog --prog programs/demo.hex --data ...  # 额外装载数�
 7. ~~**`develop` 分支已落后 `master`**~~ ✅ 已快进到 `master`。
 
 8. **无 CI**
-   `.gitignore` 忽略了 `.github/`，目前没有自动化回归。建议接入 CI 跑 `mycup all` + `mycup lint`。
+   `.gitignore` 忽略了 `.github/`，目前没有自动化回归。建议接入 CI 跑 `mycup test` + `mycup lint`。
 
 9. **文档与实现漂移**
    部分 `docs/unit/*` 端口/编码已过时，登记详见 [docs/README.md](../README.md)。

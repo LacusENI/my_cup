@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RTL = ROOT / "rtl"
 PKG = RTL / "core" / "include" / "cpu_pkg.sv"
 TESTS = Path(__file__).resolve().parent
-INCLUDES = [ROOT / "rtl" / "core" / "include", ROOT / "lib"]
+# 现在没有需要 `include 的头文件了；cpu_pkg.sv 作为普通源文件编译。
+INCLUDES: list[Path] = []
 BUILD = ROOT / "build" / "cocotb"
 WAVES = os.environ.get("MYCUP_WAVES") == "1"
 
@@ -107,7 +108,7 @@ def run_cocotb_case():
     这样每个 pytest 用例只写一行，读起来就像“跑 tb_ctrl 里的 addu 测试”。
     """
 
-    def _run(sim, test_module: str, testcase: str):
+    def _run(sim, test_module: str, testcase: str, plusargs=None):
         sim.runner.test(
             hdl_toplevel=sim.toplevel,
             test_module=test_module,
@@ -115,6 +116,7 @@ def run_cocotb_case():
             test_dir=TESTS,
             build_dir=sim.build_dir,
             waves=WAVES,
+            plusargs=plusargs or [],
         )
 
     return _run

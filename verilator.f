@@ -3,9 +3,6 @@
 -Wall
 --timing
 --bbox-sys
--Ilib
--Irtl/core/include
--Isim/tb/include
 rtl/core/include/cpu_pkg.sv
 rtl/core/cpu_top.v
 rtl/core/units/alu.v

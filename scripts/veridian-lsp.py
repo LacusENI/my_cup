@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """veridian LSP 代理。
 
-背景：veridian 内置的 slang/verible 诊断不接收 include 路径，对
-`vtest.vh` / `instr.vh` 会产生误报；且 `didSave` 会触发一次全量
+背景：veridian 内置的 slang/verible 诊断不接收 include/package 路径，
+对多文件工程（例如 cpu_pkg.sv + 各模块）会产生误报；且 `didSave` 会触发一次全量
 slang 编译，可能长时间阻塞。
 
 本代理只做两件事：

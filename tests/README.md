@@ -1,13 +1,13 @@
 # Python 验证（cocotb + pytest）
 
-用 Python 写 testbench：**编译一次、pytest 收集、仿真器执行**。
-目标是逐步替换 `sim/tb` 下的 HDL TB，让验证只有一条链路。
+项目的验证现在**只有这一条链路**：cocotb 写测试内容，pytest 负责收集和报告。
+旧的 HDL TB 与 `sim/tb`、`lib/vtest.vh` 已经全部移除。
 
 ## 快速开始
 
 ```bash
 uv sync            # 首次：创建 .venv，安装 cocotb / pytest
-uv run mycup test  # 跑全部 Python 用例
+uv run mycup test  # 跑全部 32 个用例
 uv run pytest -v   # 同上（直接调 pytest）
 ```
 
@@ -18,9 +18,9 @@ uv run pytest -v   # 同上（直接调 pytest）
 ```
 tests/
 ├── conftest.py        # fixture：编译 DUT + run_cocotb_case
-├── cocotb_utils.py    # 时钟 / 复位 / 等待的小工具
+├── cocotb_utils.py    # 时钟 / 复位 / 等待 / 程序装载的小工具
 ├── tb_alu.py          # cocotb 用例：alu
-├── test_alu.py        # pytest 包装
+├── test_alu.py        # pytest 入口
 ├── tb_ctrl.py         # cocotb 用例：控制器
 ├── test_ctrl.py
 ├── tb_datam.py        # cocotb 用例：数据存储器
@@ -29,27 +29,27 @@ tests/
 ├── test_npc.py
 ├── tb_regfile.py      # cocotb 用例：寄存器堆
 ├── test_regfile.py
-├── tb_lw_sw.py        # 指令级：sw → lw 往返
-└── test_lw_sw.py
+├── tb_instr.py        # 指令级：8 条指令 + 程序装载
+└── test_instr.py
 ```
 
-命名约定（很重要）：
+命名约定：
 
-- `tb_*.py`：**cocotb 测试模块**，由仿真器在 Python 进程里加载，pytest **不会**直接收集；
-- `test_*.py`：**pytest 用例**，负责调用 `runner.test()`，只做“入口”和“报告”。
+- `tb_*.py`：**cocotb 测试内容**，由仿真器在 Python 进程里加载，pytest 不会直接收集；
+- `test_*.py`：**pytest 入口**，负责调用 `runner.test()`，只做“选择和报告”。
 
-## 与 HDL TB 的对应关系
+## 覆盖范围
 
-| Python | HDL TB | 状态 |
+| 测试文件 | 覆盖内容 | 用例数 |
 | :-- | :-- | :-- |
-| `test_alu.py` / `tb_alu.py` | `sim/tb/unit/tb_alu.v` | ✅ |
-| `test_ctrl.py` / `tb_ctrl.py` | `sim/tb/unit/tb_ctrl.v` | ✅ |
-| `test_datam.py` / `tb_datam.py` | `sim/tb/unit/tb_datam.v` | ✅ |
-| `test_npc.py` / `tb_npc.py` | `sim/tb/unit/tb_npc.v` | ✅ |
-| `test_regfile.py` / `tb_regfile.py` | `sim/tb/unit/tb_regfile.v` | ✅ |
-| `test_lw_sw.py` / `tb_lw_sw.py` | `sim/tb/instr/tb_lw.v`、`tb_sw.v` | ✅（往返覆盖） |
-| — | `tb_addiu/addu/beq/j/jal/jr.v` | ⏳ 待迁移 |
-| — | `tb_prog.v` | ⏳ 待迁移 |
+| `test_alu.py` | 加法、减法、zero 标志 | 2 |
+| `test_ctrl.py` | 8 条指令的控制信号 | 8 |
+| `test_datam.py` | 整字读写、写禁用、读禁用 | 3 |
+| `test_npc.py` | plus4 / 分支 / 回跳 / 直接跳 / jr | 6 |
+| `test_regfile.py` | 读写、`$0`、双读端口、写禁用 | 4 |
+| `test_instr.py` | addu / addiu / lw / sw / beq / j / jal / jr / 程序装载 | 9 |
+
+合计 **32 个用例**。
 
 ## 怎么写一个新测试（3 步）
 
@@ -61,10 +61,12 @@ tests/
 @pytest.fixture(scope="session")
 def npc_sim():
     """单元级：npc（纯组合逻辑）。"""
-    return _build("npc", [RTL / "core" / "units" / "npc.v"], "npc")
+    return _build("npc", [PKG, RTL / "core" / "units" / "npc.v"], "npc")
 ```
 
 `_build` 会调用 `iverilog` 编译，并记录 build 目录；`session` 表示整个测试会话只编译一次。
+
+> 如果模块用到 `cpu_pkg.sv` 里的常量，记得把 `PKG` 放在源文件列表第一位。
 
 ### 2. 写 `tb_npc.py`（cocotb 用例）
 
@@ -86,7 +88,7 @@ async def plus4_test(dut):
 - `dut` 是 HDL 顶层句柄；
 - `await settle()` 等组合逻辑稳定。
 
-### 3. 写 `test_npc.py`（pytest 包装）
+### 3. 写 `test_npc.py`（pytest 入口）
 
 ```python
 def test_npc_plus4(npc_sim, run_cocotb_case):
@@ -96,13 +98,38 @@ def test_npc_plus4(npc_sim, run_cocotb_case):
 
 `run_cocotb_case` 是 `conftest.py` 里的 fixture，负责启动一次仿真。
 
+## 指令级测试怎么写
+
+`tb_instr.py` 里的写法更像“写一个小程序”：
+
+```python
+@cocotb.test()
+async def addu_test(dut):
+    """addu $3, $1, $2：5 + 3 = 8。"""
+    await run_program(
+        dut,
+        instructions=[ADDU_R3_R1_R2],
+        registers={1: 5, 2: 3},
+    )
+    assert int(dut.u_regfile.regs[3].value) == 8
+```
+
+`run_program` 会：
+
+1. 启动时钟；
+2. 预置寄存器和数据内存；
+3. 把机器码写入指令存储器；
+4. 复位，跑 `len(instructions) + extra_cycles` 个周期；
+5. 进入只读阶段，之后就可以安全断言。
+
 ## 常用命令
 
 ```bash
-uv run mycup test                                  # 全部
-uv run pytest -v tests/test_ctrl.py                # 单个文件
-uv run pytest -v tests/test_ctrl.py::test_addu_control   # 单个用例
-MYCUP_WAVES=1 uv run pytest -v tests/test_npc.py   # 导出波形
+uv run mycup test                                      # 全部
+uv run pytest -v tests/test_instr.py                   # 单个文件
+uv run pytest -v tests/test_instr.py::test_addu        # 单个用例
+uv run mycup prog programs/demo.hex                    # 跑 hex 程序
+MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py     # 导出波形
 ```
 
 波形路径：`build/cocotb/<toplevel>_wave/<toplevel>.fst`，可用 GTKWave 打开。
@@ -116,16 +143,4 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_npc.py   # 导出波形
 5. **Icarus 不支持 `'{...}` 结构体赋值模式**（仿真侧用逐字段赋值）。
 6. `build()` 默认会复用已有构建；RTL 改动后如需强制重编，可传 `always=True`。
 7. **组合逻辑测试用 `await settle()`**（等 1ns）；时序逻辑测试用 `await RisingEdge(clk)` + `await ReadOnly()`。
-
-## 迁移进度
-
-- [x] `alu`
-- [x] `ctrl`
-- [x] `datam`
-- [x] `npc`
-- [x] `regfile`
-- [x] `lw/sw` 往返
-- [ ] `addiu` / `addu` / `beq` / `j` / `jal` / `jr`
-- [ ] `tb_prog`（用 `runner.test(plusargs=[...])`）
-- [ ] 删除 `sim/tb/**` 与 `lib/vtest.vh`
-- [ ] 简化 `mycup`（去掉 build / run / all / wave）
+8. **未写过的寄存器是 `X`**：分支/跳转测试里，如果要断言“某条指令被跳过”，先把目标寄存器预置成 0，否则 `int(X)` 会报错。

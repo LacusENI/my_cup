@@ -1,7 +1,7 @@
 # my_cup
 
-一个用 Verilog (IEEE 1364-2012) 从零手写的 **MIPS32 指令集子集单周期 CPU**，
-配有统一的仿真测试框架与可自动生成的构建流程。
+一个用 **SystemVerilog** 从零手写的 **MIPS32 指令集子集单周期 CPU**，
+配有 cocotb + pytest 的统一验证流程。
 
 > 设计目标：以"可读、可验证、可演进"的方式逐步从一个单周期内核走向流水线内核。
 > 当前定位是 **教学 / 学习型实现**，重点在清晰的模块划分与可回归的测试。
@@ -17,7 +17,7 @@
 | 指令集 | MIPS32 子集 |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
-| 测试 | 14 个 HDL testbench + 24 个 cocotb/pytest 用例 |
+| 测试 | 32 个 cocotb/pytest 用例 |
 
 ### 已支持指令（最小集，已冻结）
 
@@ -56,25 +56,20 @@ my_cup/
 │           ├── alu.v              # 算术逻辑单元
 │           ├── cond.v             # 条件判断（分支）
 │           └── datam.v            # 数据存储器 (DMEM)
-├── sim/
-│   └── tb/               # 测试平台（旧 HDL 流程）
-│       ├── unit/              # 单元级 testbench
-│       └── instr/             # 指令级 testbench（驱动整个 cpu_top）
-├── tests/                # Python 验证 PoC（cocotb + pytest，与旧流程并存）
+├── tests/                # 全部验证（cocotb + pytest）
 │   ├── conftest.py            # session 级 build fixture
-│   ├── tb_*.py                # cocotb 测试模块
-│   └── test_*.py              # pytest 包装
+│   ├── cocotb_utils.py        # 时钟 / 复位 / 程序装载的小工具
+│   ├── tb_*.py                # cocotb 测试内容
+│   └── test_*.py              # pytest 入口
 ├── pyproject.toml        # uv 管理的 Python 依赖（cocotb / pytest）
 ├── uv.lock               # 依赖锁定
-├── lib/                  # 通用库
-│   └── vtest.vh               # 旧 HDL 测试框架（宏：TEST / EXPECT / ...）
 ├── docs/                 # 设计与文档（见 docs/README.md）
 ├── verilator.f           # Verilator lint 文件清单（mycup lint 与 IDE 共用）
 ├── .vscode/settings.json # IDE lint 配置（与项目 lint 对齐）
 ├── programs/             # 仿真用机器码程序 (*.hex) 与用法说明
-├── build/                # 生成物：filelists / targets / cocotb (gitignore)
-├── waves/                # 生成的 VCD 波形 (gitignore)
-└── logs/                 # 构建与 lint 日志 (gitignore)
+├── build/                # cocotb 构建产物 (gitignore)
+├── waves/                # 生成的波形 (gitignore)
+└── logs/                 # lint 日志 (gitignore)
 ```
 
 ---
@@ -84,39 +79,22 @@ my_cup/
 依赖：`iverilog` / `vvp` / `verilator` / `gtkwave`（可选，用于看波形）。
 
 ```bash
-uv sync                                  # 首次：创建 .venv
+uv sync                              # 首次：创建 .venv
 
-uv run mycup init      # 生成文件清单（可选）
-uv run mycup list      # 列出所有 testbench
-uv run mycup all       # 运行全部 HDL TB
+uv run mycup test                    # 运行全部 32 个用例
+uv run mycup lint                    # Verilator 静态检查
+uv run mycup prog programs/demo.hex  # 装载 hex 程序跑指令级测试
+uv run mycup clean                   # 清理 build/ waves/ logs/
 
-uv run mycup run tb_alu     # 编译并运行单个
-uv run mycup wave tb_alu    # 用 gtkwave 打开波形
-uv run mycup lint           # Verilator 静态检查
-uv run mycup test           # cocotb + pytest
-uv run mycup clean          # 清理 build/ waves/ logs/
-
-# 仿真期装载程序（+instr= / +data=），细节见 programs/README.md
-uv run mycup run tb_prog --prog programs/demo.hex
+uv run pytest -v tests/test_instr.py                  # 单个文件
+uv run pytest -v tests/test_instr.py::test_addu       # 单个用例
+MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py    # 导出波形
 ```
 
-> 工作流：`build` / `run` / `all` 会**自动发现** `sim/tb/**/tb_*.v` 并生成所需清单，
-> 新增 testbench 不需要手动注册。`init` 只是提前批量生成清单，可选。
-
-### Python 验证流程（cocotb + pytest，PoC）
-
-与上面的 HDL TB 流程**并存**，不影响 `sim/tb`：
-
-```bash
-uv sync                 # 创建 .venv，安装 cocotb / pytest
-uv run pytest -v        # 运行全部 Python 用例
-uv run pytest -v tests/test_lw_sw.py::test_lw_sw
-
-MYCUP_WAVES=1 uv run pytest -v tests/test_lw_sw.py   # 导出波形
-```
-
-说明见 [`tests/README.md`](tests/README.md)。目前移植了 `tb_alu` 与 `tb_lw_sw` 两个用例作为 PoC，
-后续是否全面迁移由你决定。
+> 验证说明：
+> - `tests/tb_*.py` 是 cocotb 测试内容，`tests/test_*.py` 是 pytest 入口；
+> - 新增测试只要建这两个文件，不需要注册；
+> - 详见 [`tests/README.md`](tests/README.md)。
 
 ---
 
@@ -164,7 +142,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_lw_sw.py   # 导出波形
 
 > 为什么是 veridian：`slang` 的 release 里没有附带 `slangd`；`svls` 只做 svlint 风格诊断、**不提供导航**；`verible-verilog-ls` 对初始化参数较敏感。veridian 的 LSP 能力完整，且能被 `mshr-h.veriloghdl` 接管。
 >
-> **为什么需要 `veridian-lsp` 代理**：veridian 内置诊断不接收 include 路径，会对 `vtest.vh` / `instr.h` 误报。代理只丢弃 `textDocument/publishDiagnostics` 与 `textDocument/didSave`，导航/补全/格式化原样转发；诊断统一交给 Verilator。
+> **为什么需要 `veridian-lsp` 代理**：veridian 内置诊断不接收 include/package 路径，会对多文件工程产生误报。代理只丢弃 `textDocument/publishDiagnostics` 与 `textDocument/didSave`，导航/补全/格式化原样转发；诊断统一交给 Verilator。
 
 ### 配置
 
@@ -173,8 +151,8 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_lw_sw.py   # 导出波形
   - `verilog.languageServer.veridian.path: "veridian-lsp"`（代理）
   - `files.associations`: 把 `*.v` / `*.vh` 识别为 `systemverilog`（veridian 客户端只绑定该语言；代码本身兼容 SV2012）
 - 项目：[`veridian.yml`](veridian.yml)
-  - `include_dirs`: `rtl/core/include`、`lib`
-  - `source_dirs`: `rtl`、`sim/tb`
+  - `include_dirs`: `[]`（没有头文件）
+  - `source_dirs`: `rtl`
   - `auto_search_workdir: false`（避免递归扫到 `.venv` / `build`）
   - 诊断交给项目 `mycup lint`，LSP 侧诊断关闭
 - 代理：[`scripts/veridian-lsp.py`](scripts/veridian-lsp.py)
@@ -198,7 +176,7 @@ Verilator + cocotb 已经足够；如果以后需要更严格的语义检查，�
 
 ```bash
 slang --lint-only --timescale 1ns/1ps \
-  -Irtl/core/include -Ilib $(find rtl sim/tb -name '*.v')
+  rtl/core/include/cpu_pkg.sv $(find rtl -name '*.v')
 ```
 
 ### 换机器时如何安装

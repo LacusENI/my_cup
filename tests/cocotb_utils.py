@@ -7,7 +7,7 @@ cocotb 常用小工具（带详细注释，方便第一次接触的同学阅读�
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, Timer
+from cocotb.triggers import ReadOnly, RisingEdge, Timer
 
 
 async def settle():
@@ -45,3 +45,36 @@ async def wait_cycles(dut, count):
     """等待 count 个时钟上升沿。"""
     for _ in range(count):
         await RisingEdge(dut.clk)
+
+
+async def run_program(dut, instructions, registers=None, memory=None, extra_cycles=2):
+    """装载一个“小程序”，复位，然后跑若干周期。
+
+    参数：
+      instructions : 机器码列表，从 mem[0] 开始依次写入
+      registers    : 预置寄存器，例如 {1: 8} 表示 R1 = 8
+      memory       : 预置数据内存，例如 {2: 0} 表示 mem[2] = 0（按字索引）
+      extra_cycles : 指令跑完后额外多等几拍，保证写回完成
+
+    注意：
+      - 指令存储器是“按字索引”的，mem[0] 对应地址 0；
+      - 数据内存也是“按字索引”的。
+    """
+    await start_clock(dut)
+
+    # 预置寄存器和数据内存（相当于旧 TB 里直接改 regs/mem）
+    for reg_index, value in (registers or {}).items():
+        dut.u_regfile.regs[reg_index].value = value
+    for word_index, value in (memory or {}).items():
+        dut.u_datam.mem[word_index].value = value
+
+    # 装载指令
+    for index, instruction in enumerate(instructions):
+        dut.u_instrm.mem[index].value = instruction
+
+    # 复位，然后跑 len(instructions) + extra_cycles 个周期
+    await reset_and_wait(dut)
+    await wait_cycles(dut, len(instructions) + extra_cycles)
+
+    # 等到只读阶段再断言，确保所有信号都已经稳定
+    await ReadOnly()
