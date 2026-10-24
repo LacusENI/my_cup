@@ -2,8 +2,8 @@
 `include "vtest.vh"
 
 // 程序装载验证: 依赖 RTL 中的 $readmemh + plusarg 机制
-//   make run-tb_prog PROG=programs/demo.hex
-// 未提供 PROG 时自动跳过, 不影响 make all。
+//   uv run mycup run tb_prog --prog programs/demo.hex
+// 未提供 --prog 时自动跳过, 不影响 mycup all。
 module tb_prog ();
     reg clk, rst;
 
@@ -22,7 +22,7 @@ module tb_prog ();
 
         if (!$test$plusargs("instr")) begin
             $display("[ SKIP ] tb_prog: 未提供 +instr=<file>, 已跳过");
-            $display("         运行示例: make run-tb_prog PROG=programs/demo.hex");
+            $display("         运行示例: uv run mycup run tb_prog --prog programs/demo.hex");
             $finish;
         end
 

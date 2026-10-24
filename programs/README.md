@@ -9,14 +9,14 @@
 
 ```bash
 # 装载指令存储器 (+instr=)
-make run-tb_prog PROG=programs/demo.hex
+uv run mycup run tb_prog --prog programs/demo.hex
 
 # 装载数据存储器 (+data=)
-make run-tb_prog PROG=programs/demo.hex DATA=programs/data.hex
+uv run mycup run tb_prog --prog programs/demo.hex --data programs/data.hex
 ```
 
 - 程序通过 vvp 的 **plusarg** 传入，**只在仿真期有效**，不参与综合。
-- 若未传 `+instr=`，`tb_prog` 会打印 `[ SKIP ]` 并正常退出，因此 `make all` 不受影响。
+- 若未传 `+instr=`，`tb_prog` 会打印 `[ SKIP ]` 并正常退出，因此 `mycup all` 不受影响。
 - 程序比存储器（2048 字）短时，`$readmemh` 会给出 "Not enough words" 警告，**属于正常现象**。
 
 ## demo.hex

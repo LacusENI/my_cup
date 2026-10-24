@@ -25,11 +25,11 @@
 
 在动架构之前，先保证"改了能验、验了可信"。
 
-- **接入 CI**：`.gitignore` 目前忽略了 `.github/`，无自动化。建议放行并加一个 workflow，跑 `make init && make all && make lint`。
-- **统一 lint 基线**：`make lint` 现会因 `UNDRIVEN` 等告警返回非零。建议先修掉阶段 1 的问题，再让 lint 成为**阻断式**门禁。
+- **接入 CI**：`.gitignore` 目前忽略了 `.github/`，无自动化。建议放行并加一个 workflow，跑 `mycup init && mycup all && mycup lint`。
+- **统一 lint 基线**：`mycup lint` 现会因 `UNDRIVEN` 等告警返回非零。建议先修掉阶段 1 的问题，再让 lint 成为**阻断式**门禁。
 - **清理分支**：`develop` 已落后 `master` 5 个提交（是祖先），建议删除或 rebase 到 `master`。
 - **程序装载入口**：~~给 `instrm`/`datam` 增加 `$readmemh`~~ ✅ **已完成**。
-  已通过 plusarg（`make run-tb_prog PROG=...`）+ `$readmemh` 装载，仿真期可跑真实程序；
+  已通过 plusarg（`uv run mycup run tb_prog --prog ...`）+ `$readmemh` 装载，仿真期可跑真实程序；
   纯 ASIC 流程后续仍需替换为 ROM / 总线加载（见阶段 3）。
 
 ---
@@ -161,7 +161,7 @@ IF ──► ID ──► EX ──► MEM ──► WB
 
 ## 建议的近期动作清单
 
-1. 放行 `.github/` 并加 CI，跑 `make init && make all && make lint`；
+1. 放行 `.github/` 并加 CI，跑 `mycup init && mycup all && mycup lint`；
 2. 接通 `lb/lbu/lh/lhu`，消除 `read_signed` 的 `UNDRIVEN`；
 3. 清理 `ctrl.v` 的 `x` 默认值与 `npc.ra` 命名；
 4. 补齐 ALU/cond 并加对应单元测试；

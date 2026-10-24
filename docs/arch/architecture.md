@@ -150,17 +150,17 @@ assign jmp_offset = imm16;
 ## 7. 构建与测试流程
 
 ```
-sim/tb/**/tb_*.v  ──(chore/gen_tb_dep.sh)──►  build/filelists/tb_*.f   (iverilog 清单)
-                                          ►  build/deps/tb_*.d        (Makefile 依赖)
+sim/tb/**/tb_*.v  ──(mycup/cli.py)──►  build/filelists/tb_*.f   (iverilog 清单)
 ```
 
-- `make init` 扫描 `sim/tb` 下所有 `tb_*.v`，为每个 testbench 生成 `.f` / `.d`；
-- `make build-<name>` 用 `iverilog` 编译成 `build/targets/<name>`；
-- `make run-<name>` 用 `vvp` 运行，生成 `waves/<name>.vcd`；
-- `make all` 运行全部测试；
-- `make lint` 通过 `verilator -f verilator.f` 做静态检查；`verilator.f` 是由 `chore/gen_lint_f.sh`
-  生成的文件清单（含 `-Wall --timing --bbox-sys` 与 include 路径），`make lint` 会先刷新它，
-  **IDE 的 Verilog lint 也复用同一清单**，从而与命令行保持一致（详见 [README](../README.md#ide-lint-配置vs-code)）。
+- `mycup init` 扫描 `sim/tb` 下所有 `tb_*.v`，为每个 testbench 生成 `.f`，并生成 `verilator.f`；
+- `mycup build <name>` 用 `iverilog` 编译成 `build/targets/<name>`；
+- `mycup run <name>` 用 `vvp` 运行，生成 `waves/<name>.vcd`；
+- `mycup all` 运行全部测试；
+- `mycup lint` 通过 `verilator -f verilator.f` 做静态检查；`verilator.f` 由 `mycup/cli.py`
+  生成（含 `-Wall --timing --bbox-sys` 与 include 路径），`mycup lint` 会先刷新它，
+  **IDE 的 Verilog lint 也复用同一清单**，从而与命令行保持一致（详见 [README](../README.md#ide-lint-配置vs-code)）；
+- `mycup test` 运行 cocotb + pytest。
 
 测试框架为 [`lib/vtest.vh`](../../lib/vtest.vh)，提供 `VTEST_INIT / VTEST_BOOT / TEST / EXPECT / TEST_END / VTEST_FINISH` 宏，
 输出风格类似 GoogleTest（`[ RUN ]` / `[ OK ]` / `[ FAILED ]`）。
@@ -168,14 +168,14 @@ sim/tb/**/tb_*.v  ──(chore/gen_tb_dep.sh)──►  build/filelists/tb_*.f  
 ### 程序装载（仿真）
 
 ```bash
-make run-tb_prog PROG=programs/demo.hex            # 装载指令存储器 (+instr=)
-make run-tb_prog PROG=programs/demo.hex DATA=...   # 额外装载数据存储器 (+data=)
+uv run mycup run tb_prog --prog programs/demo.hex            # 装载指令存储器 (+instr=)
+uv run mycup run tb_prog --prog programs/demo.hex --data ...  # 额外装载数据存储器 (+data=)
 ```
 
-`PROG` / `DATA` 会被转成 vvp 的 `+instr=` / `+data=`；`instrm`/`datam` 中的 `initial` 据此调用 `$readmemh`。
-未提供参数时 `tb_prog` 打印 `[ SKIP ]` 并退出，因此 `make all` 始终可通过。
+`--prog` / `--data` 会被转成 vvp 的 `+instr=` / `+data=`；`instrm`/`datam` 中的 `initial` 据此调用 `$readmemh`。
+未提供参数时 `tb_prog` 打印 `[ SKIP ]` 并退出，因此 `mycup all` 始终可通过。
 
-> 约定：**新增 testbench 后必须重新 `make init`**，否则不会被 `make all` 收录。
+> 约定：`build` / `run` / `all` 会自动发现 testbench 并生成所需清单，**新增 testbench 无需手动注册**。
 
 ---
 
@@ -206,18 +206,15 @@ make run-tb_prog PROG=programs/demo.hex DATA=...   # 额外装载数据存储器
    分支偏移在 `npc` 计算（`imm16 << 2`）、条件在 `cond` 判定、控制信号在 `ctrl` 产生，跨三个模块；
    上流水线时这些信号需要被正确地随流水寄存器打拍，建议先在这里梳理清晰。
 
-7. **`develop` 分支已落后 `master` 5 个提交**（`git log master..develop` 为空，develop 是祖先）。
-   建议删除或将其 rebase 到 `master`，避免误用。
+7. ~~**`develop` 分支已落后 `master`**~~ ✅ 已快进到 `master`。
 
 8. **无 CI**
-   `.gitignore` 忽略了 `.github/`，目前没有自动化回归。建议接入 CI 跑 `make all` + `make lint`。
+   `.gitignore` 忽略了 `.github/`，目前没有自动化回归。建议接入 CI 跑 `mycup all` + `mycup lint`。
 
 9. **文档与实现漂移**
    部分 `docs/unit/*` 端口/编码已过时，登记详见 [docs/README.md](../README.md)。
 
-10. **`chore/gen_tb_dep.sh` 收尾消息引用未定义变量**
-    脚本末尾打印 `... in $OUT_DIR.`，但 `OUT_DIR` 从未定义（实际目录是 `$F_DIR/$D_DIR`），
-    仅影响提示信息、不影响生成结果。顺手可修。
+10. ~~**`chore/gen_tb_dep.sh` 收尾消息引用未定义变量**~~ ✅ 已随 shell 脚本删除而移除。
 
 ---
 

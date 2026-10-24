@@ -37,7 +37,10 @@
 
 ```
 my_cup/
-├── Makefile              # 构建 / 仿真 / lint 入口
+├── mycup/                # Python 工具链（`uv run mycup ...`）
+│   └── cli.py
+├── scripts/
+│   └── veridian-lsp.py   # veridian LSP 代理
 ├── rtl/                  # 可综合的 RTL 源码
 │   └── core/
 │       ├── cpu_top.v          # 顶层：实例化各单元并连线
@@ -68,13 +71,10 @@ my_cup/
 ├── lib/                  # 通用库
 │   └── vtest.vh               # 旧 HDL 测试框架（宏：TEST / EXPECT / ...）
 ├── docs/                 # 设计与文档（见 docs/README.md）
-├── chore/                # 辅助脚本
-│   ├── gen_tb_dep.sh          # 扫描 tb 生成 .f 清单与 .d 依赖
-│   └── gen_lint_f.sh          # 生成 verilator.f（lint 文件清单）
-├── verilator.f           # Verilator lint 文件清单（make lint 与 IDE 共用）
+├── verilator.f           # Verilator lint 文件清单（mycup lint 与 IDE 共用）
 ├── .vscode/settings.json # IDE lint 配置（与项目 lint 对齐）
 ├── programs/             # 仿真用机器码程序 (*.hex) 与用法说明
-├── build/                # 生成物：filelists / deps / 可执行目标 (gitignore)
+├── build/                # 生成物：filelists / targets / cocotb (gitignore)
 ├── waves/                # 生成的 VCD 波形 (gitignore)
 └── logs/                 # 构建与 lint 日志 (gitignore)
 ```
@@ -86,25 +86,28 @@ my_cup/
 依赖：`iverilog` / `vvp` / `verilator` / `gtkwave`（可选，用于看波形）。
 
 ```bash
-make init            # 扫描 sim/tb 下的 tb_*.v，生成 build/filelists 与 build/deps
-make list            # 列出所有可运行的测试任务
-make all             # 运行全部测试
+uv sync                                  # 首次：创建 .venv
 
-make run-tb_alu      # 构建并运行单个测试
-make wave-tb_alu     # 用 gtkwave 打开对应波形
-make lint            # 对全部 RTL 运行 Verilator 静态检查
-make clean           # 清理 build/ waves/ logs/
+uv run mycup init      # 生成文件清单（可选）
+uv run mycup list      # 列出所有 testbench
+uv run mycup all       # 运行全部 HDL TB
+
+uv run mycup run tb_alu     # 编译并运行单个
+uv run mycup wave tb_alu    # 用 gtkwave 打开波形
+uv run mycup lint           # Verilator 静态检查
+uv run mycup test           # cocotb + pytest
+uv run mycup clean          # 清理 build/ waves/ logs/
 
 # 仿真期装载程序（+instr= / +data=），细节见 programs/README.md
-make run-tb_prog PROG=programs/demo.hex
+uv run mycup run tb_prog --prog programs/demo.hex
 ```
 
-> 工作流：**新增 testbench 后需要先重新执行 `make init`**，让脚本重新生成清单文件。
-> 详见 [`chore/gen_tb_dep.sh`](chore/gen_tb_dep.sh) 与 [架构说明](docs/arch/architecture.md#构建与测试流程)。
+> 工作流：`build` / `run` / `all` 会**自动发现** `sim/tb/**/tb_*.v` 并生成所需清单，
+> 新增 testbench 不需要手动注册。`init` 只是提前批量生成清单，可选。
 
 ### Python 验证流程（cocotb + pytest，PoC）
 
-与上面的 Make 流程**并存**，不影响 `sim/tb`：
+与上面的 HDL TB 流程**并存**，不影响 `sim/tb`：
 
 ```bash
 uv sync                 # 创建 .venv，安装 cocotb / pytest
@@ -121,12 +124,12 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_load_save.py   # 导出波形
 
 ## IDE lint 配置（VS Code）
 
-目标：让编辑器里看到的告警/错误与命令行 `make lint` **完全一致**。
+目标：让编辑器里看到的告警/错误与命令行 `mycup lint` **完全一致**。
 
-项目 lint 的「文件清单 + 参数」统一由 [`chore/gen_lint_f.sh`](chore/gen_lint_f.sh) 生成到
+项目 lint 的「文件清单 + 参数」统一由 [`mycup/cli.py`](mycup/cli.py) 生成到
 [`verilator.f`](verilator.f)，作为**单一事实来源**：
 
-- `make lint` 直接 `verilator -f verilator.f`；
+- `mycup lint` 直接 `verilator -f verilator.f`；
 - IDE（[`mshr-h.veriloghdl`](https://marketplace.visualstudio.com/items?itemName=mshr-h.veriloghdl) 扩展）
   通过 [`.vscode/settings.json`](.vscode/settings.json) 复用同一个 `-f verilator.f`。
 
@@ -146,7 +149,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_load_save.py   # 导出波形
   容忍这次重复，从而使输出与项目 lint 对齐。
 - `-Wno-TIMESCALEMOD` / `-Wno-MULTITOP` 只在**打开 testbench** 时才会出现（此时会把 tb 与全部 RTL
   一起 lint），项目 lint 仅针对 RTL，不会产生这些告警。
-- **新增/删除 RTL 文件后**执行 `make filelist`（或 `make init`）刷新 `verilator.f`，`make lint` 也会自动刷新。
+- **新增/删除 RTL 文件后**执行 `mycup init`（或直接 `mycup lint`）刷新 `verilator.f`。
 - 若 `verilator` 不在 `PATH` 中，可在 `verilog.linting.path` 指定其安装目录。
 
 ---
@@ -175,7 +178,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_load_save.py   # 导出波形
   - `include_dirs`: `rtl/core/include`、`lib`
   - `source_dirs`: `rtl`、`sim/tb`
   - `auto_search_workdir: false`（避免递归扫到 `.venv` / `build`）
-  - 诊断交给项目 `make lint`，LSP 侧诊断关闭
+  - 诊断交给项目 `mycup lint`，LSP 侧诊断关闭
 - 代理：[`scripts/veridian-lsp.py`](scripts/veridian-lsp.py)
 
 ### 用法

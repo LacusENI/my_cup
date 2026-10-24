@@ -10,7 +10,7 @@ slang 编译，可能长时间阻塞。
   2. 丢弃 server -> client 的 `textDocument/publishDiagnostics`
 
 导航（hover / definition / documentSymbol / completion / format）不受影响；
-诊断统一由项目 Verilator（make lint / IDE lint）负责。
+诊断统一由项目 Verilator（mycup lint / IDE lint）负责。
 
 用法：把本脚本放到 PATH 中（如 ~/.local/bin/veridian-lsp），
 并让真实 veridian 可执行文件以 `veridian-real` 的名字在 PATH 中

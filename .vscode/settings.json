@@ -1,6 +1,6 @@
 {
   // ---------------------------------------------------------------------------
-  // Lint：与项目 `make lint` 保持一致（single source of truth: verilator.f）
+  // Lint：与项目 `mycup lint` 保持一致（single source of truth: verilator.f）
   // ---------------------------------------------------------------------------
   "verilog.linting.linter": "verilator",
   "verilog.linting.verilator.runAtFileLocation": false,

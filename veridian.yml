@@ -3,7 +3,7 @@
 #
 # 诊断说明：
 #   veridian 内置的诊断无法接收 include 路径（会对 vtest.vh / instr.h 误报），
-#   因此这里关闭 LSP 诊断，统一由项目 `make lint`（Verilator）负责。
+#   因此这里关闭 LSP 诊断，统一由项目 `mycup lint`（Verilator）负责。
 #   编辑器实际通过 scripts/veridian-lsp.py 代理启动 veridian，
 #   代理会丢弃 publishDiagnostics 和 didSave，只保留导航/补全/格式化。
 include_dirs:
