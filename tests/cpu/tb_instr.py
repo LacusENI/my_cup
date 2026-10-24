@@ -16,7 +16,7 @@ from typing import Protocol
 
 import cocotb
 
-from cocotb_utils import (
+from utils.cocotb_utils import (
     CpuAccess,
     assert_fields,
     read_mem,
@@ -24,7 +24,7 @@ from cocotb_utils import (
     read_reg,
     run_one_instruction,
 )
-from mips_asm import addu, addiu, beq, j, jal, jr, lw, sw
+from utils.mips_asm import addu, addiu, beq, j, jal, jr, lw, sw
 
 
 # cpu_top 的公开接口：在 cpu_top 自己的 tb 里声明。

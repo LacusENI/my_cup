@@ -16,7 +16,7 @@ from typing import Protocol
 
 import cocotb
 
-from cocotb_utils import Signal, assert_fields, settle
+from utils.cocotb_utils import Signal, assert_fields, settle
 
 
 # 下一 PC 的操作码是对外契约：数值不要随意改。

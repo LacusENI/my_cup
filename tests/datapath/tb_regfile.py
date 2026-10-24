@@ -15,7 +15,7 @@ from typing import Protocol, Sequence
 import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
-from cocotb_utils import Signal, assert_fields, start_clock
+from utils.cocotb_utils import Signal, assert_fields, start_clock
 
 
 # regfile 的公开字段：测试依赖哪些，就列哪些。

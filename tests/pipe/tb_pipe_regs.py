@@ -16,7 +16,7 @@ from typing import Protocol
 import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
-from cocotb_utils import Signal, assert_fields, settle, start_clock
+from utils.cocotb_utils import Signal, assert_fields, settle, start_clock
 
 # 两个有辨识度的位模式
 PATTERN = 0x1234_5678_9ABC_DEF0

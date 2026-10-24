@@ -15,7 +15,7 @@ from typing import Protocol
 
 import cocotb
 
-from cocotb_utils import Signal, assert_fields, settle
+from utils.cocotb_utils import Signal, assert_fields, settle
 
 # --------------------------------------------------------------------------- #
 # 常量（来自 cpu_pkg.sv，是对外契约）

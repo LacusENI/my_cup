@@ -16,7 +16,7 @@ from typing import Protocol, Sequence
 import cocotb
 from cocotb.triggers import ReadOnly, RisingEdge
 
-from cocotb_utils import Signal, assert_fields, settle, start_clock
+from utils.cocotb_utils import Signal, assert_fields, settle, start_clock
 
 # 地址 0x80 是 4 的倍数，对应 mem[0x80 / 4] = mem[32]
 ADDR = 0x0000_0080

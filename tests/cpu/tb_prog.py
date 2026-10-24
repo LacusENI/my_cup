@@ -10,7 +10,7 @@ import os
 
 import cocotb
 
-from cocotb_utils import CpuAccess, read_reg, run_program
+from utils.cocotb_utils import CpuAccess, read_reg, run_program
 
 # 程序跑完后等待的周期数；mycup prog 可以通过环境变量覆盖
 PROGRAM_CYCLES = int(os.environ.get("MYCUP_PROG_CYCLES", "4"))

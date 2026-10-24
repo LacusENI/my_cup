@@ -86,18 +86,20 @@ my_cup/
 ```bash
 uv sync                              # 首次：创建 .venv
 
-uv run mycup test                    # 运行全部 32 个用例
+uv run mycup test                    # 运行全部 49 个用例
 uv run mycup lint                    # Verilator 静态检查
 uv run mycup prog programs/demo.hex  # 装载 hex 程序跑指令级测试
 uv run mycup clean                   # 清理 build/ waves/ logs/
 
-uv run pytest -v tests/test_instr.py                  # 单个文件
-uv run pytest -v tests/test_instr.py::test_addu       # 单个用例
-MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py    # 导出波形
+uv run pytest -v tests/cpu/test_instr.py               # 单个文件
+uv run pytest -v tests/cpu/test_instr.py::test_addu    # 单个用例
+MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 ```
 
 > 验证说明：
-> - `tests/tb_*.py` 是 cocotb 测试内容，`tests/test_*.py` 是 pytest 入口；
+> - `tests/<category>/tb_*.py` 是 cocotb 测试内容，`tests/<category>/test_*.py` 是 pytest 入口；
+> - 目录按 RTL 职责划分：`control/`、`datapath/`、`memory/`、`pipe/`、`cpu/`；
+> - 通用工具在 `tests/utils/`；
 > - 新增测试只要建这两个文件，不需要注册；
 > - 详见 [`tests/README.md`](tests/README.md)。
 

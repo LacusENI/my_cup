@@ -130,7 +130,7 @@ def cmd_test(args: argparse.Namespace) -> None:
 
 
 def cmd_prog(args: argparse.Namespace) -> None:
-    """用指定 hex 程序运行指令级测试（tests/test_prog.py::test_prog_demo）。
+    """用指定 hex 程序运行指令级测试（tests/cpu/test_prog.py::test_prog_demo）。
 
     通过环境变量把程序路径/周期数传给 pytest 包装层和 cocotb 测试：
       MYCUP_PROG         指令存储器 hex 的绝对路径
@@ -156,7 +156,7 @@ def cmd_prog(args: argparse.Namespace) -> None:
         "-m",
         "pytest",
         "-v",
-        "tests/test_prog.py::test_prog_demo",
+        "tests/cpu/test_prog.py::test_prog_demo",
     ]
     raise SystemExit(subprocess.run(cmd, cwd=ROOT, env=env).returncode)
 

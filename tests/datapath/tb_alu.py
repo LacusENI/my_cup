@@ -5,7 +5,7 @@ from typing import Protocol
 import cocotb
 from cocotb.triggers import Timer
 
-from cocotb_utils import Signal, assert_fields
+from utils.cocotb_utils import Signal, assert_fields
 
 
 # ALU 操作码是对外契约：数值不要随意改。

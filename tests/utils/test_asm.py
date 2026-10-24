@@ -1,6 +1,6 @@
 """编码器自检：用已知机器码验证 mips_asm 的字段拼接。"""
 
-from mips_asm import addu, addiu, beq, j, jal, jr, lw, sw
+from utils.mips_asm import addu, addiu, beq, j, jal, jr, lw, sw
 
 
 def test_known_encodings():

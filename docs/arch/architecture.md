@@ -156,13 +156,13 @@ assign jmp_offset = imm16;
 验证全部走 **cocotb + pytest**：
 
 ```
-tests/tb_*.py   ──(cocotb runner)──►  iverilog 编译  ──►  vvp 仿真
-tests/test_*.py ──(pytest)──────────►  收集 / 报告 / 参数化
+tests/<category>/tb_*.py   ──(cocotb runner)──►  iverilog 编译  ──►  vvp 仿真
+tests/<category>/test_*.py ──(pytest)──────────►  收集 / 报告 / 参数化
 ```
 
 - `mycup test`：运行全部 cocotb + pytest 用例；
 - `mycup lint`：生成 `verilator.f`，再运行 `verilator -f verilator.f`；
-- `mycup prog <hex>`：用 `+instr=` 装载程序，运行 `tests/test_prog.py::test_prog_demo`；
+- `mycup prog <hex>`：用 `+instr=` 装载程序，运行 `tests/cpu/test_prog.py::test_prog_demo`；
 - `mycup clean`：清理 `build/`、`waves/`、`logs/` 等生成物。
 
 `verilator.f` 由 [`mycup/cli.py`](../../mycup/cli.py) 生成（含 `-Wall --timing --bbox-sys`），

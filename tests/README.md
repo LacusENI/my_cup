@@ -18,26 +18,41 @@ uv run pytest -v   # 同上（直接调 pytest）
 ```
 tests/
 ├── conftest.py        # fixture：编译 DUT + run_cocotb_case
-├── cocotb_utils.py    # 时钟 / 复位 / 等待 + CPU 顶层共享访问器
-├── mips_asm.py        # MIPS 子集指令编码器（不再手写机器码）
-├── test_asm.py        # 编码器自检
-├── tb_alu.py          # cocotb 用例 + AluDut 契约
-├── test_alu.py        # pytest 入口
-├── tb_ctrl.py         # cocotb 用例 + CtrlDut 契约
-├── test_ctrl.py
-├── tb_datam.py        # cocotb 用例 + DatamDut 契约
-├── test_datam.py
-├── tb_npc.py          # cocotb 用例 + NpcDut 契约
-├── test_npc.py
-├── tb_regfile.py      # cocotb 用例 + RegfileDut 契约
-├── test_regfile.py
-├── tb_pipe_regs.py    # cocotb 用例 + 四个流水线寄存器的契约
-├── test_pipe_regs.py
-├── tb_instr.py        # ISA 级：单指令 + cpu_top 契约
-├── test_instr.py
-├── tb_prog.py         # program 级：$readmemh 程序装载
-└── test_prog.py
+├── utils/
+│   ├── cocotb_utils.py  # 时钟 / 复位 / 等待 + CPU 顶层共享访问器
+│   ├── mips_asm.py      # MIPS 子集指令编码器
+│   └── test_asm.py      # 编码器自检
+├── control/
+│   ├── tb_ctrl.py       # ctrl cocotb 用例 + 契约
+│   ├── test_ctrl.py
+│   ├── tb_npc.py        # npc cocotb 用例 + 契约
+│   └── test_npc.py
+├── datapath/
+│   ├── tb_alu.py        # alu cocotb 用例 + 契约
+│   ├── test_alu.py
+│   ├── tb_regfile.py    # regfile cocotb 用例 + 契约
+│   └── test_regfile.py
+├── memory/
+│   ├── tb_datam.py      # datam cocotb 用例 + 契约
+│   └── test_datam.py
+├── pipe/
+│   ├── tb_pipe_regs.py  # 四个流水线寄存器 + 契约
+│   └── test_pipe_regs.py
+└── cpu/
+    ├── tb_instr.py      # ISA 级单指令 + cpu_top 契约
+    ├── test_instr.py
+    ├── tb_prog.py       # program 级：$readmemh 程序装载
+    └── test_prog.py
 ```
+
+目录按 RTL 职责划分：
+
+- `control/`：`ctrl`、`npc`
+- `datapath/`：`alu`、`regfile`
+- `memory/`：`datam`
+- `pipe/`：流水线级间寄存器
+- `cpu/`：`cpu_top` 级测试（ISA / program）
+- `utils/`：测试工具，不是 DUT 测试
 
 每个**模块级** `tb_*.py`（`tb_alu` / `tb_ctrl` / ... / `tb_instr`）里都自带：
 
@@ -45,7 +60,7 @@ tests/
 - `REQUIRED_FIELDS`（测试依赖的字段列表）；
 - 一个 `contract_test`，在仿真里确认这些字段还在。
 
-`tb_prog.py` 是 program 级冒烟测试，不是模块 tb，所以复用 `cocotb_utils` 里的 CPU 访问器。
+`tb_prog.py` 是 program 级冒烟测试，不是模块 tb，所以复用 `utils/cocotb_utils.py` 里的 CPU 访问器。
 
 命名约定：
 
@@ -56,15 +71,15 @@ tests/
 
 | 测试文件 | 覆盖内容 | 用例数 |
 | :-- | :-- | :-- |
-| `test_alu.py` | 加法、减法、zero 标志、alu 契约 | 3 |
-| `test_ctrl.py` | 8 条指令的控制信号、ctrl 契约 | 9 |
-| `test_datam.py` | 整字读写、写禁用、读禁用、datam 契约 | 4 |
-| `test_npc.py` | plus4 / 分支 / 回跳 / 直接跳 / jr、npc 契约 | 7 |
-| `test_regfile.py` | 读写、`$0`、双读端口、写禁用、regfile 契约 | 5 |
-| `test_pipe_regs.py` | IF/ID、ID/EX、EX/MEM、MEM/WB 的行为 + 契约 | 8 |
-| `test_asm.py` | MIPS 指令编码器自检（已知机器码） | 1 |
-| `test_instr.py` | 单指令 ISA + cpu_top 契约 | 11 |
-| `test_prog.py` | 程序装载（`$readmemh`） | 1 |
+| `datapath/test_alu.py` | 加法、减法、zero 标志、alu 契约 | 3 |
+| `control/test_ctrl.py` | 8 条指令的控制信号、ctrl 契约 | 9 |
+| `memory/test_datam.py` | 整字读写、写禁用、读禁用、datam 契约 | 4 |
+| `control/test_npc.py` | plus4 / 分支 / 回跳 / 直接跳 / jr、npc 契约 | 7 |
+| `datapath/test_regfile.py` | 读写、`$0`、双读端口、写禁用、regfile 契约 | 5 |
+| `pipe/test_pipe_regs.py` | IF/ID、ID/EX、EX/MEM、MEM/WB 的行为 + 契约 | 8 |
+| `utils/test_asm.py` | MIPS 指令编码器自检（已知机器码） | 1 |
+| `cpu/test_instr.py` | 单指令 ISA + cpu_top 契约 | 11 |
+| `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
 合计 **49 个用例**。
 
@@ -81,20 +96,21 @@ tests/
 @pytest.fixture(scope="session")
 def npc_sim():
     """单元级：npc（纯组合逻辑）。"""
-    return _build("npc", [PKG, RTL / "control" / "npc.sv"], "npc")
+    return _build("npc", [PKG, RTL / "control" / "npc.sv"], "npc", "control")
 ```
 
 `_build` 会调用 `iverilog` 编译，并记录 build 目录；`session` 表示整个测试会话只编译一次。
+最后一个参数是 `module_prefix`，表示测试模块所在的子目录（这里是 `tests/control/`）。
 
 > 如果模块用到 `cpu_pkg.sv` 里的常量，记得把 `PKG` 放在源文件列表第一位。
 
-### 2. 写 `tb_npc.py`（cocotb 用例）
+### 2. 写 `tests/control/tb_npc.py`（cocotb 用例）
 
 ```python
 from typing import Protocol
 
 import cocotb
-from cocotb_utils import Signal, assert_fields, settle
+from utils.cocotb_utils import Signal, assert_fields, settle
 
 # 常量直接写死：它们是对外契约，不跟着 RTL 自动变
 NPC_OP_PLUS4 = 0b00
@@ -120,7 +136,7 @@ async def plus4_test(dut: NpcDut):
 - `dut: NpcDut` 只是给 IDE / 类型检查器看的，运行时不会检查；
 - `await settle()` 等组合逻辑稳定。
 
-### 3. 写 `test_npc.py`（pytest 入口）
+### 3. 写 `tests/control/test_npc.py`（pytest 入口）
 
 ```python
 def test_npc_plus4(npc_sim, run_cocotb_case):
@@ -129,14 +145,19 @@ def test_npc_plus4(npc_sim, run_cocotb_case):
 ```
 
 `run_cocotb_case` 是 `conftest.py` 里的 fixture，负责启动一次仿真。
+它会根据 fixture 的 `module_prefix` 自动补全模块路径：
+
+```
+"tb_npc" + "control" -> "control.tb_npc"
+```
 
 ## 指令级测试怎么写
 
 `tb_instr.py` 是 **ISA 级单指令测试**：每个用例只执行一条指令，只断言架构状态（PC / 寄存器 / 内存）：
 
 ```python
-from cocotb_utils import read_pc, read_reg
-from mips_asm import addu
+from utils.cocotb_utils import read_pc, read_reg
+from utils.mips_asm import addu
 
 # CpuTop 在 tb_instr.py 顶部声明（class CpuTop(CpuAccess, Protocol)）
 
@@ -164,7 +185,7 @@ async def addu_test(dut: CpuTop):
 > 单周期下“一条指令 = 一个上升沿”。接流水线后，这里应改为等待 `retire/commit` 信号，
 > 而不是依赖固定周期数。
 
-程序装载（`$readmemh`）是另一层，放在 `tb_prog.py` / `test_prog.py`。
+程序装载（`$readmemh`）是另一层，放在 `tests/cpu/tb_prog.py` / `tests/cpu/test_prog.py`。
 
 ## DUT 的类型注解与公开字段
 
@@ -200,10 +221,10 @@ async def contract_test(dut: AluDut):
 
 每个 `tb_*.py` 都遵循同样的结构：`Protocol` + `REQUIRED_FIELDS` + `contract_test`。
 
-> `cocotb_utils.py` 里只保留**多个测试共享**的 CPU 访问器
+> `tests/utils/cocotb_utils.py` 里只保留**多个测试共享**的 CPU 访问器
 > （`CpuAccess` / `read_pc` / `read_reg` / `read_mem`），因为
 > `tb_instr`、`tb_prog` 和 `run_program` 都要用。
-> `cpu_top` 自己的 `CpuTop` 协议仍然在 `tb_instr.py` 顶部声明。
+> `cpu_top` 自己的 `CpuTop` 协议仍然在 `tests/cpu/tb_instr.py` 顶部声明。
 
 常见架构状态不直接写 `dut.u_regfile.regs[3]`，而是走访问器：
 
@@ -213,7 +234,7 @@ assert read_pc(dut) == 4
 assert read_mem(dut, 2) == 0x1122_3344
 ```
 
-这样 CPU 顶层的内部路径只出现在 `cocotb_utils.py` 一处，改名时不用满测试找。
+这样 CPU 顶层的内部路径只出现在 `tests/utils/cocotb_utils.py` 一处，改名时不用满测试找。
 
 ## 常量是对外契约
 
@@ -236,7 +257,7 @@ CTRL_FIELDS = {
 }
 ```
 
-`mips_asm.py` 里也直接写死 opcode / funct。
+`tests/utils/mips_asm.py` 里也直接写死 opcode / funct。
 
 这样做的含义是：
 
@@ -251,11 +272,11 @@ CTRL_FIELDS = {
 
 ```bash
 uv run mycup test                                      # 全部
-uv run pytest -v tests/test_instr.py                   # 单指令 ISA 测试
-uv run pytest -v tests/test_instr.py::test_addu        # 单个用例
-uv run pytest -v tests/test_prog.py                    # 程序装载测试
+uv run pytest -v tests/cpu/test_instr.py               # 单指令 ISA 测试
+uv run pytest -v tests/cpu/test_instr.py::test_addu    # 单个用例
+uv run pytest -v tests/cpu/test_prog.py                # 程序装载测试
 uv run mycup prog programs/demo.hex                    # 跑 hex 程序
-MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py     # 导出波形
+MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 ```
 
 波形路径：`build/cocotb/<toplevel>_wave/<toplevel>.fst`，可用 GTKWave 打开。
@@ -265,7 +286,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py     # 导出波形
 1. **必须设 timescale**：`build(timescale=("1ns", "1ps"))`，否则 `Timer(1, "ns")` 会报精度错误。
 2. **cocotb 2.x 用 `cocotb_tools.runner`**，没有 `cocotb.runner`。
 3. **内部信号可直接读写**：`dut.u_regfile.regs[1].value = ...`（Icarus VPI 实测可用）；
-   但项目里优先用 `cocotb_utils.py` 的访问器，避免路径散落在测试中。
+   但项目里优先用 `tests/utils/cocotb_utils.py` 的访问器，避免路径散落在测试中。
 4. **`ReadOnly` 阶段不能赋值**：先 `await Timer(...)` 或等到下一个 `RisingEdge`。
 5. **Icarus 不支持 `'{...}` 结构体赋值模式**（仿真侧用逐字段赋值）。
 6. `build()` 默认会复用已有构建；RTL 改动后如需强制重编，可传 `always=True`。
