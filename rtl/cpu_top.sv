@@ -8,7 +8,7 @@ module cpu_top (
 
     word_t instr_addr;
     word_t instr;
-    word_t curr_pc, next_pc, pc_plus4, ra;
+    word_t curr_pc, next_pc, pc_plus4, jmp_reg;
     logic [25:0] jmp_target;
     logic [15:0] jmp_offset;
 
@@ -52,7 +52,7 @@ module cpu_top (
         .cond_jmp(cond_jmp),
         .jmp_target(jmp_target),
         .jmp_offset(jmp_offset),
-        .ra(ra),
+        .jmp_reg(jmp_reg),
         .pc_plus4(pc_plus4),
         .next_pc(next_pc)
     );
@@ -119,7 +119,7 @@ module cpu_top (
     assign instr_addr = curr_pc;
     assign jmp_target = instr_index;
     assign jmp_offset = imm16;
-    assign ra = rs1_data;
+    assign jmp_reg = rs1_data;
 
     // 写回目标寄存器：rd / rt / $ra
     always_comb begin

@@ -8,7 +8,7 @@ module npc
     input  logic        cond_jmp,
     input  logic [25:0] jmp_target,
     input  logic [15:0] jmp_offset,
-    input  word_t ra,
+    input  word_t jmp_reg,
     output word_t pc_plus4,
     output word_t next_pc
 );
@@ -23,7 +23,7 @@ module npc
         unique case (npc_op)
             NPC_OP_DIRECT: next_pc = pc_target;
             NPC_OP_BRANCH: next_pc = cond_jmp ? (curr_pc + pc_offset) : pc_plus4;
-            NPC_OP_RA:     next_pc = ra;
+            NPC_OP_RA:     next_pc = jmp_reg;
             default:       next_pc = pc_plus4;
         endcase
     end

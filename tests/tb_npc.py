@@ -89,7 +89,7 @@ async def direct_jump_test(dut):
 async def jump_register_test(dut):
     """jr：直接跳到寄存器里的地址。"""
     dut.npc_op.value = NPC_OP_RA
-    dut.ra.value = 0x1234_5678
+    dut.jmp_reg.value = 0x1234_5678
     await settle()
 
     assert int(dut.next_pc.value) == 0x1234_5678, "jr 应该使用寄存器地址"
