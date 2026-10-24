@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "vtest.vh"
-`include "instr.vh"
 
 module tb_addiu ();
+    import cpu_pkg::*;
     reg clk, rst;
 
     cpu_top cpu (
@@ -16,7 +16,7 @@ module tb_addiu ();
 
     // addiu rt, rs, imm
     function [31:0] addiu_code(input [4:0] rt, input [4:0] rs, input [15:0] imm);
-        addiu_code = {`OP_ADDIU, rs, rt, imm};
+        addiu_code = {OP_ADDIU, rs, rt, imm};
     endfunction
 
     initial begin

@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "vtest.vh"
-`include "defines.vh"
 
 module tb_alu ();
+    import cpu_pkg::*;
     reg [31:0] alu_src1, alu_src2;
     reg [3:0] alu_op;
     wire [31:0] alu_out;
@@ -19,7 +19,7 @@ module tb_alu ();
 
         // 测试1: 测试加法
         `TEST(alu_add_test)
-            alu_op = `ALU_OP_ADD;
+            alu_op = ALU_OP_ADD;
             alu_src1 = 5; alu_src2 = 3;
             #10;
             `EXPECT("alu_out", alu_out, 8);
@@ -28,7 +28,7 @@ module tb_alu ();
 
         // 测试2: 测试减法
         `TEST(alu_sub_test)
-            alu_op = `ALU_OP_SUB;
+            alu_op = ALU_OP_SUB;
             alu_src1 = 8; alu_src2 = 8;
             #10;
             `EXPECT("alu_out", alu_out, 0);

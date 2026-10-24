@@ -1,5 +1,3 @@
-`include "defines.vh"
-
 module alu (
     input [31:0] alu_src1,
     input [31:0] alu_src2,
@@ -10,11 +8,12 @@ module alu (
     output overflow_f,
     output carry_f
 );
+    import cpu_pkg::*;
     
     always @(*) begin
         case (alu_op)
-            `ALU_OP_ADD: alu_out = alu_src1 + alu_src2;
-            `ALU_OP_SUB: alu_out = alu_src1 - alu_src2;
+            ALU_OP_ADD: alu_out = alu_src1 + alu_src2;
+            ALU_OP_SUB: alu_out = alu_src1 - alu_src2;
             default: alu_out = 32'b0;
         endcase
     end

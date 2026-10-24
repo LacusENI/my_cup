@@ -1,5 +1,3 @@
-`include "defines.vh"
-
 module datam (
     input clk,
     input mem_read,

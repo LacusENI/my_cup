@@ -1,5 +1,3 @@
-`include "defines.vh"
-
 module npc (
     input [31:0] curr_pc,
     input [1:0]  npc_op,
@@ -10,16 +8,18 @@ module npc (
     output [31:0] pc_plus4,
     output reg [31:0] next_pc
 );
+    import cpu_pkg::*;
+
     wire [31:0] pc_target = {curr_pc[31:28], jmp_target, 2'b00};
     wire [31:0] pc_offset = {{14{jmp_offset[15]}}, jmp_offset, 2'b00};
     assign pc_plus4 = curr_pc + 4;
 
     always @(*) begin
-        if (npc_op == `NPC_OP_DIRECT)
+        if (npc_op == NPC_OP_DIRECT)
             next_pc = pc_target;
-        else if ((npc_op == `NPC_OP_BRANCH) && cond_jmp)
+        else if ((npc_op == NPC_OP_BRANCH) && cond_jmp)
             next_pc = curr_pc + pc_offset;
-        else if (npc_op == `NPC_OP_RA)
+        else if (npc_op == NPC_OP_RA)
             next_pc = ra;
         else
             next_pc = pc_plus4;

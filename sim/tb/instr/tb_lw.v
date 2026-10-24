@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "vtest.vh"
-`include "instr.vh"
 
 module tb_lw ();
+    import cpu_pkg::*;
     reg clk, rst;
 
     cpu_top cpu (
@@ -16,7 +16,7 @@ module tb_lw ();
 
     // lw rt, offset(base)
     function [31:0] lw_code(input [4:0] rt, input [15:0] offset, input [4:0] base);
-        lw_code = {`OP_LW, base, rt, offset};
+        lw_code = {OP_LW, base, rt, offset};
     endfunction
 
     initial begin

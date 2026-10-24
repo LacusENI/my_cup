@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "vtest.vh"
-`include "defines.vh"
 
 module tb_ctrl ();
+    import cpu_pkg::*;
     reg [5:0] op;
     reg [5:0] funct;
 
@@ -29,22 +29,22 @@ module tb_ctrl ();
 
         // 测试1: addu 指令
         `TEST(addu_test)
-            op = `OP_R_INSTR;
-            funct = `FUNCT_ADDU;
+            op = OP_R;
+            funct = FUNCT_ADDU;
             #10;
             
-            `EXPECT("rd_sel", rd_sel, `RD_SEL_RD);
-            `EXPECT("wb_sel", wb_sel, `WB_SEL_ALU_OUT);
-            `EXPECT("src2_sel", src2_sel, `SRC2_SEL_RS2);
-            `EXPECT("npc_op", npc_op, `NPC_OP_PLUS4);
-            `EXPECT("alu_op", alu_op, `ALU_OP_ADD);
+            `EXPECT("rd_sel", rd_sel, RD_SEL_RD);
+            `EXPECT("wb_sel", wb_sel, WB_SEL_ALU_OUT);
+            `EXPECT("src2_sel", src2_sel, SRC2_SEL_RS2);
+            `EXPECT("npc_op", npc_op, NPC_OP_PLUS4);
+            `EXPECT("alu_op", alu_op, ALU_OP_ADD);
             `EXPECT("mem_read", mem_read, 1'b0);
             `EXPECT("mem_write", mem_write, 1'b0);
         `TEST_END
         
         // 测试2: lw 指令
         `TEST(lw_test);
-            op = `OP_LW;
+            op = OP_LW;
             #10;
 
             `EXPECT("mem_read", mem_read, 1'b1);

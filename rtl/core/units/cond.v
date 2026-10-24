@@ -1,5 +1,3 @@
-`include "defines.vh"
-
 module cond (
     input zero_f,
     /* verilator lint_off UNUSED */
@@ -9,10 +7,11 @@ module cond (
     input [1:0] cond_type,
     output reg cond_jmp
 );
+    import cpu_pkg::*;
 
     always @(*) begin
         case (cond_type)
-            `COND_TYPE_EQ: 
+            COND_TYPE_EQ: 
                 cond_jmp = zero_f;
             default: 
                 cond_jmp = 1'b0;

@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "vtest.vh"
-`include "instr.vh"
 
 module tb_beq ();
+    import cpu_pkg::*;
     reg clk, rst;
 
     cpu_top cpu (
@@ -14,12 +14,12 @@ module tb_beq ();
 
     // addu rd, rs, rt
     function [31:0] addu_code(input [4:0] rd, input [4:0] rs, input [4:0] rt);
-        addu_code = {`OP_R, rs, rt, rd, 5'b0, `FUNCT_ADDU};
+        addu_code = {OP_R, rs, rt, rd, 5'b0, FUNCT_ADDU};
     endfunction
 
     // beq, rs, rt, offset
     function [31:0] beq_code(input [4:0] rs, input[4:0] rt, input [15:0] offset);
-        beq_code = {`OP_BEQ, rs, rt, offset};
+        beq_code = {OP_BEQ, rs, rt, offset};
     endfunction
 
     `VTEST_INIT

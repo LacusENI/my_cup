@@ -1,5 +1,3 @@
-`include "defines.vh"
-
 module regfile (
     input clk,
     input [4:0] reg_src1,

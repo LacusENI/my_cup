@@ -1,5 +1,3 @@
-`include "defines.vh"
-
 module instrm (
     /* verilator lint_off UNUSED */
     input [31:0] instr_addr,

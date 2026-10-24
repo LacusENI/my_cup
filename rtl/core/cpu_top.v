@@ -1,9 +1,9 @@
-`include "defines.vh"
-
 module cpu_top (
     input clk,
     input rst
 );
+    import cpu_pkg::*;
+
     wire [31:0] instr_addr;
     wire [31:0] instr;
     wire [31:0] curr_pc, next_pc, pc_plus4, ra;
@@ -56,13 +56,13 @@ module cpu_top (
 
     assign reg_src1 = rs;
     assign reg_src2 = rt;
-    assign reg_dst = rd_sel == `RD_SEL_RD ? rd : 
-                     rd_sel == `RD_SEL_RT ? rt : 
-                     rd_sel == `RD_SEL_REG_RA ? 5'd31 : 
+    assign reg_dst = rd_sel == RD_SEL_RD ? rd : 
+                     rd_sel == RD_SEL_RT ? rt : 
+                     rd_sel == RD_SEL_REG_RA ? 5'd31 : 
                      5'd0;
-    assign wb_data = wb_sel == `WB_SEL_R_DATA ? r_data : 
-                     wb_sel == `WB_SEL_ALU_OUT ? alu_out : 
-                     wb_sel == `WB_SEL_PC_P4 ? pc_plus4 :
+    assign wb_data = wb_sel == WB_SEL_R_DATA ? r_data : 
+                     wb_sel == WB_SEL_ALU_OUT ? alu_out : 
+                     wb_sel == WB_SEL_PC_P4 ? pc_plus4 :
                      32'dx;
 
     assign alu_src1 = rs1_data;

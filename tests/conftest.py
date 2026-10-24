@@ -17,10 +17,18 @@ from cocotb_tools.runner import get_runner
 
 ROOT = Path(__file__).resolve().parents[1]
 RTL = ROOT / "rtl"
+PKG = RTL / "core" / "include" / "cpu_pkg.sv"
 TESTS = Path(__file__).resolve().parent
 INCLUDES = [ROOT / "rtl" / "core" / "include", ROOT / "lib"]
 BUILD = ROOT / "build" / "cocotb"
 WAVES = os.environ.get("MYCUP_WAVES") == "1"
+
+
+def _rtl_sources() -> list[Path]:
+    """全部 RTL 源文件，且 cpu_pkg.sv 必须排在最前面。"""
+    files = sorted(p for p in RTL.rglob("*") if p.suffix in (".v", ".sv"))
+    package = [p for p in files if p.name == "cpu_pkg.sv"]
+    return package + [p for p in files if p.name != "cpu_pkg.sv"]
 
 
 def _build(toplevel: str, sources, build_name: str):
@@ -52,37 +60,37 @@ def _build(toplevel: str, sources, build_name: str):
 @pytest.fixture(scope="session")
 def cpu_sim():
     """整个 cpu_top（全部 RTL）。指令级测试用这个。"""
-    return _build("cpu_top", sorted(RTL.rglob("*.v")), "cpu_top")
+    return _build("cpu_top", _rtl_sources(), "cpu_top")
 
 
 @pytest.fixture(scope="session")
 def alu_sim():
     """单元级：alu。"""
-    return _build("alu", [RTL / "core" / "units" / "alu.v"], "alu")
+    return _build("alu", [PKG, RTL / "core" / "units" / "alu.v"], "alu")
 
 
 @pytest.fixture(scope="session")
 def ctrl_sim():
     """单元级：ctrl（纯组合逻辑）。"""
-    return _build("ctrl", [RTL / "core" / "units" / "ctrl.v"], "ctrl")
+    return _build("ctrl", [PKG, RTL / "core" / "units" / "ctrl.v"], "ctrl")
 
 
 @pytest.fixture(scope="session")
 def datam_sim():
     """单元级：datam（数据存储器）。"""
-    return _build("datam", [RTL / "core" / "units" / "datam.v"], "datam")
+    return _build("datam", [PKG, RTL / "core" / "units" / "datam.v"], "datam")
 
 
 @pytest.fixture(scope="session")
 def npc_sim():
     """单元级：npc（下一 PC，纯组合逻辑）。"""
-    return _build("npc", [RTL / "core" / "units" / "npc.v"], "npc")
+    return _build("npc", [PKG, RTL / "core" / "units" / "npc.v"], "npc")
 
 
 @pytest.fixture(scope="session")
 def regfile_sim():
     """单元级：regfile（寄存器堆）。"""
-    return _build("regfile", [RTL / "core" / "units" / "regfile.v"], "regfile")
+    return _build("regfile", [PKG, RTL / "core" / "units" / "regfile.v"], "regfile")
 
 
 # --------------------------------------------------------------------------- #

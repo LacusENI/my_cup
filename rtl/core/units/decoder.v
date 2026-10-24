@@ -1,5 +1,3 @@
-`include "defines.vh"
-
 module decoder (
     input [31:0] instr,
     output [5:0] op,

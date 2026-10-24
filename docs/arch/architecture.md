@@ -3,7 +3,7 @@
 本文描述 `my_cup` 的整体框架、数据通路与模块职责，作为阅读代码的入口。
 
 - 顶层模块：[`rtl/core/cpu_top.v`](../../rtl/core/cpu_top.v)
-- 控制信号编码：[`rtl/core/include/defines.vh`](../../rtl/core/include/defines.vh)
+- 控制信号编码：[`rtl/core/include/cpu_pkg.sv`](../../rtl/core/include/cpu_pkg.sv)
 
 ---
 
@@ -189,8 +189,7 @@ uv run mycup run tb_prog --prog programs/demo.hex --data ...  # 额外装载数�
 2. **`ctrl.v` 大量使用 `2'bx` / `1'bx` 作为默认值**
    仿真可行，但对综合不友好，且掩盖"某条指令未定义该信号"的真实问题。建议改为显式默认值 + `default` 分支。
 
-3. **`defines.vh` 与 `instr.vh` 职责重叠**
-   两者都声明 opcode/funct；`instr.vh` 中多为**空占位宏**（如 `\`define OP_ADDI`），实际使用的是 `defines.vh`。建议合并或明确分工。
+3. ~~**`defines.vh` 与 `instr.vh` 职责重叠**~~ ✅ 已合并为 `cpu_pkg.sv`（package），用 `import` 使用。
 
 4. **`alu.v` 与 `cond.v` 功能远未覆盖设计意图**
    ALU 仅实现 `ADD`/`SUB`，`neg_f/overflow_f/carry_f` 是常量 0（TODO）；`cond.v` 仅实现相等比较。

@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "vtest.vh"
-`include "defines.vh"
 
 module tb_npc ();
+    import cpu_pkg::*;
     reg [31:0] curr_pc;
     reg [1:0] npc_op;
     reg cond_jmp;
@@ -21,14 +21,14 @@ module tb_npc ();
         `VTEST_BOOT
 
         `TEST(npc_plus4_test)
-            npc_op = `NPC_OP_PLUS4;
+            npc_op = NPC_OP_PLUS4;
             curr_pc = 32'b0100_1100;
             #10;
             `EXPECT("next_pc", next_pc, 32'b0100_1100 + 4)
         `TEST_END
 
         `TEST(npc_branch_jmp_test)
-            npc_op = `NPC_OP_BRANCH;
+            npc_op = NPC_OP_BRANCH;
             curr_pc = 32'b1101_1111_0000;
             jmp_offset = -4;
             cond_jmp = 1;
@@ -40,7 +40,7 @@ module tb_npc ();
         `TEST_END
         
         `TEST(npc_directly_jmp_test)
-            npc_op = `NPC_OP_DIRECT;
+            npc_op = NPC_OP_DIRECT;
             curr_pc = 32'hffff_ffff;
             curr_pc[31:28] = 4'b0101;
             curr_pc[27:20] = 8'b1111_1111;
@@ -50,7 +50,7 @@ module tb_npc ();
         `TEST_END
         
         `TEST(npc_jmp_to_ra_test)
-            npc_op = `NPC_OP_RA;
+            npc_op = NPC_OP_RA;
             curr_pc = 32'hffff_ffff;
             ra = 32'b1;
             #10;

@@ -16,7 +16,7 @@ import cocotb
 
 from cocotb_utils import settle
 
-# 与 defines.vh 保持一致
+# 与 cpu_pkg.sv 保持一致
 NPC_OP_PLUS4  = 0b00
 NPC_OP_BRANCH = 0b01
 NPC_OP_DIRECT = 0b10

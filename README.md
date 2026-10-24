@@ -44,10 +44,8 @@ my_cup/
 ├── rtl/                  # 可综合的 RTL 源码
 │   └── core/
 │       ├── cpu_top.v          # 顶层：实例化各单元并连线
-│       ├── include/           # 宏与函数定义
-│       │   ├── defines.vh         # 控制信号编码、opcode/funct
-│       │   ├── instr.vh           # 指令 opcode 占位声明
-│       │   └── ext.vh             # 位宽扩展函数
+│       ├── include/           # 共享常量与函数
+│       │   └── cpu_pkg.sv         # package：opcode、控制编码、扩展函数
 │       └── units/             # 各功能单元
 │           ├── pc.v / npc.v       # 程序计数器 / 下一 PC 逻辑
 │           ├── instrm.v           # 指令存储器 (IMEM)

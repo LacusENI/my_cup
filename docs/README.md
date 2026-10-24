@@ -45,7 +45,7 @@
 1. ~~**`ctrl/ctrl.md`**：`sb/sh` 行 opcode 错误、缺少 `lb/lbu/lh/lhu` 行~~ ✅ 已重写为当前 8 条指令。
 2. **`instr/instr_v0.3.md`**：`sb/sh` 的 opcode 写法有误；该文档已整体标记为**延后**，保留作为未来参考。
 3. **`unit/npc.md`**：端口仍写作 `jmp/jmp_target/jmp_offset/...`，当前实现为 `npc_op` 枚举 + `ra` 输入。
-4. **`unit/cond.md`**：比较类型把 `11` 描述为"大于(无符号)"，与 `defines.vh` 中的 `COND_TYPE_LTU`（小于无符号）不一致。
+4. **`unit/cond.md`**：比较类型描述的是完整规划（EQ/NE/LT/LTU），但当前实现只用到 `COND_TYPE_EQ`，文档与实现不一致。
 5. **`unit/alu.md`**：列出了 MUL/DIV/AND/... 等操作码，但当前 `alu.v` 只实现了 `ADD`/`SUB`。
 6. ~~**`unit/datam.md`**：未反映 `mem_size` / `read_signed` 与字节/半字能力~~ ✅ 已改为字访问描述。
 
