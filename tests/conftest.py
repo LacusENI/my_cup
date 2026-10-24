@@ -1,5 +1,11 @@
 """
-pytest fixtures: 每个 DUT 只 build 一次（session 级），测试用例复用。
+pytest fixtures：每个 DUT 只编译一次（session 级），多个测试复用。
+
+这里有两个概念：
+  1. *_sim fixture：负责“编译 HDL”，并保存后续运行测试需要的信息；
+  2. run_cocotb_case：负责“启动一次仿真，跑一个 cocotb 测试用例”。
+
+单独的 test_*.py 只负责挑选要跑哪个用例，具体仿真细节都在这里。
 """
 
 import os
@@ -11,12 +17,20 @@ from cocotb_tools.runner import get_runner
 
 ROOT = Path(__file__).resolve().parents[1]
 RTL = ROOT / "rtl"
+TESTS = Path(__file__).resolve().parent
 INCLUDES = [ROOT / "rtl" / "core" / "include", ROOT / "lib"]
 BUILD = ROOT / "build" / "cocotb"
 WAVES = os.environ.get("MYCUP_WAVES") == "1"
 
 
 def _build(toplevel: str, sources, build_name: str):
+    """编译一个 DUT，返回后续 runner.test 需要的对象。
+
+    参数说明：
+      toplevel   : HDL 顶层模块名（例如 "ctrl"）
+      sources    : 参与编译的 .v 文件列表
+      build_name : build 目录名（不同 DUT 分开，互不覆盖）
+    """
     runner = get_runner("icarus")
     # Icarus 要求 build 阶段就开启 waves，否则 test 阶段传 waves 无效
     build_dir = BUILD / (build_name + ("_wave" if WAVES else ""))
@@ -32,13 +46,67 @@ def _build(toplevel: str, sources, build_name: str):
     return SimpleNamespace(runner=runner, build_dir=build_dir, toplevel=toplevel)
 
 
+# --------------------------------------------------------------------------- #
+# 每个 DUT 一个 fixture
+# --------------------------------------------------------------------------- #
 @pytest.fixture(scope="session")
 def cpu_sim():
-    """整个 cpu_top（全部 RTL）"""
+    """整个 cpu_top（全部 RTL）。指令级测试用这个。"""
     return _build("cpu_top", sorted(RTL.rglob("*.v")), "cpu_top")
 
 
 @pytest.fixture(scope="session")
 def alu_sim():
-    """单元级：alu"""
+    """单元级：alu。"""
     return _build("alu", [RTL / "core" / "units" / "alu.v"], "alu")
+
+
+@pytest.fixture(scope="session")
+def ctrl_sim():
+    """单元级：ctrl（纯组合逻辑）。"""
+    return _build("ctrl", [RTL / "core" / "units" / "ctrl.v"], "ctrl")
+
+
+@pytest.fixture(scope="session")
+def datam_sim():
+    """单元级：datam（数据存储器）。"""
+    return _build("datam", [RTL / "core" / "units" / "datam.v"], "datam")
+
+
+@pytest.fixture(scope="session")
+def npc_sim():
+    """单元级：npc（下一 PC，纯组合逻辑）。"""
+    return _build("npc", [RTL / "core" / "units" / "npc.v"], "npc")
+
+
+@pytest.fixture(scope="session")
+def regfile_sim():
+    """单元级：regfile（寄存器堆）。"""
+    return _build("regfile", [RTL / "core" / "units" / "regfile.v"], "regfile")
+
+
+# --------------------------------------------------------------------------- #
+# 把一次 pytest 用例变成一次 cocotb 仿真
+# --------------------------------------------------------------------------- #
+@pytest.fixture
+def run_cocotb_case():
+    """返回一个函数：运行指定 cocotb 模块里的一个测试用例。
+
+    用法：
+        def test_addu_control(ctrl_sim, run_cocotb_case):
+            run_cocotb_case(ctrl_sim, "tb_ctrl", "addu_control_test")
+
+    这样每个 pytest 用例只写一行，读起来就像“跑 tb_ctrl 里的 addu 测试”。
+    """
+
+    def _run(sim, test_module: str, testcase: str):
+        sim.runner.test(
+            hdl_toplevel=sim.toplevel,
+            test_module=test_module,
+            testcase=testcase,
+            test_dir=TESTS,
+            build_dir=sim.build_dir,
+            waves=WAVES,
+        )
+
+    return _run
