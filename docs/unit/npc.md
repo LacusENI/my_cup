@@ -1,19 +1,34 @@
-version: v0.1
+version: 0.2
 
-date: 2026/03/12
+date: 2026/10/24
 
 ## 描述
-计算下一指令开始时的PC值。
-分为正常递增、直接跳转（直接跳转到目标）、根据条件跳转指定的偏移量（条件跳转）
+
+计算下一条指令的 PC。根据 `npc_op` 选择四种来源：
+
+| `npc_op` | 含义 | `next_pc` |
+| :-- | :-- | :-- |
+| `NPC_OP_PLUS4` | 顺序执行 | `curr_pc + 4` |
+| `NPC_OP_BRANCH` | 条件分支 | `cond_jmp ? curr_pc + (sign_ext(jmp_offset) << 2) : curr_pc + 4` |
+| `NPC_OP_DIRECT` | `j` / `jal` | `{curr_pc[31:28], jmp_target, 2'b00}` |
+| `NPC_OP_RA` | `jr` | `jmp_reg` |
 
 ## 端口
+
 input
-- jmp : 是否使用直接跳转
-- cond_jmp : 是否使用条件跳转
-- jmp_target : 若使用直接跳转，跳转的目标地址
-- jmp_offset : 若使用条件跳转，跳转的地址偏移量
-- curr_pc : 当前的PC值
+- `curr_pc(32)`：当前 PC
+- `npc_op(npc_op_t)`：下一 PC 来源
+- `cond_jmp`：分支条件是否成立
+- `jmp_target(26)`：直接跳转的 26 位目标
+- `jmp_offset(16)`：分支偏移（单位：指令字）
+- `jmp_reg(32)`：寄存器跳转目标（`jr` 的 `rs1`）
 
 output
-- next_pc : 下次的PC值
-- pc_plus4 : 当前PC值加4
+- `pc_plus4(32)`：`curr_pc + 4`
+- `next_pc(32)`：下一条指令地址
+
+## 说明
+
+- 分支偏移在内部左移 2 位，变成字节偏移；
+- 当前实现的分支基址是 **当前 PC**（不是 MIPS 的 PC+4）；
+- `jmp_reg` 旧名 `ra`，容易和 `jal` 的 `$ra` 混淆，已改名。

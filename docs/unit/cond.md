@@ -1,23 +1,31 @@
-version: v0.1
+version: 0.2
 
-date: 2026/03/12
+date: 2026/10/24
 
 ## 描述
-接受要进行比较类型和ALU计算结果的条件码，给出比较的结果。
+
+根据 ALU 标志和 `cond_type` 产生分支条件 `cond_jmp`。
 
 ## 端口
+
 input
-- cond_type(2) : 比较条件的类型
-- zero_f : 条件码 - 结果为零
-- negative_f : 条件码 - 结果为负
-- overflow_f : 条件码 - 结果溢出
-- carry_f : 条件码 - 进位为1
+- `zero_f`：结果为零
+- `neg_f`：结果为负（当前未使用）
+- `overflow_f`：结果溢出（当前未使用）
+- `carry_f`：进位为 1（当前未使用）
+- `cond_type(cond_type_t)`：比较类型
 
 output
-- cond_jmp : 是否满足条件
+- `cond_jmp`：是否满足条件
 
 ## 比较类型
-- 相等 : 00
-- 不相等 : 01
-- 小于(有符号): 10
-- 大于(无符号): 11
+
+| 类型 | 编码 | 当前状态 |
+| :-- | :-- | :-- |
+| `COND_TYPE_EQ` | `2'b00` | ✅ 已实现 |
+| NE / LT / LTU | `2'b01` / `2'b10` / `2'b11` | 延后 |
+
+## 说明
+
+- 当前只实现相等比较；
+- `neg_f/overflow_f/carry_f` 预留给未来的有符号/无符号比较。

@@ -28,25 +28,25 @@
 | 文档 | 单元 | 时效性 |
 | :-- | :-- | :-- |
 | [unit/pc.md](unit/pc.md) | `pc` | ✅ |
-| [unit/npc.md](unit/npc.md) | `npc` | ⚠️ 端口描述与当前实现不符 |
+| [unit/npc.md](unit/npc.md) | `npc` | ✅ 已更新为 `npc_op` + `jmp_reg` |
 | [unit/instrm.md](unit/instrm.md) | `instrm` | ✅ |
 | [unit/regfile.md](unit/regfile.md) | `regfile` | ✅ |
 | [unit/ext.md](unit/ext.md) | `ext` | ✅ |
-| [unit/alu.md](unit/alu.md) | `alu` | ⚠️ 操作码表为规划项，当前仅实现 ADD/SUB |
-| [unit/cond.md](unit/cond.md) | `cond` | ⚠️ 比较类型描述有误（见下） |
+| [unit/alu.md](unit/alu.md) | `alu` | ✅ 当前仅 ADD/SUB |
+| [unit/cond.md](unit/cond.md) | `cond` | ✅ 当前仅 EQ |
 | [unit/datam.md](unit/datam.md) | `datam` | ✅ 字访问（子字访问延后） |
 
 ---
 
-## 已知的文档不一致（供后续修订参考）
+## 已知的文档不一致
 
-以下为整理框架时发现的问题；本轮已修订的条目标注为 ✅：
+以下为整理过程中发现的问题，当前均已处理或明确延后：
 
 1. ~~**`ctrl/ctrl.md`**：`sb/sh` 行 opcode 错误、缺少 `lb/lbu/lh/lhu` 行~~ ✅ 已重写为当前 8 条指令。
-2. **`instr/instr_v0.3.md`**：`sb/sh` 的 opcode 写法有误；该文档已整体标记为**延后**，保留作为未来参考。
-3. **`unit/npc.md`**：端口仍写作 `jmp/jmp_target/jmp_offset/...`，当前实现为 `npc_op` 枚举 + `ra` 输入。
-4. **`unit/cond.md`**：比较类型描述的是完整规划（EQ/NE/LT/LTU），但当前实现只用到 `COND_TYPE_EQ`，文档与实现不一致。
-5. **`unit/alu.md`**：列出了 MUL/DIV/AND/... 等操作码，但当前 `alu.sv` 只实现了 `ADD`/`SUB`。
-6. ~~**`unit/datam.md`**：未反映 `mem_size` / `read_signed` 与字节/半字能力~~ ✅ 已改为字访问描述。
+2. **`instr/instr_v0.3.md`**：`sb/sh` 的 opcode 写法有误；该文档已整体标记为**延后**，保留作为未来参考（不视为待修）。
+3. ~~**`unit/npc.md`**：端口描述过时~~ ✅ 已更新为 `npc_op` + `jmp_reg`。
+4. ~~**`unit/cond.md`**：比较类型描述与实现不一致~~ ✅ 已注明当前只实现 `COND_TYPE_EQ`。
+5. ~~**`unit/alu.md`**：操作码表与实现不一致~~ ✅ 已注明当前只实现 `ADD`/`SUB`。
+6. ~~**`unit/datam.md`**：未反映字节/半字能力~~ ✅ 已改为字访问描述。
 
 > 处理建议：修订时**按版本新增**（如 `ctrl_v0.4.md`）或直接更新并在提交信息中说明，二选一即可，避免文档与实现长期漂移。

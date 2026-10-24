@@ -41,7 +41,7 @@
   +----+-----+  cond_jmp  +------+   flags   +---------+   src2   +-----------+
   |   npc    |<-----------| cond |<----------|   alu   |<---------| regfile   |
   +----------+            +------+           +----+----+  rs1,rs2 |  (32x32)  |
-       ^ ra = rs1_data                          | alu_out          +-----+-----+
+       ^ jmp_reg = rs1_data                          | alu_out          +-----+-----+
        |                                        v                        | rs2_data
        |                                   +----------+  M[addr] <= ------+
        +-----------------------------------|  datam   |
@@ -101,7 +101,7 @@ assign alu_src1   = rs1_data;
 assign alu_src2   = src2_sel ? imm32 : rs2_data;
 assign addr       = alu_out;
 assign w_data     = rs2_data;
-assign ra         = rs1_data;        // 供 npc 的寄存器跳转使用
+assign jmp_reg    = rs1_data;        // 供 npc 的寄存器跳转使用
 assign jmp_target = instr_index;
 assign jmp_offset = imm16;
 ```
@@ -110,7 +110,7 @@ assign jmp_offset = imm16;
 
 ## 5. 顶层多路选择器
 
-三个 MUX 直接在 `cpu_top` 中用条件表达式实现：
+三个 MUX 在 `cpu_top` 中用 `always_comb` + `unique case` 实现（选择信号来自 `cpu_pkg.sv` 的枚举）：
 
 **写回目标寄存器 `reg_dst`**（由 `rd_sel` 选择）：
 
@@ -196,8 +196,7 @@ uv run mycup prog programs/demo.hex --data programs/data.hex --cycles 8
    ALU 仅实现 `ADD`/`SUB`，`neg_f/overflow_f/carry_f` 是常量 0（TODO）；`cond.sv` 仅实现相等比较。
    现有 `docs/unit/alu.md`、`docs/unit/cond.md` 描述的是**目标形态**，与实现存在差距。
 
-5. **`npc` 的 `ra` 命名易误导**
-   该输入实际接的是 `rs1_data`（`jr` 的通用寄存器源），并非专指 `$ra`。建议更名（如 `jmp_reg`）以免与 `jal` 的 `$ra` 混淆。
+5. ~~**`npc` 的 `ra` 命名易误导**~~ ✅ 已改名为 `jmp_reg`，与 `jal` 的 `$ra` 区分开。
 
 6. **分支跳转逻辑分散**
    分支偏移在 `npc` 计算（`imm16 << 2`）、条件在 `cond` 判定、控制信号在 `ctrl` 产生，跨三个模块；
