@@ -42,25 +42,26 @@ my_cup/
 ├── scripts/
 │   └── veridian-lsp.py   # veridian LSP 代理
 ├── rtl/                  # 可综合的 RTL 源码
-│   └── core/
-│       ├── cpu_top.sv          # 顶层：实例化各单元并连线
-│       ├── include/           # 共享常量与函数
-│       │   └── cpu_pkg.sv         # package：opcode、控制编码、扩展函数
-│       ├── units/             # 各功能单元
-│           ├── pc.sv / npc.sv       # 程序计数器 / 下一 PC 逻辑
-│           ├── instrm.sv           # 指令存储器 (IMEM)
-│           ├── decoder.sv          # 指令字段拆分
-│           ├── ctrl.sv             # 控制器（产生全部控制信号）
-│           ├── regfile.sv          # 通用寄存器堆
-│           ├── ext.sv              # 立即数扩展
-│           ├── alu.sv              # 算术逻辑单元
-│           ├── cond.sv             # 条件判断（分支）
-│           └── datam.sv            # 数据存储器 (DMEM)
-│       └── pipe/              # 流水线级间寄存器（已就位，尚未接入 cpu_top）
-│           ├── if_id_reg.sv
-│           ├── id_ex_reg.sv
-│           ├── ex_mem_reg.sv
-│           └── mem_wb_reg.sv
+│   ├── cpu_top.sv            # 顶层：实例化各单元并连线
+│   ├── cpu_pkg.sv            # package：参数、类型、控制编码、扩展函数
+│   ├── control/              # 控制 / 取指 / 分支
+│   │   ├── pc.sv
+│   │   ├── npc.sv
+│   │   ├── decoder.sv
+│   │   ├── ctrl.sv
+│   │   └── cond.sv
+│   ├── datapath/             # 数据通路
+│   │   ├── alu.sv
+│   │   ├── ext.sv
+│   │   └── regfile.sv
+│   ├── memory/               # 存储器
+│   │   ├── instrm.sv
+│   │   └── datam.sv
+│   └── pipe/                 # 流水线级间寄存器（已就位，尚未接入）
+│       ├── if_id_reg.sv
+│       ├── id_ex_reg.sv
+│       ├── ex_mem_reg.sv
+│       └── mem_wb_reg.sv
 ├── tests/                # 全部验证（cocotb + pytest）
 │   ├── conftest.py            # session 级 build fixture
 │   ├── cocotb_utils.py        # 时钟 / 复位 / 程序装载的小工具
@@ -171,7 +172,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py    # 导出波形
 #   手动格式化：Shift+Alt+F（verible-verilog-format）
 
 # 格式化（默认不自动保存格式化，避免大面积 diff）
-verible-verilog-format rtl/core/units/alu.sv
+verible-verilog-format rtl/datapath/alu.sv
 ```
 
 ### slang（可选，当前未接入）

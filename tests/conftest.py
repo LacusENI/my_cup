@@ -17,7 +17,7 @@ from cocotb_tools.runner import get_runner
 
 ROOT = Path(__file__).resolve().parents[1]
 RTL = ROOT / "rtl"
-PKG = RTL / "core" / "include" / "cpu_pkg.sv"
+PKG = RTL / "cpu_pkg.sv"
 TESTS = Path(__file__).resolve().parent
 # 现在没有需要 `include 的头文件了；cpu_pkg.sv 作为普通源文件编译。
 INCLUDES: list[Path] = []
@@ -37,7 +37,7 @@ def _build(toplevel: str, sources, build_name: str):
 
     参数说明：
       toplevel   : HDL 顶层模块名（例如 "ctrl"）
-      sources    : 参与编译的 .v 文件列表
+      sources    : 参与编译的 .sv 文件列表
       build_name : build 目录名（不同 DUT 分开，互不覆盖）
     """
     runner = get_runner("icarus")
@@ -67,55 +67,55 @@ def cpu_sim():
 @pytest.fixture(scope="session")
 def alu_sim():
     """单元级：alu。"""
-    return _build("alu", [PKG, RTL / "core" / "units" / "alu.sv"], "alu")
+    return _build("alu", [PKG, RTL / "datapath" / "alu.sv"], "alu")
 
 
 @pytest.fixture(scope="session")
 def ctrl_sim():
     """单元级：ctrl（纯组合逻辑）。"""
-    return _build("ctrl", [PKG, RTL / "core" / "units" / "ctrl.sv"], "ctrl")
+    return _build("ctrl", [PKG, RTL / "control" / "ctrl.sv"], "ctrl")
 
 
 @pytest.fixture(scope="session")
 def datam_sim():
     """单元级：datam（数据存储器）。"""
-    return _build("datam", [PKG, RTL / "core" / "units" / "datam.sv"], "datam")
+    return _build("datam", [PKG, RTL / "memory" / "datam.sv"], "datam")
 
 
 @pytest.fixture(scope="session")
 def npc_sim():
     """单元级：npc（下一 PC，纯组合逻辑）。"""
-    return _build("npc", [PKG, RTL / "core" / "units" / "npc.sv"], "npc")
+    return _build("npc", [PKG, RTL / "control" / "npc.sv"], "npc")
 
 
 @pytest.fixture(scope="session")
 def regfile_sim():
     """单元级：regfile（寄存器堆）。"""
-    return _build("regfile", [PKG, RTL / "core" / "units" / "regfile.sv"], "regfile")
+    return _build("regfile", [PKG, RTL / "datapath" / "regfile.sv"], "regfile")
 
 
 @pytest.fixture(scope="session")
 def if_id_sim():
     """流水线寄存器：IF/ID。"""
-    return _build("if_id_reg", [PKG, RTL / "core" / "pipe" / "if_id_reg.sv"], "if_id_reg")
+    return _build("if_id_reg", [PKG, RTL / "pipe" / "if_id_reg.sv"], "if_id_reg")
 
 
 @pytest.fixture(scope="session")
 def id_ex_sim():
     """流水线寄存器：ID/EX。"""
-    return _build("id_ex_reg", [PKG, RTL / "core" / "pipe" / "id_ex_reg.sv"], "id_ex_reg")
+    return _build("id_ex_reg", [PKG, RTL / "pipe" / "id_ex_reg.sv"], "id_ex_reg")
 
 
 @pytest.fixture(scope="session")
 def ex_mem_sim():
     """流水线寄存器：EX/MEM。"""
-    return _build("ex_mem_reg", [PKG, RTL / "core" / "pipe" / "ex_mem_reg.sv"], "ex_mem_reg")
+    return _build("ex_mem_reg", [PKG, RTL / "pipe" / "ex_mem_reg.sv"], "ex_mem_reg")
 
 
 @pytest.fixture(scope="session")
 def mem_wb_sim():
     """流水线寄存器：MEM/WB。"""
-    return _build("mem_wb_reg", [PKG, RTL / "core" / "pipe" / "mem_wb_reg.sv"], "mem_wb_reg")
+    return _build("mem_wb_reg", [PKG, RTL / "pipe" / "mem_wb_reg.sv"], "mem_wb_reg")
 
 
 # --------------------------------------------------------------------------- #

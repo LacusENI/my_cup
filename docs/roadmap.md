@@ -90,7 +90,7 @@ IF ──► ID ──► EX ──► MEM ──► WB
 
 ### 2.2 关键改造点
 
-**(a) 插入流水寄存器**（建议新建 `rtl/core/pipe/`）
+**(a) 插入流水寄存器**（建议新建 `rtl/pipe/`）
 
 | 寄存器 | 携带内容（示意） |
 | :-- | :-- |
@@ -173,4 +173,4 @@ IF ──► ID ──► EX ──► MEM ──► WB
 1. 放行 `.github/` 并加 CI，跑 `mycup init && mycup test && mycup lint`；
 2. 清理 `ctrl.sv` 的 `x` 默认值与 `npc.ra` 命名；
 3. 补指令 trace + Python ISS 差分测试；
-4. 开始阶段 2：新建 `rtl/core/pipe/` 与流水线版 `cpu_top`，先跑通"无冒险"程序，再加前递/停顿/冲刷。
+4. 开始阶段 2：新建 `rtl/pipe/` 与流水线版 `cpu_top`，先跑通"无冒险"程序，再加前递/停顿/冲刷。

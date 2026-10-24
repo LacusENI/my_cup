@@ -67,7 +67,7 @@ tests/
 @pytest.fixture(scope="session")
 def npc_sim():
     """单元级：npc（纯组合逻辑）。"""
-    return _build("npc", [PKG, RTL / "core" / "units" / "npc.sv"], "npc")
+    return _build("npc", [PKG, RTL / "control" / "npc.sv"], "npc")
 ```
 
 `_build` 会调用 `iverilog` 编译，并记录 build 目录；`session` 表示整个测试会话只编译一次。

@@ -2,8 +2,8 @@
 
 本文描述 `my_cup` 的整体框架、数据通路与模块职责，作为阅读代码的入口。
 
-- 顶层模块：[`rtl/core/cpu_top.sv`](../../rtl/core/cpu_top.sv)
-- 控制信号编码：[`rtl/core/include/cpu_pkg.sv`](../../rtl/core/include/cpu_pkg.sv)
+- 顶层模块：[`rtl/cpu_top.sv`](../../rtl/cpu_top.sv)
+- 控制信号编码：[`rtl/cpu_pkg.sv`](../../rtl/cpu_pkg.sv)
 
 ---
 
@@ -60,19 +60,19 @@
 
 | 模块 | 文件 | 职责 |
 | :-- | :-- | :-- |
-| `cpu_top` | `rtl/core/cpu_top.sv` | 顶层：实例化所有单元、显式连线、实现多路选择器 |
-| `pc` | `units/pc.sv` | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
-| `npc` | `units/npc.sv` | 下一 PC 决策：`PLUS4` / `BRANCH`(条件偏移) / `DIRECT`(区域跳转) / `RA`(寄存器跳转)；同时输出 `pc_plus4` |
-| `instrm` | `units/instrm.sv` | 指令存储器（IMEM），默认 2048 字，组合读 |
-| `decoder` | `units/decoder.sv` | 把 32 位指令拆成 `instr_t`（op/rs/rt/rd/shamt/funct）+ `imm16` / `instr_index` |
-| `ctrl` | `units/ctrl.sv` | 控制器：由 `op/funct` 产生打包好的 `ctrl_t` |
-| `regfile` | `units/regfile.sv` | 32×32 寄存器堆；`$0` 恒 0；上升沿写 |
-| `ext` | `units/ext.sv` | 立即数 16→32 位扩展（符号/零扩展由 `ext_type` 选择） |
-| `alu` | `units/alu.sv` | 算术逻辑运算，输出结果与标志 `zero_f/neg_f/overflow_f/carry_f` |
-| `cond` | `units/cond.sv` | 依据 `cond_type` 将 ALU 标志折算为分支条件 `cond_jmp` |
-| `datam` | `units/datam.sv` | 数据存储器（DMEM），默认 2048 字，**仅整字访问**（子字访问延后） |
+| `cpu_top` | `rtl/cpu_top.sv` | 顶层：实例化所有单元、显式连线、实现多路选择器 |
+| `pc` | `control/pc.sv` | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
+| `npc` | `control/npc.sv` | 下一 PC 决策：`PLUS4` / `BRANCH`(条件偏移) / `DIRECT`(区域跳转) / `RA`(寄存器跳转)；同时输出 `pc_plus4` |
+| `instrm` | `memory/instrm.sv` | 指令存储器（IMEM），默认 2048 字，组合读 |
+| `decoder` | `control/decoder.sv` | 把 32 位指令拆成 `instr_t`（op/rs/rt/rd/shamt/funct）+ `imm16` / `instr_index` |
+| `ctrl` | `control/ctrl.sv` | 控制器：由 `op/funct` 产生打包好的 `ctrl_t` |
+| `regfile` | `datapath/regfile.sv` | 32×32 寄存器堆；`$0` 恒 0；上升沿写 |
+| `ext` | `datapath/ext.sv` | 立即数 16→32 位扩展（符号/零扩展由 `ext_type` 选择） |
+| `alu` | `datapath/alu.sv` | 算术逻辑运算，输出结果与标志 `zero_f/neg_f/overflow_f/carry_f` |
+| `cond` | `control/cond.sv` | 依据 `cond_type` 将 ALU 标志折算为分支条件 `cond_jmp` |
+| `datam` | `memory/datam.sv` | 数据存储器（DMEM），默认 2048 字，**仅整字访问**（子字访问延后） |
 
-> **流水线寄存器（已就位，尚未接入）**：`rtl/core/pipe/` 下有
+> **流水线寄存器（已就位，尚未接入）**：`rtl/pipe/` 下有
 > `if_id_reg` / `id_ex_reg` / `ex_mem_reg` / `mem_wb_reg`，
 > 使用 `cpu_pkg` 的 `if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`，支持 `rst/flush/stall`。
 > 当前 `cpu_top` 仍是单周期，还没有把它们接进去。
