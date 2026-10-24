@@ -1,12 +1,46 @@
 {
-  // 让 IDE 的 Verilog lint 与项目 `make lint` 保持一致（single source of truth: verilator.f）
-  // 详细说明见 README.md 的「IDE lint 配置」一节。
+  // ---------------------------------------------------------------------------
+  // Lint：与项目 `make lint` 保持一致（single source of truth: verilator.f）
+  // ---------------------------------------------------------------------------
   "verilog.linting.linter": "verilator",
   "verilog.linting.verilator.runAtFileLocation": false,
 
   // -Wall --timing --bbox-sys         : 与项目 lint 相同的 flags
-  // -f verilator.f                    : 复用项目 lint 的**文件清单**（这样跨模块实例化才不会误报）
+  // -f verilator.f                    : 复用项目 lint 的文件清单（跨模块实例化不误报）
   // -Wno-MODDUP                       : 扩展会把当前打开的文件额外追加一次，与清单重复
-  // -Wno-TIMESCALEMOD/-Wno-MULTITOP   : 仅当打开 testbench 时才会出现，项目 lint(RTL) 不产生
-  "verilog.linting.verilator.arguments": "-Wall --timing --bbox-sys -f verilator.f -Wno-MODDUP -Wno-TIMESCALEMOD -Wno-MULTITOP"
+  // -Wno-TIMESCALEMOD/-Wno-MULTITOP   : 打开 testbench 时才出现的噪音
+  "verilog.linting.verilator.arguments": "-Wall --timing --bbox-sys -f verilator.f -Wno-MODDUP -Wno-TIMESCALEMOD -Wno-MULTITOP",
+
+  // ---------------------------------------------------------------------------
+  // Language Server：veridian（hover / 跳转定义 / 文档符号 / 补全）
+  // 经 scripts/veridian-lsp.py 代理启动：丢弃 veridian 不可靠的诊断与 didSave，
+  // 只保留导航/补全/格式化；lint 仍由上面的 Verilator 负责。
+  // 安装与配置见 README「SV 工具链」；项目配置在 veridian.yml
+  // ---------------------------------------------------------------------------
+  "verilog.languageServer.veridian.enabled": true,
+  "verilog.languageServer.veridian.path": "veridian-lsp",
+  "verilog.languageServer.svls.enabled": false,
+
+  // veridian 客户端只绑定 systemverilog 语言；本项目代码兼容 SV2012，
+  // 因此把 .v/.vh 也识别为 systemverilog，让 LSP 生效。
+  "files.associations": {
+    "*.v": "systemverilog",
+    "*.vh": "systemverilog"
+  },
+
+  // ---------------------------------------------------------------------------
+  // 格式化：verible-verilog-format（不自动保存格式化，避免大面积 diff）
+  // 手动格式化快捷键：Shift+Alt+F
+  // ---------------------------------------------------------------------------
+  "verilog.formatting.systemVerilog.formatter": "verible-verilog-format",
+  "verilog.formatting.veribleVerilogFormatter.path": "verible-verilog-format",
+
+  "[systemverilog]": {
+    "editor.defaultFormatter": "mshr-h.veriloghdl",
+    "editor.formatOnSave": false
+  },
+  "[verilog]": {
+    "editor.defaultFormatter": "mshr-h.veriloghdl",
+    "editor.formatOnSave": false
+  }
 }

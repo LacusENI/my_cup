@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# 生成 verilator.f —— 供 `make lint` 与 IDE (Verilog-HDL/SystemVerilog 扩展) 共用的
-# Verilator 文件清单，作为工程 lint 的单一事实来源。
+# 生成 verilator.f —— 供 `make lint` 与 IDE 共用的 Verilator 文件清单，
+# 作为工程 lint 的单一事实来源 (single source of truth)。
 #
 # 用法: make filelist   (或 make init)
 

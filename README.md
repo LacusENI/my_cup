@@ -56,11 +56,17 @@ my_cup/
 │           ├── cond.v             # 条件判断（分支）
 │           └── datam.v            # 数据存储器 (DMEM)
 ├── sim/
-│   └── tb/               # 测试平台
+│   └── tb/               # 测试平台（旧 HDL 流程）
 │       ├── unit/              # 单元级 testbench
 │       └── instr/             # 指令级 testbench（驱动整个 cpu_top）
+├── tests/                # Python 验证 PoC（cocotb + pytest，与旧流程并存）
+│   ├── conftest.py            # session 级 build fixture
+│   ├── tb_*.py                # cocotb 测试模块
+│   └── test_*.py              # pytest 包装
+├── pyproject.toml        # uv 管理的 Python 依赖（cocotb / pytest）
+├── uv.lock               # 依赖锁定
 ├── lib/                  # 通用库
-│   └── vtest.vh               # 统一测试框架（宏：TEST / EXPECT / ...）
+│   └── vtest.vh               # 旧 HDL 测试框架（宏：TEST / EXPECT / ...）
 ├── docs/                 # 设计与文档（见 docs/README.md）
 ├── chore/                # 辅助脚本
 │   ├── gen_tb_dep.sh          # 扫描 tb 生成 .f 清单与 .d 依赖
@@ -96,6 +102,21 @@ make run-tb_prog PROG=programs/demo.hex
 > 工作流：**新增 testbench 后需要先重新执行 `make init`**，让脚本重新生成清单文件。
 > 详见 [`chore/gen_tb_dep.sh`](chore/gen_tb_dep.sh) 与 [架构说明](docs/arch/architecture.md#构建与测试流程)。
 
+### Python 验证流程（cocotb + pytest，PoC）
+
+与上面的 Make 流程**并存**，不影响 `sim/tb`：
+
+```bash
+uv sync                 # 创建 .venv，安装 cocotb / pytest
+uv run pytest -v        # 运行全部 Python 用例
+uv run pytest -v tests/test_load_save.py::test_load_save
+
+MYCUP_WAVES=1 uv run pytest -v tests/test_load_save.py   # 导出波形
+```
+
+说明见 [`tests/README.md`](tests/README.md)。目前移植了 `tb_alu` 与 `tb_load_save` 两个用例作为 PoC，
+后续是否全面迁移由你决定。
+
 ---
 
 ## IDE lint 配置（VS Code）
@@ -127,6 +148,78 @@ make run-tb_prog PROG=programs/demo.hex
   一起 lint），项目 lint 仅针对 RTL，不会产生这些告警。
 - **新增/删除 RTL 文件后**执行 `make filelist`（或 `make init`）刷新 `verilator.f`，`make lint` 也会自动刷新。
 - 若 `verilator` 不在 `PATH` 中，可在 `verilog.linting.path` 指定其安装目录。
+
+---
+
+## SV 工具链（LSP / format）
+
+在保留 Verilator lint 不变的前提下，补充了编辑器智能提示与格式化能力：
+
+| 工具 | 用途 | 版本 | 安装位置 |
+| :-- | :-- | :-- | :-- |
+| **veridian** | Language Server：hover / 跳转定义 / 文档符号 / 补全 / 格式化 | 0.1.0 (nightly) | `~/.local/bin/veridian-real` |
+| **veridian-lsp** | 轻量 LSP 代理：丢弃 veridian 不可靠的诊断与 `didSave` | 本仓库脚本 | `~/.local/bin/veridian-lsp` |
+| **verible** | `verible-verilog-format`（格式化）等 | v0.0-4296 | `~/.local/bin/verible-*` |
+
+> 为什么是 veridian：`slang` 的 release 里没有附带 `slangd`；`svls` 只做 svlint 风格诊断、**不提供导航**；`verible-verilog-ls` 对初始化参数较敏感。veridian 的 LSP 能力完整，且能被 `mshr-h.veriloghdl` 接管。
+>
+> **为什么需要 `veridian-lsp` 代理**：veridian 内置诊断不接收 include 路径，会对 `vtest.vh` / `instr.h` 误报。代理只丢弃 `textDocument/publishDiagnostics` 与 `textDocument/didSave`，导航/补全/格式化原样转发；诊断统一交给 Verilator。
+
+### 配置
+
+- 编辑器：[`.vscode/settings.json`](.vscode/settings.json)
+  - `verilog.languageServer.veridian.enabled: true`
+  - `verilog.languageServer.veridian.path: "veridian-lsp"`（代理）
+  - `files.associations`: 把 `*.v` / `*.vh` 识别为 `systemverilog`（veridian 客户端只绑定该语言；代码本身兼容 SV2012）
+- 项目：[`veridian.yml`](veridian.yml)
+  - `include_dirs`: `rtl/core/include`、`lib`
+  - `source_dirs`: `rtl`、`sim/tb`
+  - `auto_search_workdir: false`（避免递归扫到 `.venv` / `build`）
+  - 诊断交给项目 `make lint`，LSP 侧诊断关闭
+- 代理：[`scripts/veridian-lsp.py`](scripts/veridian-lsp.py)
+
+### 用法
+
+```bash
+# 编辑器：重新加载窗口后生效
+#   Ctrl+Shift+P -> Developer: Reload Window
+#   悬停 / F12 跳转 / Ctrl+Shift+O 文档符号
+#   手动格式化：Shift+Alt+F（verible-verilog-format）
+
+# 格式化（默认不自动保存格式化，避免大面积 diff）
+verible-verilog-format rtl/core/units/alu.v
+```
+
+### slang（可选，当前未接入）
+
+`slang` 12.0 已安装在 `~/.local/bin/slang`，但**没有接入项目流程**。当前规模下
+Verilator + cocotb 已经足够；如果以后需要更严格的语义检查，可手动运行：
+
+```bash
+slang --lint-only --timescale 1ns/1ps \
+  -Irtl/core/include -Ilib $(find rtl sim/tb -name '*.v')
+```
+
+### 换机器时如何安装
+
+工具都在 `~/.local/bin`，扩展通过 `PATH` 查找：
+
+```bash
+# verible（GitHub release）
+#   https://github.com/chipsalliance/verible/releases -> *-linux-static-x86_64.tar.gz
+
+# veridian（GitHub nightly）
+#   https://github.com/vivekmalneedi/veridian/releases/tag/nightly -> veridian-ubuntu-22.04.tar.gz
+#   解压后：ln -sf /path/to/veridian ~/.local/bin/veridian-real
+
+# LSP 代理（本仓库）
+cp scripts/veridian-lsp.py ~/.local/bin/veridian-lsp
+chmod +x ~/.local/bin/veridian-lsp
+```
+
+> 注意：`.vscode/settings.json` 依赖 `veridian-lsp` / `verible-verilog-format` 在 `PATH` 中；
+> 若不在，可分别用 `verilog.languageServer.veridian.path` 和
+> `verilog.formatting.veribleVerilogFormatter.path` 指定绝对路径。
 
 ---
 

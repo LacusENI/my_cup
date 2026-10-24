@@ -1,0 +1,31 @@
+# veridian (SystemVerilog Language Server) 项目配置
+# 提供 hover / 跳转定义 / 文档符号 / 补全 / 格式化。
+#
+# 诊断说明：
+#   veridian 内置的诊断无法接收 include 路径（会对 vtest.vh / instr.h 误报），
+#   因此这里关闭 LSP 诊断，统一由项目 `make lint`（Verilator）负责。
+#   编辑器实际通过 scripts/veridian-lsp.py 代理启动 veridian，
+#   代理会丢弃 publishDiagnostics 和 didSave，只保留导航/补全/格式化。
+include_dirs:
+  - rtl/core/include
+  - lib
+
+source_dirs:
+  - rtl
+  - sim/tb
+
+# 只扫描 source_dirs，避免递归扫到 .venv/build 等目录
+auto_search_workdir: false
+
+verible:
+  syntax:
+    enabled: false
+  format:
+    enabled: true
+    path: "verible-verilog-format"
+
+verilator:
+  syntax:
+    enabled: false
+
+log_level: Warn
