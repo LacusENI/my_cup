@@ -7,7 +7,7 @@
 
 ```bash
 uv sync            # 首次：创建 .venv，安装 cocotb / pytest
-uv run mycup test  # 跑全部 50 个用例
+uv run mycup test  # 跑全部 49 个用例
 uv run pytest -v   # 同上（直接调 pytest）
 ```
 
@@ -19,9 +19,7 @@ uv run pytest -v   # 同上（直接调 pytest）
 tests/
 ├── conftest.py        # fixture：编译 DUT + run_cocotb_case
 ├── cocotb_utils.py    # 时钟 / 复位 / 等待 + CPU 顶层共享访问器
-├── rtl_consts.py      # 从 cpu_pkg.sv 解析常量 / struct 布局
 ├── mips_asm.py        # MIPS 子集指令编码器（不再手写机器码）
-├── test_rtl_consts.py # 常量 / struct 布局解析器自检
 ├── test_asm.py        # 编码器自检
 ├── tb_alu.py          # cocotb 用例 + AluDut 契约
 ├── test_alu.py        # pytest 入口
@@ -67,9 +65,8 @@ tests/
 | `test_asm.py` | MIPS 指令编码器自检（已知机器码） | 1 |
 | `test_instr.py` | 单指令 ISA + cpu_top 契约 | 11 |
 | `test_prog.py` | 程序装载（`$readmemh`） | 1 |
-| `test_rtl_consts.py` | `cpu_pkg.sv` 常量 / struct 布局解析自检 | 1 |
 
-合计 **50 个用例**。
+合计 **49 个用例**。
 
 > 流水线寄存器用 `struct packed`（`if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`）承载数据；
 > 由于 Icarus VPI 不暴露 struct 字段，测试里把 struct 当成一个整数来读写。
@@ -98,7 +95,9 @@ from typing import Protocol
 
 import cocotb
 from cocotb_utils import Signal, assert_fields, settle
-from rtl_consts import NPC_OP_PLUS4
+
+# 常量直接写死：它们是对外契约，不跟着 RTL 自动变
+NPC_OP_PLUS4 = 0b00
 
 # NpcDut 就在本文件顶部声明
 class NpcDut(Protocol):
@@ -110,7 +109,7 @@ class NpcDut(Protocol):
 async def plus4_test(dut: NpcDut):
     """普通情况：PC = PC + 4。"""
     dut.curr_pc.value = 0x10
-    dut.npc_op.value = NPC_OP_PLUS4   # 不手写 0b00，值来自 cpu_pkg.sv
+    dut.npc_op.value = NPC_OP_PLUS4   # 0b00 是测试里写死的契约
     dut.cond_jmp.value = 0
     await settle()
     assert int(dut.next_pc.value) == 0x14
@@ -216,26 +215,37 @@ assert read_mem(dut, 2) == 0x1122_3344
 
 这样 CPU 顶层的内部路径只出现在 `cocotb_utils.py` 一处，改名时不用满测试找。
 
-## 常量单一来源
+## 常量是对外契约
 
-测试里不写 `ALU_OP_ADD = 0b0001`，而是从 `rtl/cpu_pkg.sv` 解析：
+测试里直接写死常量，例如：
 
 ```python
-from rtl_consts import ALU_OP_ADD, NPC_OP_PLUS4
-
-dut.alu_op.value = ALU_OP_ADD
+ALU_OP_ADD = 0b0001
+ALU_OP_SUB = 0b0010
+NPC_OP_PLUS4 = 0b00
 ```
 
-`rtl_consts.py` 在 import 时读取 `cpu_pkg.sv`，解析：
+`tb_ctrl.py` 里连 `ctrl_t` 的字段布局也直接写死：
 
-- enum / localparam 的数字常量；
-- packed struct 的字段顺序和位宽（`struct_layout("ctrl_t")`）。
+```python
+CTRL_FIELDS = {
+    "npc_op":    (16, 2),
+    "reg_write": (14, 1),
+    "alu_op":    (13, 4),
+    ...
+}
+```
 
-因此 `tb_ctrl.py` 不再手写 `ctrl_t` 的 `[16:15]` 这类偏移，
-`mips_asm.py` 也不再手写 opcode / funct。
+`mips_asm.py` 里也直接写死 opcode / funct。
 
-> 解析器只支持项目用到的简单写法；遇到不认识的表达式会直接报错，
-> 不会悄悄给出错误值。
+这样做的含义是：
+
+- `ALU_OP_ADD`、`NPC_OP_PLUS4`、opcode、funct、`ctrl_t` 布局都是**对外契约**；
+- 已发布的数值不要修改；新增指令时只追加，保持向后兼容；
+- 如果 RTL 改了这些值，测试会失败——这是故意的，提醒这是一次破坏性变更；
+- 如果确实要改，必须同时改 RTL 和测试，并明确记录为 breaking change。
+
+`cpu_pkg.sv` 顶部也有同样的注释。
 
 ## 常用命令
 

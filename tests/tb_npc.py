@@ -17,7 +17,13 @@ from typing import Protocol
 import cocotb
 
 from cocotb_utils import Signal, assert_fields, settle
-from rtl_consts import NPC_OP_BRANCH, NPC_OP_DIRECT, NPC_OP_PLUS4, NPC_OP_RA
+
+
+# 下一 PC 的操作码是对外契约：数值不要随意改。
+NPC_OP_PLUS4  = 0b00
+NPC_OP_BRANCH = 0b01
+NPC_OP_DIRECT = 0b10
+NPC_OP_RA     = 0b11
 
 
 # npc 的公开字段：测试依赖哪些，就列哪些。

@@ -17,7 +17,7 @@
 | 指令集 | MIPS32 子集 |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
-| 测试 | 50 个 cocotb/pytest 用例 |
+| 测试 | 49 个 cocotb/pytest 用例 |
 
 ### 已支持指令（最小集，已冻结）
 

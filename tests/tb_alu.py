@@ -6,7 +6,11 @@ import cocotb
 from cocotb.triggers import Timer
 
 from cocotb_utils import Signal, assert_fields
-from rtl_consts import ALU_OP_ADD, ALU_OP_SUB
+
+
+# ALU 操作码是对外契约：数值不要随意改。
+ALU_OP_ADD = 0b0001
+ALU_OP_SUB = 0b0010
 
 
 # ALU 的公开字段：测试依赖哪些，就列哪些。

@@ -7,8 +7,8 @@ ctrl 是“纯组合逻辑”：
 由于 Icarus 的 VPI 不会把 packed struct 的字段暴露成子对象，
 这里用一个 field() 小工具，从 dut.ctrl 的整数值里取出字段。
 
-字段布局不再手写：rtl_consts.struct_layout() 会从 cpu_pkg.sv 里
-解析 ctrl_t 的字段顺序和位宽，RTL 改了布局，测试会自动跟着变。
+字段布局和常量数值都直接写在测试里，作为 CPU 的对外契约。
+如果 RTL 改了它们，测试会失败——这是故意的，提醒你这是一次破坏性变更。
 """
 
 from typing import Protocol
@@ -16,37 +16,60 @@ from typing import Protocol
 import cocotb
 
 from cocotb_utils import Signal, assert_fields, settle
-from rtl_consts import (
-    ALU_OP_ADD,
-    ALU_OP_SUB,
-    COND_TYPE_EQ,
-    EXT_TYPE_SIGN_EXT,
-    FUNCT_ADDU,
-    FUNCT_JR,
-    NPC_OP_BRANCH,
-    NPC_OP_DIRECT,
-    NPC_OP_PLUS4,
-    NPC_OP_RA,
-    OP_ADDIU,
-    OP_BEQ,
-    OP_J,
-    OP_JAL,
-    OP_LW,
-    OP_R,
-    OP_SW,
-    RD_SEL_RD,
-    RD_SEL_REG_RA,
-    RD_SEL_RT,
-    SRC2_SEL_IMM,
-    SRC2_SEL_RS2,
-    WB_SEL_ALU_OUT,
-    WB_SEL_PC_P4,
-    WB_SEL_R_DATA,
-    struct_layout,
-)
+
+# --------------------------------------------------------------------------- #
+# 常量（来自 cpu_pkg.sv，是对外契约）
+#
+# 已发布的数值不要修改；需要扩展时只新增，保持向后兼容。
+# --------------------------------------------------------------------------- #
+OP_R       = 0b000000
+OP_ADDIU   = 0b001001
+OP_BEQ     = 0b000100
+OP_LW      = 0b100011
+OP_SW      = 0b101011
+OP_J       = 0b000010
+OP_JAL     = 0b000011
+
+FUNCT_ADDU = 0b100001
+FUNCT_JR   = 0b001000
+
+NPC_OP_PLUS4  = 0b00
+NPC_OP_BRANCH = 0b01
+NPC_OP_DIRECT = 0b10
+NPC_OP_RA     = 0b11
+
+RD_SEL_RT     = 0b00
+RD_SEL_RD     = 0b01
+RD_SEL_REG_RA = 0b10
+
+WB_SEL_ALU_OUT = 0b00
+WB_SEL_R_DATA  = 0b01
+WB_SEL_PC_P4   = 0b10
+
+SRC2_SEL_RS2 = 0
+SRC2_SEL_IMM = 1
+
+EXT_TYPE_SIGN_EXT = 1
+
+ALU_OP_ADD = 0b0001
+ALU_OP_SUB = 0b0010
+
+COND_TYPE_EQ = 0b00
 
 # ctrl_t 的字段布局：(最高位, 位宽)
-CTRL_LAYOUT = struct_layout("ctrl_t")
+# 如果 cpu_pkg.sv 里 ctrl_t 的字段顺序/位宽变了，这里也要同步更新。
+CTRL_FIELDS = {
+    "npc_op":    (16, 2),
+    "reg_write": (14, 1),
+    "alu_op":    (13, 4),
+    "mem_write": (9, 1),
+    "mem_read":  (8, 1),
+    "cond_type": (7, 2),
+    "ext_type":  (5, 1),
+    "rd_sel":    (4, 2),
+    "wb_sel":    (2, 2),
+    "src2_sel":  (0, 1),
+}
 
 
 # ctrl 的公开字段：测试依赖哪些，就列哪些。
@@ -61,7 +84,7 @@ REQUIRED_FIELDS = ("op", "funct", "ctrl")
 
 def field(dut: CtrlDut, name: str) -> int:
     """从打包的 ctrl_t 里取出一个字段的整数值。"""
-    msb, width = CTRL_LAYOUT[name]
+    msb, width = CTRL_FIELDS[name]
     shift = msb - width + 1
     mask = (1 << width) - 1
     return (int(dut.ctrl.value) >> shift) & mask
