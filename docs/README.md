@@ -21,7 +21,7 @@
 | :-- | :-- | :-- |
 | [instr/instr_v0.1.md](instr/instr_v0.1.md) | `addu` `addiu` `lw` `sw` `beq` `j` | ✅ 与实现一致 |
 | [instr/instr_v0.2.md](instr/instr_v0.2.md) | `jal` `jr` | ✅ 与实现一致 |
-| [instr/instr_v0.3.md](instr/instr_v0.3.md) | `sb` `sh`（文档中另含 `lb/lbu/lh/lhu`，但控制通路未接通） | ⚠️ 见下 |
+| [instr/instr_v0.3.md](instr/instr_v0.3.md) | `sb` `sh` + `lb/lbu/lh/lhu` | ⏸ 已延后（不在当前 ISA） |
 
 ## 3. 功能单元
 
@@ -34,19 +34,19 @@
 | [unit/ext.md](unit/ext.md) | `ext` | ✅ |
 | [unit/alu.md](unit/alu.md) | `alu` | ⚠️ 操作码表为规划项，当前仅实现 ADD/SUB |
 | [unit/cond.md](unit/cond.md) | `cond` | ⚠️ 比较类型描述有误（见下） |
-| [unit/datam.md](unit/datam.md) | `datam` | ⚠️ 未反映字节/半字支持与新端口 |
+| [unit/datam.md](unit/datam.md) | `datam` | ✅ 字访问（子字访问延后） |
 
 ---
 
 ## 已知的文档不一致（供后续修订参考）
 
-以下为整理框架时发现的问题，**本次未改动原文件**，仅在此登记：
+以下为整理框架时发现的问题；本轮已修订的条目标注为 ✅：
 
-1. **`ctrl/ctrl.md`**：`sb`/`sh` 行的 opcode 写成 `10 1111`（应为 `10 1000` / `10 1001`），且两行相同；缺 `lb/lbu/lh/lhu` 行。
-2. **`instr/instr_v0.3.md`**：`sb`/`sh` 的 opcode 写成 `00 1010` / `00 1011`（应为 `10 1000` / `10 1001`）；标题只列了 `sb/sh`，正文却包含 `lb/lbu/lh/lhu`。
+1. ~~**`ctrl/ctrl.md`**：`sb/sh` 行 opcode 错误、缺少 `lb/lbu/lh/lhu` 行~~ ✅ 已重写为当前 8 条指令。
+2. **`instr/instr_v0.3.md`**：`sb/sh` 的 opcode 写法有误；该文档已整体标记为**延后**，保留作为未来参考。
 3. **`unit/npc.md`**：端口仍写作 `jmp/jmp_target/jmp_offset/...`，当前实现为 `npc_op` 枚举 + `ra` 输入。
 4. **`unit/cond.md`**：比较类型把 `11` 描述为"大于(无符号)"，与 `defines.vh` 中的 `COND_TYPE_LTU`（小于无符号）不一致。
 5. **`unit/alu.md`**：列出了 MUL/DIV/AND/... 等操作码，但当前 `alu.v` 只实现了 `ADD`/`SUB`。
-6. **`unit/datam.md`**：仍写"目前支持字读写"，未反映 `mem_size` / `read_signed` 端口与字节/半字读写能力。
+6. ~~**`unit/datam.md`**：未反映 `mem_size` / `read_signed` 与字节/半字能力~~ ✅ 已改为字访问描述。
 
 > 处理建议：修订时**按版本新增**（如 `ctrl_v0.4.md`）或直接更新并在提交信息中说明，二选一即可，避免文档与实现长期漂移。

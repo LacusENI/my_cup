@@ -1,6 +1,9 @@
 `ifndef INSTR_VH
 `define INSTR_VH
 
+// 当前 ISA（最小集）：addu/addiu/lw/sw/beq/j/jal/jr
+// 其余条目是未来指令占位，不在当前 ISA；子字访存见 docs/roadmap.md#明确延后deferred
+
 `define OP_ADDI
 `define OP_ADDIU   6'b00_1001
 `define OP_ANDI
@@ -12,15 +15,9 @@
 `define OP_BNE
 `define OP_J       6'b00_0010
 `define OP_JAL     6'b00_0011
-`define OP_LB
-`define OP_LBU
-`define OP_LH
-`define OP_LHU
 `define OP_LUI
 `define OP_LW      6'b10_0011
 `define OP_ORI
-`define OP_SB      6'b10_1000
-`define OP_SH      6'b10_1001
 `define OP_SLTI
 `define OP_SLTIU
 `define OP_SW      6'b10_1011

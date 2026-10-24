@@ -28,8 +28,7 @@
                           +-------------------------------------------------------+
    instr[31:26], [5:0]    |                     ctrl (控制器)                       |
       +------------------>| (op,funct) -> npc_op,reg_write,alu_op,mem_read/mem_write,|
-      |                   |               mem_size,cond_type,ext_type,              |
-      |                   |               rd_sel,wb_sel,src2_sel                     |
+      |                   |               cond_type,ext_type,rd_sel,wb_sel,src2_sel|
       |                   +---+----+----+----+----+----+----+----+-------------------+
       |                       |    |    |    |    |    |    |    |   (控制信号扇出)
       |                       v    v    v    v    v    v    v    v
@@ -71,7 +70,7 @@
 | `ext` | `units/ext.v` | 立即数 16→32 位扩展（符号/零扩展由 `ext_type` 选择） |
 | `alu` | `units/alu.v` | 算术逻辑运算，输出结果与标志 `zero_f/neg_f/overflow_f/carry_f` |
 | `cond` | `units/cond.v` | 依据 `cond_type` 将 ALU 标志折算为分支条件 `cond_jmp` |
-| `datam` | `units/datam.v` | 数据存储器（DMEM），2048 字，支持字/半字/字节访问 |
+| `datam` | `units/datam.v` | 数据存储器（DMEM），2048 字，**仅整字访问**（子字访问延后） |
 
 ---
 
@@ -84,7 +83,7 @@
 | **IF** | `instr_addr = curr_pc` → `instrm` 输出 `instr`；`npc` 依据 `npc_op/cond_jmp` 计算 `next_pc` |
 | **ID** | `decoder` 拆字段；`ctrl` 产生控制信号；`regfile` 读出 `rs1_data/rs2_data`；`ext` 扩展 `imm16` |
 | **EX** | `alu_src1 = rs1_data`，`alu_src2 = src2_sel ? imm32 : rs2_data`；`alu` 计算 `alu_out` 与标志 |
-| **MEM** | `addr = alu_out`，`w_data = rs2_data`；`datam` 读/写（`mem_read/mem_write/mem_size`） |
+| **MEM** | `addr = alu_out`，`w_data = rs2_data`；`datam` 读/写（`mem_read/mem_write`） |
 | **WB** | `wb_data` 多路选择（见 §5）写回 `regfile` |
 
 ### 关键连线（来自 `cpu_top`，均为 `assign`）
@@ -138,7 +137,7 @@ assign jmp_offset = imm16;
 | 容量 | 2048 字（8 KiB） | 2048 字（8 KiB） |
 | 地址解码 | `instr_addr[12:2]` | `addr[12:2]` |
 | 访问 | 组合读 | 组合读 / 上升沿写 |
-| 位宽访问 | 固定 32 位 | 字 / 半字 / 字节（`mem_size`）+ 符号位（`read_signed`） |
+| 位宽访问 | 固定 32 位 | 固定 32 位（整字访问；子字访问延后） |
 
 > 二者是**相互独立的存储体**（天然的哈佛结构），这一点对后续上流水线有利（无需再拆分存储）。
 > 存储器已提供**仿真期装载入口**：`instrm`/`datam` 内含 `initial` + `$readmemh`，
@@ -183,11 +182,9 @@ uv run mycup run tb_prog --prog programs/demo.hex --data ...  # 额外装载数�
 
 整理框架时发现的问题，按影响排序：
 
-1. **`lb/lbu/lh/lhu` 控制通路未接通（半成品）**
-   `datam.v` 已支持 `mem_size` 与 `read_signed`，`docs/instr/instr_v0.3.md` 也已写文档，
-   但 `ctrl.v` **没有输出 `read_signed`**，且未识别这些 opcode。
-   结果：`cpu_top` 中的 `wire read_signed` **未被驱动**（Verilator 报 `UNDRIVEN`），
-   这些指令当前不可用。→ 见 [roadmap.md](roadmap.md) 阶段 1。
+1. ~~**`lb/lbu/lh/lhu` 控制通路未接通（半成品）**~~ ✅ 已移除；子字访问整体延后
+   （见 [roadmap.md](roadmap.md#明确延后deferred)）。`datam` 收敛为整字访问，
+   `read_signed` / `mem_size` 已删除。
 
 2. **`ctrl.v` 大量使用 `2'bx` / `1'bx` 作为默认值**
    仿真可行，但对综合不友好，且掩盖"某条指令未定义该信号"的真实问题。建议改为显式默认值 + `default` 分支。
@@ -222,4 +219,4 @@ uv run mycup run tb_prog --prog programs/demo.hex --data ...  # 额外装载数�
 
 > 一个 **组合数据通路 + 少量时序状态** 的 MIPS32 子集单周期 CPU；
 > 指令/数据存储已分离（哈佛）；控制集中在 `ctrl`，其余为纯功能单元；
-> 主要待办是**接通半成品指令**、**清理控制逻辑默认值**，并**向流水线重构**。
+> 主要待办是**清理控制逻辑默认值**、**补验证闭环**，并**向流水线重构**。

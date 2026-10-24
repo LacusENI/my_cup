@@ -34,35 +34,44 @@
 
 ---
 
-## 阶段 1 · 补全单周期（为流水线铺路）
+## 阶段 1 · 清理与冻结（为流水线铺路）
 
-这些工作**现在做成本最低**；一旦上了流水线，同样的改动要同时改流水寄存器与控制信号，代价翻倍。
+> **ISA 已冻结为最小集**：`addu, addiu, lw, sw, beq, j, jal, jr`。
+> 子字访存与更多指令整体延后，见 [明确延后](#明确延后deferred)。
 
-### 1.1 接通 `lb/lbu/lh/lhu`（半成品收尾）
+### 1.1 已完成的收敛
 
-- `datam.v` 已支持 `mem_size` + `read_signed`，缺的是控制侧：
-  - `ctrl.v` 增加 `read_signed` 输出，并识别 `lb/lbu/lh/lhu` 的 opcode；
-  - `defines.vh` 补上对应 `OP_LB/LBU/LH/LHU`；
-  - 处理 `cpu_top` 中 `read_signed` 未驱动的 `UNDRIVEN` 告警。
-- 同步补 `slt/sltu` 等需要"符号/无符号"语义的指令时复用同一路径。
+- [x] 移除半成品 `lb/lbu/lh/lhu` 的控制通路与文档承诺；
+- [x] 移除 `sb/sh`，`datam` 收敛为**整字访问**；
+- [x] 删除 `read_signed` / `mem_size`，消除 `UNDRIVEN` 告警；
+- [x] ISA 文档与测试同步（8 条指令）。
 
 ### 1.2 清理控制逻辑
 
-- 把 `ctrl.v` 的 `2'bx/1'bx` 默认值改为**显式默认 + `default` 分支**，避免综合歧义并暴露漏定义。
-- 收敛 `npc` 的 `ra` 命名为 `jmp_reg`（或类似），消除与 `jal` 的 `$ra` 的歧义。
+- [ ] 把 `ctrl.v` 的 `2'bx/1'bx` 默认值改为**显式默认 + `default` 分支**；
+- [ ] 收敛 `npc` 的 `ra` 命名为 `jmp_reg`，消除与 `jal` 的 `$ra` 的歧义。
 
-### 1.3 补齐 ALU / cond 的设计意图
+### 1.3 验证最小闭环
 
-- `alu.v`：实现 AND/OR/XOR/NOR/SLL/SRL/SRA/SLT/SLTU，以及 `neg_f/overflow_f/carry_f`；
-- `cond.v`：补齐 NE / LT / LTU 等比较类型。
-- 这些是"分支指令族（`bne/blez/bgtz/bltz/bgez`）"和大量 R 型指令的先决条件。
+- [ ] 指令 trace（PC / 指令 / 写回 / 访存）；
+- [ ] Python ISS 参考模型 + 差分测试；
+- [ ] 上流水线前先写好 `lw/sw` 的 load-use / store forwarding 测试。
 
-### 1.4 指令扩展（可分批）
+> 不再扩展 ALU/cond 或新增指令；当前 `ADD/SUB` 与 `EQ` 已覆盖冻结 ISA。
 
-- 立即数：`andi/ori/xori/lui/slti/sltiu`；R 型：`add/sub/and/or/xor/nor/slt/sltu/sll/srl/sra`；
-- 分支：`bne/blez/bgtz/bltz/bgez`。
+---
 
-> 每加一条指令，都遵循现有约定：**更新 `docs/ctrl/ctrl.md` 真值表 + 新增 `docs/instr/instr_vX.md` + 补 testbench**。
+## 明确延后（Deferred）
+
+以下内容**不在当前 ISA**，等内存子系统定型后再一起做：
+
+- **子字访存**：`sb/sh/lb/lbu/lh/lhu`；
+- **端序策略**：大端/小端（整字访问下不影响功能）；
+- **字节掩码**：core → memory 的 `wstrb[3:0]`；
+- **DM controller / 总线**：Wishbone/AXI-Lite 简化接口、Cache；
+- **更多指令**：逻辑/移位/比较、更多分支、异常/CSR。
+
+> 理由：这些改动会同时影响 DM、控制通路、测试与端序，过早实现容易返工。
 
 ---
 
@@ -162,8 +171,6 @@ IF ──► ID ──► EX ──► MEM ──► WB
 ## 建议的近期动作清单
 
 1. 放行 `.github/` 并加 CI，跑 `mycup init && mycup all && mycup lint`；
-2. 接通 `lb/lbu/lh/lhu`，消除 `read_signed` 的 `UNDRIVEN`；
-3. 清理 `ctrl.v` 的 `x` 默认值与 `npc.ra` 命名；
-4. 补齐 ALU/cond 并加对应单元测试；
-5. 删除/重基 `develop` 分支；
-6. 开始阶段 2：新建 `rtl/core/pipe/` 与流水线版 `cpu_top`，先跑通"无冒险"程序，再加前递/停顿/冲刷。
+2. 清理 `ctrl.v` 的 `x` 默认值与 `npc.ra` 命名；
+3. 补指令 trace + Python ISS 差分测试；
+4. 开始阶段 2：新建 `rtl/core/pipe/` 与流水线版 `cpu_top`，先跑通"无冒险"程序，再加前递/停顿/冲刷。

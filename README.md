@@ -19,17 +19,17 @@
 | 静态检查 | Verilator `--lint-only -Wall` |
 | 测试 | 14 个 testbench（单元 + 指令级），当前全部通过 |
 
-### 已支持指令
+### 已支持指令（最小集，已冻结）
 
 | 类别 | 指令 |
 | :-- | :-- |
 | R 型 | `addu` `jr` |
 | 立即数 | `addiu` |
-| 访存 | `lw` `sw` `sb` `sh` |
+| 访存 | `lw` `sw` |
 | 分支/跳转 | `beq` `j` `jal` |
 
-> `lb/lbu/lh/lhu` 目前**只有数据存储器侧就绪、控制通路尚未接通**，详见
-> [架构说明中的"已知限制"](docs/arch/architecture.md#已知限制与已有技术债) 与 [路线图](docs/roadmap.md)。
+> 当前 ISA 已冻结为最小集。`sb/sh` 与 `lb/lbu/lh/lhu` 作为**子字访问整体延后**
+> （涉及端序、字节掩码 `wstrb`、DM 控制器），详见 [路线图](docs/roadmap.md#明确延后deferred)。
 
 ---
 
@@ -112,12 +112,12 @@ uv run mycup run tb_prog --prog programs/demo.hex
 ```bash
 uv sync                 # 创建 .venv，安装 cocotb / pytest
 uv run pytest -v        # 运行全部 Python 用例
-uv run pytest -v tests/test_load_save.py::test_load_save
+uv run pytest -v tests/test_lw_sw.py::test_lw_sw
 
-MYCUP_WAVES=1 uv run pytest -v tests/test_load_save.py   # 导出波形
+MYCUP_WAVES=1 uv run pytest -v tests/test_lw_sw.py   # 导出波形
 ```
 
-说明见 [`tests/README.md`](tests/README.md)。目前移植了 `tb_alu` 与 `tb_load_save` 两个用例作为 PoC，
+说明见 [`tests/README.md`](tests/README.md)。目前移植了 `tb_alu` 与 `tb_lw_sw` 两个用例作为 PoC，
 后续是否全面迁移由你决定。
 
 ---
