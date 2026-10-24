@@ -171,6 +171,12 @@ def cmd_clean(_: argparse.Namespace) -> None:
         ROOT / "tests" / "__pycache__",
     ):
         shutil.rmtree(directory, ignore_errors=True)
+
+    # 兼容旧版本：早期 cocotb 结果会落在 tests/
+    for pattern in ("*.result.xml", "results.xml"):
+        for old in (ROOT / "tests").glob(pattern):
+            old.unlink(missing_ok=True)
+
     print("Cleaned build/, waves/, logs/, .pytest_cache/")
 
 

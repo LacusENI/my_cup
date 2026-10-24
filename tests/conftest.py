@@ -133,12 +133,16 @@ def run_cocotb_case():
     """
 
     def _run(sim, test_module: str, testcase: str, plusargs=None):
+        # cocotb 默认会把 pytest 结果写成 tests/<testcase>.result.xml；
+        # 这里显式指到 build/ 下，避免污染源码目录。
+        results_xml = sim.build_dir / f"{testcase}.result.xml"
         sim.runner.test(
             hdl_toplevel=sim.toplevel,
             test_module=test_module,
             testcase=testcase,
             test_dir=TESTS,
             build_dir=sim.build_dir,
+            results_xml=str(results_xml),
             waves=WAVES,
             plusargs=plusargs or [],
         )
