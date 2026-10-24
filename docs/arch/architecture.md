@@ -202,15 +202,21 @@ uv run mycup prog programs/demo.hex --data programs/data.hex --cycles 8
    分支偏移在 `npc` 计算（`imm16 << 2`）、条件在 `cond` 判定、控制信号在 `ctrl` 产生，跨三个模块；
    上流水线时这些信号需要被正确地随流水寄存器打拍，建议先在这里梳理清晰。
 
-7. ~~**`develop` 分支已落后 `master`**~~ ✅ 已快进到 `master`。
+7. **分支基址与标准 MIPS 不同**
+   `npc` 的条件分支目标使用**当前 PC**（`curr_pc + offset<<2`），不是标准 MIPS 的 `PC+4`。
+   这是 `v0.3-mips` 的既定行为，已在 [`docs/unit/npc.md`](../unit/npc.md) 记录；
+   RV32I 的 PC 相对分支正好与此一致。
 
-8. **无 CI**
-   `.gitignore` 忽略了 `.github/`，目前没有自动化回归。建议接入 CI 跑 `mycup test` + `mycup lint`。
+8. ~~**无 CI**~~ ✅ 已接入 GitHub Actions，运行 `mycup lint` + `mycup test`。
 
-9. **文档与实现漂移**
-   部分 `docs/unit/*` 端口/编码已过时，登记详见 [docs/README.md](../README.md)。
+9. ~~**`develop` 分支已落后 `master`**~~ ✅ 当前 `develop` 是开发线；发布时以 tag 固化
+   （`v0.3-mips`），再按需合并到 `master`。
 
-10. ~~**`chore/gen_tb_dep.sh` 收尾消息引用未定义变量**~~ ✅ 已随 shell 脚本删除而移除。
+10. **文档与实现漂移**
+    文档已按 `v0.3-mips` 校对；后续改动仍需同步更新
+    [docs/README.md](../README.md) 里的时效性标注。
+
+11. ~~**`chore/gen_tb_dep.sh` 收尾消息引用未定义变量**~~ ✅ 已随 shell 脚本删除而移除。
 
 ---
 
@@ -218,4 +224,5 @@ uv run mycup prog programs/demo.hex --data programs/data.hex --cycles 8
 
 > 一个 **组合数据通路 + 少量时序状态** 的 MIPS32 子集单周期 CPU；
 > 指令/数据存储已分离（哈佛）；控制集中在 `ctrl`，其余为纯功能单元；
-> 主要待办是**清理控制逻辑默认值**、**补验证闭环**，并**向流水线重构**。
+> `v0.3-mips` 已作为可回归的冻结版本；主要待办是**补强验证闭环**、
+> **向流水线重构**，以及后续在理解清楚后评估 **RV32I**。

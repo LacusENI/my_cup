@@ -54,7 +54,7 @@ date: 2026/03/12
 |  sw(6)  | base(5) |  rt(5)  | offset(16) |
 | :-----: | :-----: | :-----: | :--------: |
 | [31:26] | [25:21] | [20:16] |   [15:0]   |
-| 00 0100 |    -    |    -    |     -      |
+| 10 1011 |    -    |    -    |     -      |
 
 - IF : reg_src1 = base, reg_src2 = rt, imm = offset
 - ID : src1 = R[reg_src1], src2 = imm, rs2_data = R[reg_src2]
@@ -64,7 +64,7 @@ date: 2026/03/12
 
 ## 5. beq rs, rt, offset
 编码
-| beq(6)  |  bs(5)  |  rt(5)  | offset(16) |
+| beq(6)  |  rs(5)  |  rt(5)  | offset(16) |
 | :-----: | :-----: | :-----: | :--------: |
 | [31:26] | [25:21] | [20:16] |   [15:0]   |
 | 00 0100 |    -    |    -    |     -      |
@@ -75,6 +75,9 @@ date: 2026/03/12
 - if (cond_jmp): PC = PC + jmp_offset << 2
 - else:          PC = PC + 4
 
+> 注意：当前实现的基址是**当前 PC**，不是标准 MIPS 的 `PC+4`。
+> 这是 `v0.3-mips` 的既定行为，详见 [`unit/npc.md`](../unit/npc.md)。
+
 ## 6. j target
 编码
 |  j(6)   | instr_index(26) |
@@ -82,5 +85,4 @@ date: 2026/03/12
 | [31:26] |     [25:0]      |
 | 00 0010 |        -        |
 
-- jmp_target[27:0] = instr_index << 2
-- PC = jmp_target
+- PC = {curr_pc[31:28], instr_index, 2'b00}

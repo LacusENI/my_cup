@@ -12,12 +12,13 @@
 
 | 项 | 状态 |
 | :-- | :-- |
-| 版本 | `v0.3`（见 `docs/instr/`） |
+| 版本 | `v0.3-mips`（见 `docs/instr/`） |
 | 微架构 | 单周期（组合数据通路 + 时序状态） |
-| 指令集 | MIPS32 子集 |
+| 指令集 | MIPS32 子集（8 条，已冻结） |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
 | 测试 | 49 个 cocotb/pytest 用例 |
+| CI | GitHub Actions：`mycup lint` + `mycup test` |
 
 ### 已支持指令（最小集，已冻结）
 
@@ -30,6 +31,10 @@
 
 > 当前 ISA 已冻结为最小集。`sb/sh` 与 `lb/lbu/lh/lhu` 作为**子字访问整体延后**
 > （涉及端序、字节掩码 `wstrb`、DM 控制器），详见 [路线图](docs/roadmap.md#明确延后deferred)。
+
+> **已知语义差异**：当前 `beq` 的分支目标基址是**当前 PC**，不是标准 MIPS 的 `PC+4`。
+> 这是 `v0.3-mips` 的既定行为，详见 [`docs/unit/npc.md`](docs/unit/npc.md)。
+> 后续迁移 RV32I 时，这个基址正好与 RISC-V 的 PC 相对分支一致。
 
 ---
 

@@ -1,6 +1,6 @@
 version: v0.2
 
-data: 2026/04/19
+date: 2026/04/19
 
 # 添加的指令
 - jal
@@ -13,8 +13,8 @@ data: 2026/04/19
 |  [31:26]   |      [25:0]     |
 |   00 0011  |       -         |
 
-- IF : PC = jmp_target, jmp_target[27:0] = instr_index << 2
-- ID : reg_dst = $ra
+- IF : PC = {curr_pc[31:28], instr_index, 2'b00}
+- ID : reg_dst = $ra（固定 `5'd31`）
 - EX :
 - MEM:
 - WB : R[reg_dst] = PC + 4

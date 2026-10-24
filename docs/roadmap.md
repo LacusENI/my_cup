@@ -4,6 +4,10 @@
 中期主线是 **单周期 → 5 级流水线**，因此阶段 0/1 的目标是为流水线**扫清障碍**，而不是无谓地堆功能。
 
 > 背景与现状见 [architecture.md](arch/architecture.md)。
+>
+> **当前发布**：`v0.3-mips`（MIPS32 子集，8 条指令，单周期）。
+> 阶段 0 的工程基建已基本完成，阶段 1 的 ISA 冻结已完成；
+> 下一主线仍是流水线。RV32I 迁移暂缓，等 ISA 细节理清后另起阶段。
 
 ---
 
@@ -25,10 +29,11 @@
 
 在动架构之前，先保证"改了能验、验了可信"。
 
-- **接入 CI**：`.gitignore` 目前忽略了 `.github/`，无自动化。建议放行并加一个 workflow，跑 `mycup init && mycup test && mycup lint`。
-- **统一 lint 基线**：`mycup lint` 现会因 `UNDRIVEN` 等告警返回非零。建议先修掉阶段 1 的问题，再让 lint 成为**阻断式**门禁。
-- **清理分支**：`develop` 已落后 `master` 5 个提交（是祖先），建议删除或 rebase 到 `master`。
-- **程序装载入口**：~~给 `instrm`/`datam` 增加 `$readmemh`~~ ✅ **已完成**。
+- **接入 CI**：✅ 已完成。GitHub Actions 运行 `mycup lint` + `mycup test`。
+- **统一 lint 基线**：✅ 已完成。`mycup lint` 当前为 0 warning，已作为阻断式门禁。
+- **分支与发布**：当前 `develop` 是开发线，领先 `master`；发布时用 tag 固化
+  （`v0.3-mips`），再按需合并到 `master`。
+- **程序装载入口**：✅ 已完成。
   已通过 plusarg（`uv run mycup prog programs/demo.hex`）+ `$readmemh` 装载，仿真期可跑真实程序；
   纯 ASIC 流程后续仍需替换为 ROM / 总线加载（见阶段 3）。
 
@@ -69,7 +74,9 @@
 - **端序策略**：大端/小端（整字访问下不影响功能）；
 - **字节掩码**：core → memory 的 `wstrb[3:0]`；
 - **DM controller / 总线**：Wishbone/AXI-Lite 简化接口、Cache；
-- **更多指令**：逻辑/移位/比较、更多分支、异常/CSR。
+- **更多指令**：逻辑/移位/比较、更多分支、异常/CSR；
+- **RV32I 迁移**：当前 `v0.3-mips` 已冻结；等 ISA 细节理清后，
+  再评估从最小子集开始迁移，不混入当前流水线改造。
 
 > 理由：这些改动会同时影响 DM、控制通路、测试与端序，过早实现容易返工。
 
@@ -170,7 +177,9 @@ IF ──► ID ──► EX ──► MEM ──► WB
 
 ## 建议的近期动作清单
 
-1. 放行 `.github/` 并加 CI，跑 `mycup init && mycup test && mycup lint`；
+1. ~~放行 `.github/` 并加 CI，跑 `mycup test` + `mycup lint`~~ ✅ 已完成；
 2. ~~清理 `ctrl.sv` 的 `x` 默认值与 `npc.ra` 命名~~ ✅ 已完成；
 3. 补指令 trace + Python ISS 差分测试；
-4. 开始阶段 2：新建 `rtl/pipe/` 与流水线版 `cpu_top`，先跑通"无冒险"程序，再加前递/停顿/冲刷。
+4. 开始阶段 2：新建流水线版 `cpu_top`，把 `rtl/pipe/` 的级间寄存器接进去，
+   先跑通“无冒险”程序，再加前递/停顿/冲刷；
+5. RV32I 迁移暂缓：等 ISA 细节理清后另起阶段，不混入当前流水线改造。
