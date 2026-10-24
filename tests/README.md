@@ -7,7 +7,7 @@
 
 ```bash
 uv sync            # 首次：创建 .venv，安装 cocotb / pytest
-uv run mycup test  # 跑全部 38 个用例
+uv run mycup test  # 跑全部 39 个用例
 uv run pytest -v   # 同上（直接调 pytest）
 ```
 
@@ -19,6 +19,8 @@ uv run pytest -v   # 同上（直接调 pytest）
 tests/
 ├── conftest.py        # fixture：编译 DUT + run_cocotb_case
 ├── cocotb_utils.py    # 时钟 / 复位 / 等待 / 程序装载的小工具
+├── mips_asm.py        # MIPS 子集指令编码器（不再手写机器码）
+├── test_asm.py        # 编码器自检
 ├── tb_alu.py          # cocotb 用例：alu
 ├── test_alu.py        # pytest 入口
 ├── tb_ctrl.py         # cocotb 用例：控制器
@@ -52,10 +54,11 @@ tests/
 | `test_npc.py` | plus4 / 分支 / 回跳 / 直接跳 / jr | 6 |
 | `test_regfile.py` | 读写、`$0`、双读端口、写禁用 | 4 |
 | `test_pipe_regs.py` | IF/ID、ID/EX、EX/MEM、MEM/WB 的复位/装载/停顿/冲刷 | 4 |
+| `test_asm.py` | MIPS 指令编码器自检（已知机器码） | 1 |
 | `test_instr.py` | 单指令 ISA：addu / addiu(+/-) / lw / sw / beq(taken/not) / j / jal / jr | 10 |
 | `test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **38 个用例**。
+合计 **39 个用例**。
 
 > 流水线寄存器用 `struct packed`（`if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`）承载数据；
 > 由于 Icarus VPI 不暴露 struct 字段，测试里把 struct 当成一个整数来读写。
@@ -112,12 +115,14 @@ def test_npc_plus4(npc_sim, run_cocotb_case):
 `tb_instr.py` 是 **ISA 级单指令测试**：每个用例只执行一条指令，只断言架构状态（PC / 寄存器 / 内存）：
 
 ```python
+from mips_asm import addu
+
 @cocotb.test()
 async def addu_test(dut):
     """addu $3, $1, $2：5 + 3 = 8。"""
     await run_one_instruction(
         dut,
-        ADDU_R3_R1_R2,
+        addu(rd=3, rs=1, rt=2),   # 编码器生成机器码，不手写 0x00221821
         registers={1: 5, 2: 3},
     )
     assert int(dut.u_regfile.regs[3].value) == 8
