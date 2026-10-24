@@ -7,7 +7,7 @@
 
 ```bash
 uv sync            # 首次：创建 .venv，安装 cocotb / pytest
-uv run mycup test  # 跑全部 32 个用例
+uv run mycup test  # 跑全部 38 个用例
 uv run pytest -v   # 同上（直接调 pytest）
 ```
 
@@ -31,8 +31,10 @@ tests/
 ├── test_regfile.py
 ├── tb_pipe_regs.py    # cocotb 用例：四个流水线级间寄存器
 ├── test_pipe_regs.py
-├── tb_instr.py        # 指令级：8 条指令 + 程序装载
-└── test_instr.py
+├── tb_instr.py        # ISA 级：单指令（10 个用例）
+├── test_instr.py
+├── tb_prog.py         # program 级：$readmemh 程序装载
+└── test_prog.py
 ```
 
 命名约定：
@@ -50,9 +52,10 @@ tests/
 | `test_npc.py` | plus4 / 分支 / 回跳 / 直接跳 / jr | 6 |
 | `test_regfile.py` | 读写、`$0`、双读端口、写禁用 | 4 |
 | `test_pipe_regs.py` | IF/ID、ID/EX、EX/MEM、MEM/WB 的复位/装载/停顿/冲刷 | 4 |
-| `test_instr.py` | addu / addiu / lw / sw / beq / j / jal / jr / 程序装载 | 9 |
+| `test_instr.py` | 单指令 ISA：addu / addiu(+/-) / lw / sw / beq(taken/not) / j / jal / jr | 10 |
+| `test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **36 个用例**。
+合计 **38 个用例**。
 
 > 流水线寄存器用 `struct packed`（`if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`）承载数据；
 > 由于 Icarus VPI 不暴露 struct 字段，测试里把 struct 当成一个整数来读写。
@@ -106,34 +109,41 @@ def test_npc_plus4(npc_sim, run_cocotb_case):
 
 ## 指令级测试怎么写
 
-`tb_instr.py` 里的写法更像“写一个小程序”：
+`tb_instr.py` 是 **ISA 级单指令测试**：每个用例只执行一条指令，只断言架构状态（PC / 寄存器 / 内存）：
 
 ```python
 @cocotb.test()
 async def addu_test(dut):
     """addu $3, $1, $2：5 + 3 = 8。"""
-    await run_program(
+    await run_one_instruction(
         dut,
-        instructions=[ADDU_R3_R1_R2],
+        ADDU_R3_R1_R2,
         registers={1: 5, 2: 3},
     )
     assert int(dut.u_regfile.regs[3].value) == 8
+    assert int(dut.u_pc.curr_pc.value) == 4
 ```
 
-`run_program` 会：
+`run_one_instruction` 会：
 
 1. 启动时钟；
 2. 预置寄存器和数据内存；
-3. 把机器码写入指令存储器；
-4. 复位，跑 `len(instructions) + extra_cycles` 个周期；
-5. 进入只读阶段，之后就可以安全断言。
+3. 把机器码写入 `mem[0]`；
+4. 复位，执行一条指令；
+5. 进入只读阶段，之后断言 PC / 寄存器 / 内存。
+
+> 单周期下“一条指令 = 一个上升沿”。接流水线后，这里应改为等待 `retire/commit` 信号，
+> 而不是依赖固定周期数。
+
+程序装载（`$readmemh`）是另一层，放在 `tb_prog.py` / `test_prog.py`。
 
 ## 常用命令
 
 ```bash
 uv run mycup test                                      # 全部
-uv run pytest -v tests/test_instr.py                   # 单个文件
+uv run pytest -v tests/test_instr.py                   # 单指令 ISA 测试
 uv run pytest -v tests/test_instr.py::test_addu        # 单个用例
+uv run pytest -v tests/test_prog.py                    # 程序装载测试
 uv run mycup prog programs/demo.hex                    # 跑 hex 程序
 MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py     # 导出波形
 ```

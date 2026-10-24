@@ -78,3 +78,23 @@ async def run_program(dut, instructions, registers=None, memory=None, extra_cycl
 
     # 等到只读阶段再断言，确保所有信号都已经稳定
     await ReadOnly()
+
+
+async def run_one_instruction(dut, instruction, registers=None, memory=None):
+    """执行“一条”指令，然后停在只读阶段。
+
+    这是 ISA 级测试的基础：
+      - 只关心架构状态（PC / 寄存器 / 数据内存）；
+      - 不关心流水线级数、停顿、前递等微架构细节。
+
+    目前是单周期 CPU：复位后一个上升沿就执行完一条指令。
+    以后接流水线时，这里应该改成“等到 retire/commit 信号”，
+    而不是依赖固定周期数。
+    """
+    await run_program(
+        dut,
+        instructions=[instruction],
+        registers=registers,
+        memory=memory,
+        extra_cycles=0,
+    )

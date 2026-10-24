@@ -18,7 +18,7 @@ uv run mycup prog programs/demo.hex --data programs/data.hex
 uv run mycup prog programs/demo.hex --cycles 8
 ```
 
-`mycup prog` 会运行 `tests/test_instr.py::test_prog_demo`：
+`mycup prog` 会运行 `tests/test_prog.py::test_prog_demo`：
 程序路径通过 `+instr=` / `+data=` 传给 vvp，`instrm` / `datam` 中的 `initial` 据此调用 `$readmemh`。
 
 说明：
