@@ -1,16 +1,18 @@
 `default_nettype none
 
-module regfile (
+module regfile
+    import cpu_pkg::*;
+(
     input  logic        clk,
     input  logic [4:0]  reg_src1,
     input  logic [4:0]  reg_src2,
     input  logic [4:0]  reg_dst,
-    input  logic [31:0] wb_data,
+    input  word_t wb_data,
     input  logic        reg_write,
-    output logic [31:0] rs1_data,
-    output logic [31:0] rs2_data
+    output word_t rs1_data,
+    output word_t rs2_data
 );
-    logic [31:0] regs [0:31];
+    word_t regs [0:31];
 
     localparam logic [4:0] ZERO_REG = '0;
 

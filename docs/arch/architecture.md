@@ -63,14 +63,14 @@
 | `cpu_top` | `rtl/core/cpu_top.v` | 顶层：实例化所有单元、隐式连线、实现多路选择器 |
 | `pc` | `units/pc.v` | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
 | `npc` | `units/npc.v` | 下一 PC 决策：`PLUS4` / `BRANCH`(条件偏移) / `DIRECT`(区域跳转) / `RA`(寄存器跳转)；同时输出 `pc_plus4` |
-| `instrm` | `units/instrm.v` | 指令存储器（IMEM），2048 字，组合读 |
+| `instrm` | `units/instrm.v` | 指令存储器（IMEM），默认 2048 字，组合读 |
 | `decoder` | `units/decoder.v` | 从 32 位指令中拆出 `op/funct/shamt/rs/rt/rd/imm16/instr_index` |
 | `ctrl` | `units/ctrl.v` | 控制器：由 `op/funct` 产生**全部控制信号** |
 | `regfile` | `units/regfile.v` | 32×32 寄存器堆；`$0` 恒 0；上升沿写 |
 | `ext` | `units/ext.v` | 立即数 16→32 位扩展（符号/零扩展由 `ext_type` 选择） |
 | `alu` | `units/alu.v` | 算术逻辑运算，输出结果与标志 `zero_f/neg_f/overflow_f/carry_f` |
 | `cond` | `units/cond.v` | 依据 `cond_type` 将 ALU 标志折算为分支条件 `cond_jmp` |
-| `datam` | `units/datam.v` | 数据存储器（DMEM），2048 字，**仅整字访问**（子字访问延后） |
+| `datam` | `units/datam.v` | 数据存储器（DMEM），默认 2048 字，**仅整字访问**（子字访问延后） |
 
 ---
 
@@ -134,8 +134,8 @@ assign jmp_offset = imm16;
 
 | | 指令存储器 `instrm` | 数据存储器 `datam` |
 | :-- | :-- | :-- |
-| 容量 | 2048 字（8 KiB） | 2048 字（8 KiB） |
-| 地址解码 | `instr_addr[12:2]` | `addr[12:2]` |
+| 容量 | `IMEM_WORDS`（默认 2048 字 / 8 KiB） | `DMEM_WORDS`（默认 2048 字 / 8 KiB） |
+| 地址解码 | `instr_addr[IMEM_ADDR_W+1:2]` | `addr[DMEM_ADDR_W+1:2]` |
 | 访问 | 组合读 | 组合读 / 上升沿写 |
 | 位宽访问 | 固定 32 位 | 固定 32 位（整字访问；子字访问延后） |
 

@@ -1,10 +1,12 @@
 `default_nettype none
 
-module pc (
+module pc
+    import cpu_pkg::*;
+(
     input  logic        clk,
     input  logic        rst,
-    input  logic [31:0] next_pc,
-    output logic [31:0] curr_pc
+    input  word_t next_pc,
+    output word_t curr_pc
 );
     always_ff @(posedge clk) begin
         if (rst)

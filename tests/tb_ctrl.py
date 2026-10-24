@@ -2,23 +2,55 @@
 ctrl（控制器）的单元测试。
 
 ctrl 是“纯组合逻辑”：
-  你给它 op/funct，它马上输出一组控制信号；
-  没有时钟，也不需要复位。
+  你给它 op/funct，它马上输出一个打包好的 ctrl_t 结构体。
 
-所以每个测试的步骤都是：
-  1. 设置 op/funct
-  2. 等 1ns，让组合逻辑稳定
-  3. 检查输出信号是否符合预期
+由于 Icarus 的 VPI 不会把 packed struct 的字段暴露成子对象，
+这里用一个 field() 小工具，从 dut.ctrl 的整数值里取出字段。
+
+ctrl_t 的字段布局（与 cpu_pkg.sv 保持一致，packed struct 从 MSB 开始）：
+  npc_op[16:15]
+  reg_write[14]
+  alu_op[13:10]
+  mem_write[9]
+  mem_read[8]
+  cond_type[7:6]
+  ext_type[5]
+  rd_sel[4:3]
+  wb_sel[2:1]
+  src2_sel[0]
 """
 
 import cocotb
 
 from cocotb_utils import settle
 
+# 每个字段：(最高位, 位宽)
+CTRL_FIELDS = {
+    "npc_op":    (16, 2),
+    "reg_write": (14, 1),
+    "alu_op":    (13, 4),
+    "mem_write": (9, 1),
+    "mem_read":  (8, 1),
+    "cond_type": (7, 2),
+    "ext_type":  (5, 1),
+    "rd_sel":    (4, 2),
+    "wb_sel":    (2, 2),
+    "src2_sel":  (0, 1),
+}
+
+
+def field(dut, name: str) -> int:
+    """从打包的 ctrl_t 里取出一个字段的整数值。"""
+    msb, width = CTRL_FIELDS[name]
+    shift = msb - width + 1
+    mask = (1 << width) - 1
+    return (int(dut.ctrl.value) >> shift) & mask
+
+
 # --------------------------------------------------------------------------- #
 # 指令编码（与 cpu_pkg.sv 保持一致）
 # --------------------------------------------------------------------------- #
-OP_R_INSTR = 0b000000  # R 型指令
+OP_R_INSTR = 0b000000
 OP_ADDIU   = 0b001001
 OP_BEQ     = 0b000100
 OP_LW      = 0b100011
@@ -66,14 +98,14 @@ async def addu_control_test(dut):
     dut.funct.value = FUNCT_ADDU
     await settle()
 
-    assert int(dut.reg_write.value) == 1, "addu 应该写寄存器"
-    assert int(dut.rd_sel.value) == RD_SEL_RD, "addu 的目标寄存器是 rd"
-    assert int(dut.wb_sel.value) == WB_SEL_ALU_OUT, "addu 写回 ALU 结果"
-    assert int(dut.src2_sel.value) == SRC2_SEL_RS2, "addu 的第二个操作数来自 rs2"
-    assert int(dut.alu_op.value) == ALU_OP_ADD, "addu 做加法"
-    assert int(dut.npc_op.value) == NPC_OP_PLUS4, "addu 不跳转，PC+4"
-    assert int(dut.mem_read.value) == 0, "addu 不读内存"
-    assert int(dut.mem_write.value) == 0, "addu 不写内存"
+    assert field(dut, "reg_write") == 1, "addu 应该写寄存器"
+    assert field(dut, "rd_sel") == RD_SEL_RD, "addu 的目标寄存器是 rd"
+    assert field(dut, "wb_sel") == WB_SEL_ALU_OUT, "addu 写回 ALU 结果"
+    assert field(dut, "src2_sel") == SRC2_SEL_RS2, "addu 的第二个操作数来自 rs2"
+    assert field(dut, "alu_op") == ALU_OP_ADD, "addu 做加法"
+    assert field(dut, "npc_op") == NPC_OP_PLUS4, "addu 不跳转，PC+4"
+    assert field(dut, "mem_read") == 0, "addu 不读内存"
+    assert field(dut, "mem_write") == 0, "addu 不写内存"
 
 
 @cocotb.test()
@@ -83,15 +115,15 @@ async def addiu_control_test(dut):
     dut.funct.value = 0
     await settle()
 
-    assert int(dut.reg_write.value) == 1, "addiu 应该写寄存器"
-    assert int(dut.rd_sel.value) == RD_SEL_RT, "addiu 的目标寄存器是 rt"
-    assert int(dut.wb_sel.value) == WB_SEL_ALU_OUT, "addiu 写回 ALU 结果"
-    assert int(dut.src2_sel.value) == SRC2_SEL_IMM, "addiu 的第二个操作数是立即数"
-    assert int(dut.ext_type.value) == EXT_TYPE_SIGN_EXT, "立即数需要符号扩展"
-    assert int(dut.alu_op.value) == ALU_OP_ADD, "addiu 做加法"
-    assert int(dut.npc_op.value) == NPC_OP_PLUS4, "addiu 不跳转，PC+4"
-    assert int(dut.mem_read.value) == 0
-    assert int(dut.mem_write.value) == 0
+    assert field(dut, "reg_write") == 1, "addiu 应该写寄存器"
+    assert field(dut, "rd_sel") == RD_SEL_RT, "addiu 的目标寄存器是 rt"
+    assert field(dut, "wb_sel") == WB_SEL_ALU_OUT, "addiu 写回 ALU 结果"
+    assert field(dut, "src2_sel") == SRC2_SEL_IMM, "addiu 的第二个操作数是立即数"
+    assert field(dut, "ext_type") == EXT_TYPE_SIGN_EXT, "立即数需要符号扩展"
+    assert field(dut, "alu_op") == ALU_OP_ADD, "addiu 做加法"
+    assert field(dut, "npc_op") == NPC_OP_PLUS4, "addiu 不跳转，PC+4"
+    assert field(dut, "mem_read") == 0
+    assert field(dut, "mem_write") == 0
 
 
 @cocotb.test()
@@ -101,13 +133,13 @@ async def beq_control_test(dut):
     dut.funct.value = 0
     await settle()
 
-    assert int(dut.npc_op.value) == NPC_OP_BRANCH, "beq 是条件分支"
-    assert int(dut.alu_op.value) == ALU_OP_SUB, "beq 用减法判断是否相等"
-    assert int(dut.cond_type.value) == COND_TYPE_EQ, "beq 的条件是相等"
-    assert int(dut.src2_sel.value) == SRC2_SEL_RS2, "beq 比较两个寄存器"
-    assert int(dut.reg_write.value) == 0, "beq 不写寄存器"
-    assert int(dut.mem_read.value) == 0
-    assert int(dut.mem_write.value) == 0
+    assert field(dut, "npc_op") == NPC_OP_BRANCH, "beq 是条件分支"
+    assert field(dut, "alu_op") == ALU_OP_SUB, "beq 用减法判断是否相等"
+    assert field(dut, "cond_type") == COND_TYPE_EQ, "beq 的条件是相等"
+    assert field(dut, "src2_sel") == SRC2_SEL_RS2, "beq 比较两个寄存器"
+    assert field(dut, "reg_write") == 0, "beq 不写寄存器"
+    assert field(dut, "mem_read") == 0
+    assert field(dut, "mem_write") == 0
 
 
 @cocotb.test()
@@ -117,14 +149,14 @@ async def lw_control_test(dut):
     dut.funct.value = 0
     await settle()
 
-    assert int(dut.reg_write.value) == 1, "lw 应该写寄存器"
-    assert int(dut.rd_sel.value) == RD_SEL_RT, "lw 的目标寄存器是 rt"
-    assert int(dut.wb_sel.value) == WB_SEL_R_DATA, "lw 写回内存读出的数据"
-    assert int(dut.src2_sel.value) == SRC2_SEL_IMM, "lw 的地址 = rs + 立即数"
-    assert int(dut.ext_type.value) == EXT_TYPE_SIGN_EXT, "偏移量需要符号扩展"
-    assert int(dut.mem_read.value) == 1, "lw 要读内存"
-    assert int(dut.mem_write.value) == 0
-    assert int(dut.npc_op.value) == NPC_OP_PLUS4
+    assert field(dut, "reg_write") == 1, "lw 应该写寄存器"
+    assert field(dut, "rd_sel") == RD_SEL_RT, "lw 的目标寄存器是 rt"
+    assert field(dut, "wb_sel") == WB_SEL_R_DATA, "lw 写回内存读出的数据"
+    assert field(dut, "src2_sel") == SRC2_SEL_IMM, "lw 的地址 = rs + 立即数"
+    assert field(dut, "ext_type") == EXT_TYPE_SIGN_EXT, "偏移量需要符号扩展"
+    assert field(dut, "mem_read") == 1, "lw 要读内存"
+    assert field(dut, "mem_write") == 0
+    assert field(dut, "npc_op") == NPC_OP_PLUS4
 
 
 @cocotb.test()
@@ -134,12 +166,12 @@ async def sw_control_test(dut):
     dut.funct.value = 0
     await settle()
 
-    assert int(dut.reg_write.value) == 0, "sw 不写寄存器"
-    assert int(dut.src2_sel.value) == SRC2_SEL_IMM, "sw 的地址 = rs + 立即数"
-    assert int(dut.ext_type.value) == EXT_TYPE_SIGN_EXT, "偏移量需要符号扩展"
-    assert int(dut.mem_read.value) == 0
-    assert int(dut.mem_write.value) == 1, "sw 要写内存"
-    assert int(dut.npc_op.value) == NPC_OP_PLUS4
+    assert field(dut, "reg_write") == 0, "sw 不写寄存器"
+    assert field(dut, "src2_sel") == SRC2_SEL_IMM, "sw 的地址 = rs + 立即数"
+    assert field(dut, "ext_type") == EXT_TYPE_SIGN_EXT, "偏移量需要符号扩展"
+    assert field(dut, "mem_read") == 0
+    assert field(dut, "mem_write") == 1, "sw 要写内存"
+    assert field(dut, "npc_op") == NPC_OP_PLUS4
 
 
 @cocotb.test()
@@ -149,10 +181,10 @@ async def j_control_test(dut):
     dut.funct.value = 0
     await settle()
 
-    assert int(dut.npc_op.value) == NPC_OP_DIRECT, "j 是直接跳转"
-    assert int(dut.reg_write.value) == 0, "j 不写寄存器"
-    assert int(dut.mem_read.value) == 0
-    assert int(dut.mem_write.value) == 0
+    assert field(dut, "npc_op") == NPC_OP_DIRECT, "j 是直接跳转"
+    assert field(dut, "reg_write") == 0, "j 不写寄存器"
+    assert field(dut, "mem_read") == 0
+    assert field(dut, "mem_write") == 0
 
 
 @cocotb.test()
@@ -162,12 +194,12 @@ async def jal_control_test(dut):
     dut.funct.value = 0
     await settle()
 
-    assert int(dut.npc_op.value) == NPC_OP_DIRECT, "jal 是直接跳转"
-    assert int(dut.reg_write.value) == 1, "jal 要写 $ra"
-    assert int(dut.rd_sel.value) == RD_SEL_REG_RA, "jal 的目标寄存器是 $ra"
-    assert int(dut.wb_sel.value) == WB_SEL_PC_P4, "jal 写回 PC+4"
-    assert int(dut.mem_read.value) == 0
-    assert int(dut.mem_write.value) == 0
+    assert field(dut, "npc_op") == NPC_OP_DIRECT, "jal 是直接跳转"
+    assert field(dut, "reg_write") == 1, "jal 要写 $ra"
+    assert field(dut, "rd_sel") == RD_SEL_REG_RA, "jal 的目标寄存器是 $ra"
+    assert field(dut, "wb_sel") == WB_SEL_PC_P4, "jal 写回 PC+4"
+    assert field(dut, "mem_read") == 0
+    assert field(dut, "mem_write") == 0
 
 
 @cocotb.test()
@@ -177,7 +209,7 @@ async def jr_control_test(dut):
     dut.funct.value = FUNCT_JR
     await settle()
 
-    assert int(dut.npc_op.value) == NPC_OP_RA, "jr 跳到寄存器地址"
-    assert int(dut.reg_write.value) == 0, "jr 不写寄存器"
-    assert int(dut.mem_read.value) == 0
-    assert int(dut.mem_write.value) == 0
+    assert field(dut, "npc_op") == NPC_OP_RA, "jr 跳到寄存器地址"
+    assert field(dut, "reg_write") == 0, "jr 不写寄存器"
+    assert field(dut, "mem_read") == 0
+    assert field(dut, "mem_write") == 0

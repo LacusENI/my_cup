@@ -1,22 +1,24 @@
 `default_nettype none
 
-module datam (
+module datam
+    import cpu_pkg::*;
+(
     input  logic        clk,
     input  logic        mem_read,
     input  logic        mem_write,
-    input  logic [31:0] addr,
-    input  logic [31:0] w_data,
-    output logic [31:0] r_data
+    input  word_t addr,
+    input  word_t w_data,
+    output word_t r_data
 );
-    logic [31:0] mem [0:2047];
+    word_t mem [0:DMEM_WORDS-1];
 
-    logic [10:0] mem_addr;
-    assign mem_addr = addr[12:2];
+    logic [DMEM_ADDR_W-1:0] mem_addr;
+    assign mem_addr = addr[DMEM_ADDR_W+1:2];
 
-    // 当前仅整字访问：addr[12:2] 有效；高 19 位与低 2 位暂不参与译码
+    // 当前仅整字访问：addr[DMEM_ADDR_W+1:2] 有效；高 19 位与低 2 位暂不参与译码
     // （未来接总线 / 字节掩码时再使用）。名字含 unused，Verilator 不会告警。
     logic unused_addr;
-    assign unused_addr = &{1'b0, addr[31:13], addr[1:0]};
+    assign unused_addr = &{1'b0, addr[XLEN-1:DMEM_ADDR_W+2], addr[1:0]};
 
     // 仿真期数据装载 (仅仿真有效, 综合时忽略)
     // 用法: vvp <target> +data=<path/to/data.hex>

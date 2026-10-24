@@ -1,16 +1,17 @@
 `default_nettype none
 
-module alu (
-    input  logic [31:0] alu_src1,
-    input  logic [31:0] alu_src2,
-    input  logic [3:0]  alu_op,
-    output logic [31:0] alu_out,
+module alu
+    import cpu_pkg::*;
+(
+    input  word_t alu_src1,
+    input  word_t alu_src2,
+    input  alu_op_t     alu_op,
+    output word_t alu_out,
     output logic        zero_f,
     output logic        neg_f,
     output logic        overflow_f,
     output logic        carry_f
 );
-    import cpu_pkg::*;
 
     always_comb begin
         unique case (alu_op)

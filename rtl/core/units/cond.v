@@ -1,16 +1,17 @@
 `default_nettype none
 
-module cond (
+module cond
+    import cpu_pkg::*;
+(
     input  logic       zero_f,
     /* verilator lint_off UNUSED */
     input  logic       neg_f,
     input  logic       overflow_f,
     input  logic       carry_f,
     /* verilator lint_on UNUSED */
-    input  logic [1:0] cond_type,
+    input  cond_type_t cond_type,
     output logic       cond_jmp
 );
-    import cpu_pkg::*;
 
     always_comb begin
         unique case (cond_type)

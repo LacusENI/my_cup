@@ -1,15 +1,17 @@
 `default_nettype none
 
-module instrm (
+module instrm
+    import cpu_pkg::*;
+(
     /* verilator lint_off UNUSED */
-    input  logic [31:0] instr_addr,
+    input  word_t instr_addr,
     /* verilator lint_on UNUSED */
-    output logic [31:0] instr
+    output word_t instr
 );
-    logic [31:0] mem [0:2047];
+    word_t mem [0:IMEM_WORDS-1];
 
-    logic [10:0] mem_addr;
-    assign mem_addr = instr_addr[12:2];
+    logic [IMEM_ADDR_W-1:0] mem_addr;
+    assign mem_addr = instr_addr[IMEM_ADDR_W+1:2];
     assign instr = mem[mem_addr];
 
     // 仿真期程序装载 (仅仿真有效, 综合时忽略)
