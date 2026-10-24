@@ -4,7 +4,7 @@
 # 诊断说明：
 #   veridian 内置的诊断无法接收 include/package 路径（多文件工程容易误报），
 #   因此这里关闭 LSP 诊断，统一由项目 `mycup lint`（Verilator）负责。
-#   编辑器实际通过 scripts/veridian-lsp.py 代理启动 veridian，
+#   编辑器实际通过 mycup/veridian_lsp.py 代理启动 veridian，
 #   代理会丢弃 publishDiagnostics 和 didSave，只保留导航/补全/格式化。
 include_dirs: []
 

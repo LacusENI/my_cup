@@ -13,7 +13,7 @@
 
   // ---------------------------------------------------------------------------
   // Language Server：veridian（hover / 跳转定义 / 文档符号 / 补全）
-  // 经 scripts/veridian-lsp.py 代理启动：丢弃 veridian 不可靠的诊断与 didSave，
+  // 经 mycup/veridian_lsp.py 代理启动：丢弃 veridian 不可靠的诊断与 didSave，
   // 只保留导航/补全/格式化；lint 仍由上面的 Verilator 负责。
   // 安装与配置见 README「SV 工具链」；项目配置在 veridian.yml
   // ---------------------------------------------------------------------------

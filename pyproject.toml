@@ -14,6 +14,7 @@ addopts = "-ra"
 
 [project.scripts]
 mycup = "mycup.cli:main"
+veridian-lsp = "mycup.veridian_lsp:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -37,10 +37,9 @@
 
 ```
 my_cup/
-├── mycup/                # Python 工具链（`uv run mycup ...`）
-│   └── cli.py
-├── scripts/
-│   └── veridian-lsp.py   # veridian LSP 代理
+├── mycup/                # Python 工具链
+│   ├── cli.py                # mycup lint / test / prog ...
+│   └── veridian_lsp.py       # veridian LSP 代理（安装为 `veridian-lsp`）
 ├── rtl/                  # 可综合的 RTL 源码
 │   ├── cpu_top.sv            # 顶层：实例化各单元并连线
 │   ├── cpu_pkg.sv            # package：参数、类型、控制编码、扩展函数
@@ -161,7 +160,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/test_instr.py    # 导出波形
   - `source_dirs`: `rtl`
   - `auto_search_workdir: false`（避免递归扫到 `.venv` / `build`）
   - 诊断交给项目 `mycup lint`，LSP 侧诊断关闭
-- 代理：[`scripts/veridian-lsp.py`](scripts/veridian-lsp.py)
+- 代理：[`mycup/veridian_lsp.py`](mycup/veridian_lsp.py)（安装为 `veridian-lsp`）
 
 ### 用法
 
@@ -197,8 +196,8 @@ slang --lint-only --timescale 1ns/1ps $(find rtl -name '*.sv')
 #   解压后：ln -sf /path/to/veridian ~/.local/bin/veridian-real
 
 # LSP 代理（本仓库）
-cp scripts/veridian-lsp.py ~/.local/bin/veridian-lsp
-chmod +x ~/.local/bin/veridian-lsp
+uv sync
+ln -sf "$(pwd)/.venv/bin/veridian-lsp" ~/.local/bin/veridian-lsp
 ```
 
 > 注意：`.vscode/settings.json` 依赖 `veridian-lsp` / `verible-verilog-format` 在 `PATH` 中；
