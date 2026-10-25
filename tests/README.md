@@ -22,8 +22,10 @@ tests/
 │   ├── cocotb_utils.py  # 时钟 / 复位 / 等待 + CPU 顶层共享访问器
 │   ├── mips_asm.py      # MIPS 子集指令编码器
 │   └── test_asm.py      # 编码器自检
+├── hdl/
+│   └── ctrl_probe.sv    # test-only：把 ctrl_t 摊平给 cocotb
 ├── control/
-│   ├── tb_ctrl.py       # ctrl cocotb 用例 + 契约
+│   ├── tb_ctrl.py       # ctrl cocotb 用例 + 契约（使用 ctrl_probe）
 │   ├── test_ctrl.py
 │   ├── tb_npc.py        # npc cocotb 用例 + 契约
 │   └── test_npc.py
@@ -66,6 +68,10 @@ tests/
 
 - `tb_*.py`：**cocotb 测试内容**，由仿真器在 Python 进程里加载，pytest 不会直接收集；
 - `test_*.py`：**pytest 入口**，负责调用 `runner.test()`，只做“选择和报告”。
+
+> `tests/hdl/ctrl_probe.sv` 是 **test-only probe**：它实例化 `ctrl`，
+> 把 `ctrl_t` 的字段摊平成普通端口，避免 Python 里手写 struct 位偏移。
+> 它不参与综合，也不在 `verilator.f` 的 lint 清单里；只由 `ctrl_sim` 编译。
 
 ## 覆盖范围
 
@@ -246,22 +252,20 @@ ALU_OP_SUB = 0b0010
 NPC_OP_PLUS4 = 0b00
 ```
 
-`tb_ctrl.py` 里连 `ctrl_t` 的字段布局也直接写死：
+`tests/utils/mips_asm.py` 里也直接写死 opcode / funct。
+
+`tb_ctrl.py` 不再手写 `ctrl_t` 的字段位偏移，而是通过
+`tests/hdl/ctrl_probe.sv` 把字段摊平后直接读取：
 
 ```python
-CTRL_FIELDS = {
-    "npc_op":    (16, 2),
-    "reg_write": (14, 1),
-    "alu_op":    (13, 4),
-    ...
-}
+assert int(dut.alu_op.value) == ALU_OP_ADD
 ```
 
-`tests/utils/mips_asm.py` 里也直接写死 opcode / funct。
+这样常量数值仍然是测试契约，但 struct 布局由 SV wrapper 在编译期检查。
 
 这样做的含义是：
 
-- `ALU_OP_ADD`、`NPC_OP_PLUS4`、opcode、funct、`ctrl_t` 布局都是**对外契约**；
+- `ALU_OP_ADD`、`NPC_OP_PLUS4`、opcode、funct 都是**对外契约**；
 - 已发布的数值不要修改；新增指令时只追加，保持向后兼容；
 - 如果 RTL 改了这些值，测试会失败——这是故意的，提醒这是一次破坏性变更；
 - 如果确实要改，必须同时改 RTL 和测试，并明确记录为 breaking change。

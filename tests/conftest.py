@@ -84,8 +84,17 @@ def alu_sim():
 
 @pytest.fixture(scope="session")
 def ctrl_sim():
-    """单元级：ctrl（纯组合逻辑）。"""
-    return _build("ctrl", [PKG, RTL / "control" / "ctrl.sv"], "ctrl", "control")
+    """单元级：ctrl（纯组合逻辑），通过 test-only probe 观察 struct 字段。"""
+    return _build(
+        "ctrl_probe",
+        [
+            PKG,
+            RTL / "control" / "ctrl.sv",
+            TESTS / "hdl" / "ctrl_probe.sv",
+        ],
+        "ctrl_probe",
+        "control",
+    )
 
 
 @pytest.fixture(scope="session")
