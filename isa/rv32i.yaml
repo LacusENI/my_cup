@@ -1,0 +1,222 @@
+# RV32I instruction table
+#
+# Generated from riscv-opcodes extensions/rv_i + extensions/rv32_i.
+#
+# How to read this file:
+#   - opcodes: opcode mnemonic -> 7-bit opcode value.
+#   - formats: instruction type -> ordered fields from bit 31 to bit 0.
+#     'bits' is the field position [msb, lsb] in the instruction word.
+#     'imm_bits' maps the field bits to the final immediate bit indices.
+#     Each imm_bits entry is either:
+#       - an integer: one immediate bit, or
+#       - an [msb, lsb] range: a contiguous run of immediate bits.
+#     Ranges are expanded MSB-first, matching the field bits.
+#     Example: [12, [10, 5]] means field bit 0 -> imm[12],
+#              field bits 1..6 -> imm[10..5].
+#     Fields without a fixed value in an instruction are variable.
+#   - instructions: mnemonic -> type, opcode name, and fixed field values.
+#   - implemented: the subset this project currently implements.
+#   - pseudo: assembler pseudoinstructions and their expansions.
+#
+# Decoding:
+#   - For every field in the instruction's format:
+#       if the instruction entry has a fixed value, check
+#         ((inst >> lsb) & ((1 << width) - 1)) == value
+#       otherwise the field is variable.
+#   - The opcode field is compared against opcodes[instruction.opcode].
+#
+# Immediate reconstruction:
+#   - Each field with 'imm_bits' contributes its instruction bits,
+#     MSB first, to the listed final immediate bit positions:
+#         imm |= ((inst >> inst_bit) & 1) << imm_bit
+#   - Bits in 'zero_bits' are always 0.
+#   - If 'immediate.signed' is true, sign-extend from the highest
+#     immediate bit.
+#   - 'immediate.kind: shamt' means a 5-bit shift amount:
+#     zero-extend to 32 bits, do not sign-extend.
+
+isa: rv32i
+version: 1
+source: "riscv-opcodes: extensions/rv_i + extensions/rv32_i"
+
+opcodes:
+  LOAD: 0x03
+  MISC_MEM: 0x0f
+  OP_IMM: 0x13
+  AUIPC: 0x17
+  STORE: 0x23
+  OP: 0x33
+  LUI: 0x37
+  BRANCH: 0x63
+  JALR: 0x67
+  JAL: 0x6f
+  SYSTEM: 0x73
+
+formats:
+  R:
+    fields:
+      - {name: funct7, bits: [31, 25]}
+      - {name: rs2, bits: [24, 20]}
+      - {name: rs1, bits: [19, 15]}
+      - {name: funct3, bits: [14, 12]}
+      - {name: rd, bits: [11, 7]}
+      - {name: opcode, bits: [6, 0]}
+    immediate: null
+  I:
+    fields:
+      - {name: imm12, bits: [31, 20], imm_bits: [[11, 0]]}
+      - {name: rs1, bits: [19, 15]}
+      - {name: funct3, bits: [14, 12]}
+      - {name: rd, bits: [11, 7]}
+      - {name: opcode, bits: [6, 0]}
+    immediate:
+      signed: true
+  SHIFT:
+    fields:
+      - {name: funct7, bits: [31, 25]}
+      - {name: shamtw, bits: [24, 20], imm_bits: [[4, 0]]}
+      - {name: rs1, bits: [19, 15]}
+      - {name: funct3, bits: [14, 12]}
+      - {name: rd, bits: [11, 7]}
+      - {name: opcode, bits: [6, 0]}
+    immediate:
+      kind: shamt
+      signed: false
+  S:
+    fields:
+      - {name: imm12hi, bits: [31, 25], imm_bits: [[11, 5]]}
+      - {name: rs2, bits: [24, 20]}
+      - {name: rs1, bits: [19, 15]}
+      - {name: funct3, bits: [14, 12]}
+      - {name: imm12lo, bits: [11, 7], imm_bits: [[4, 0]]}
+      - {name: opcode, bits: [6, 0]}
+    immediate:
+      signed: true
+  B:
+    fields:
+      - {name: bimm12hi, bits: [31, 25], imm_bits: [12, [10, 5]]}
+      - {name: rs2, bits: [24, 20]}
+      - {name: rs1, bits: [19, 15]}
+      - {name: funct3, bits: [14, 12]}
+      - {name: bimm12lo, bits: [11, 7], imm_bits: [[4, 1], 11]}
+      - {name: opcode, bits: [6, 0]}
+    immediate:
+      signed: true
+      zero_bits: [0]
+  U:
+    fields:
+      - {name: imm20, bits: [31, 12], imm_bits: [[31, 12]]}
+      - {name: rd, bits: [11, 7]}
+      - {name: opcode, bits: [6, 0]}
+    immediate:
+      signed: false
+      zero_bits: [[11, 0]]
+  J:
+    fields:
+      - {name: jimm20, bits: [31, 12], imm_bits: [20, [10, 1], 11, [19, 12]]}
+      - {name: rd, bits: [11, 7]}
+      - {name: opcode, bits: [6, 0]}
+    immediate:
+      signed: true
+      zero_bits: [0]
+  FENCE:
+    fields:
+      - {name: fm, bits: [31, 28]}
+      - {name: pred, bits: [27, 24]}
+      - {name: succ, bits: [23, 20]}
+      - {name: rs1, bits: [19, 15]}
+      - {name: funct3, bits: [14, 12]}
+      - {name: rd, bits: [11, 7]}
+      - {name: opcode, bits: [6, 0]}
+    immediate: null
+  SYSTEM:
+    fields:
+      - {name: imm12, bits: [31, 20]}
+      - {name: rs1, bits: [19, 15]}
+      - {name: funct3, bits: [14, 12]}
+      - {name: rd, bits: [11, 7]}
+      - {name: opcode, bits: [6, 0]}
+    immediate: null
+
+instructions:
+  # R-type
+  add: {type: R, funct7: 0x00, funct3: 0x0, opcode: OP}
+  and: {type: R, funct7: 0x00, funct3: 0x7, opcode: OP}
+  or: {type: R, funct7: 0x00, funct3: 0x6, opcode: OP}
+  sll: {type: R, funct7: 0x00, funct3: 0x1, opcode: OP}
+  slt: {type: R, funct7: 0x00, funct3: 0x2, opcode: OP}
+  sltu: {type: R, funct7: 0x00, funct3: 0x3, opcode: OP}
+  sra: {type: R, funct7: 0x20, funct3: 0x5, opcode: OP}
+  srl: {type: R, funct7: 0x00, funct3: 0x5, opcode: OP}
+  sub: {type: R, funct7: 0x20, funct3: 0x0, opcode: OP}
+  xor: {type: R, funct7: 0x00, funct3: 0x4, opcode: OP}
+
+  # I-type
+  addi: {type: I, funct3: 0x0, opcode: OP_IMM}
+  andi: {type: I, funct3: 0x7, opcode: OP_IMM}
+  jalr: {type: I, funct3: 0x0, opcode: JALR}
+  lb: {type: I, funct3: 0x0, opcode: LOAD}
+  lbu: {type: I, funct3: 0x4, opcode: LOAD}
+  lh: {type: I, funct3: 0x1, opcode: LOAD}
+  lhu: {type: I, funct3: 0x5, opcode: LOAD}
+  lw: {type: I, funct3: 0x2, opcode: LOAD}
+  ori: {type: I, funct3: 0x6, opcode: OP_IMM}
+  slti: {type: I, funct3: 0x2, opcode: OP_IMM}
+  sltiu: {type: I, funct3: 0x3, opcode: OP_IMM}
+  xori: {type: I, funct3: 0x4, opcode: OP_IMM}
+
+  # SHIFT-type
+  slli: {type: SHIFT, funct7: 0x00, funct3: 0x1, opcode: OP_IMM}
+  srai: {type: SHIFT, funct7: 0x20, funct3: 0x5, opcode: OP_IMM}
+  srli: {type: SHIFT, funct7: 0x00, funct3: 0x5, opcode: OP_IMM}
+
+  # S-type
+  sb: {type: S, funct3: 0x0, opcode: STORE}
+  sh: {type: S, funct3: 0x1, opcode: STORE}
+  sw: {type: S, funct3: 0x2, opcode: STORE}
+
+  # B-type
+  beq: {type: B, funct3: 0x0, opcode: BRANCH}
+  bge: {type: B, funct3: 0x5, opcode: BRANCH}
+  bgeu: {type: B, funct3: 0x7, opcode: BRANCH}
+  blt: {type: B, funct3: 0x4, opcode: BRANCH}
+  bltu: {type: B, funct3: 0x6, opcode: BRANCH}
+  bne: {type: B, funct3: 0x1, opcode: BRANCH}
+
+  # U-type
+  auipc: {type: U, opcode: AUIPC}
+  lui: {type: U, opcode: LUI}
+
+  # J-type
+  jal: {type: J, opcode: JAL}
+
+  # FENCE-type
+  # RV32I 的 fence 要求 fm=0, rs1=0, rd=0；pred/succ 可变。
+  fence: {type: FENCE, fm: 0x0, rs1: 0x0, funct3: 0x0, rd: 0x0, opcode: MISC_MEM}
+
+  # SYSTEM-type
+  ebreak: {type: SYSTEM, imm12: 0x001, rs1: 0x0, funct3: 0x0, rd: 0x0, opcode: SYSTEM}
+  ecall: {type: SYSTEM, imm12: 0x000, rs1: 0x0, funct3: 0x0, rd: 0x0, opcode: SYSTEM}
+
+# 当前项目计划实现的最小子集。
+# 完整标准表在上面；测试生成器应默认只遍历这个列表。
+implemented:
+  - add
+  - addi
+  - lui
+  - lw
+  - sw
+  - beq
+  - jal
+  - jalr
+
+# 汇编器伪指令：不是真实指令，展开后再编码。
+pseudo:
+  j:
+    expand: "jal x0, {offset}"
+  jr:
+    expand: "jalr x0, 0({rs1})"
+  ret:
+    expand: "jalr x0, 0(ra)"
+  nop:
+    expand: "addi x0, x0, 0"
