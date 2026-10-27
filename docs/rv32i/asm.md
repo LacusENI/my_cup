@@ -1,6 +1,8 @@
-# RTL描述
+# RV32I 汇编
 
 version: v0.4
+
+> 0.3
 
 ## add rd, rs1, rs2
 ```
@@ -10,7 +12,7 @@ R[rd] = R[rs1] + R[rs2]
 ## addi rd, rs1, imm
 ```
 imm12: i12, imm = imm12 as i32
-R[rd] = R[rs1] + immm
+R[rd] = R[rs1] + imm
 ```
 
 ## beq rs1, rs2, offset
@@ -45,9 +47,10 @@ PC = PC + imm
 ```
 offset: i12, imm = offset as i32
 target = (R[rs1] + imm) & 32'hFFFF_FFFE
-R[rd]  = PC + 4
-PC     = target      
+PC, R[rd] = target, PC + 4
 ```
+
+> v0.4
 
 ## lui rd, hi
 ```
