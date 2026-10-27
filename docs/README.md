@@ -6,7 +6,7 @@
 > 标注为「⚠️ 可能过时」的文档保留原样，供对照历史；后续如有需要可另起新版本补充。
 >
 > 当前发布线：**`v0.3-mips`**（MIPS32 子集，8 条指令，单周期）。
-> RV32I 迁移暂缓，等 ISA 细节理清后再另起阶段。
+> 下一阶段：**`v0.3-rv32i`**（RV32I 最小子集设计已整理，尚未实现）。
 
 ---
 
@@ -38,6 +38,20 @@
 | [unit/alu.md](unit/alu.md) | `alu` | ✅ 当前仅 ADD/SUB |
 | [unit/cond.md](unit/cond.md) | `cond` | ✅ 当前仅 EQ |
 | [unit/datam.md](unit/datam.md) | `datam` | ✅ 字访问（子字访问延后） |
+
+## 4. RV32I 专题
+
+| 文档 | 内容 | 时效性 |
+| :-- | :-- | :-- |
+| [v0.3-rv32i/design.md](v0.3-rv32i/design.md) | v0.3-rv32i 当前批次设计落地、范围、非法策略、任务与验证 | 🚧 规划中 |
+| [v0.3-rv32i/units.md](v0.3-rv32i/units.md) | 各模块接口、控制表和实现细节 | 🚧 规划中 |
+| [v0.3-rv32i/instruction-paths.md](v0.3-rv32i/instruction-paths.md) | 每条指令的 Mermaid 数据流图 | 🚧 规划中 |
+| [v0.3-rv32i/future.md](v0.3-rv32i/future.md) | 后续批次与待议设计 | 🚧 规划中 |
+| [v0.3-rv32i/datapath.drawio](v0.3-rv32i/datapath.drawio) | 整个单周期 CPU 的 draw.io 设计图 | 🚧 规划中 |
+| [rv32i/format.md](rv32i/format.md) | RV32I 六种指令格式与立即数拼接 | ✅ |
+| [rv32i/asm.md](rv32i/asm.md) | RV32I 汇编语义（含 v0.4 的 `lui`） | ✅ |
+| [rv32i/inst-list.md](rv32i/inst-list.md) | RV32I 指令清单 | ⚠️ `Save` 应为 `Store` |
+| [`isa/rv32i.yaml`](../isa/rv32i.yaml) | 机器可读编码表（opcode/funct/imm），`implemented` 为本批 7 条 | ✅ |
 
 ---
 

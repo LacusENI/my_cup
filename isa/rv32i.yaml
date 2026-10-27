@@ -203,7 +203,6 @@ instructions:
 implemented:
   - add
   - addi
-  - lui
   - lw
   - sw
   - beq

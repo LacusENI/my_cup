@@ -74,6 +74,7 @@ my_cup/
 ├── pyproject.toml        # uv 管理的 Python 依赖（cocotb / pytest）
 ├── uv.lock               # 依赖锁定
 ├── docs/                 # 设计与文档（见 docs/README.md）
+├── isa/                  # 机器可读 ISA 描述（rv32i.yaml）
 ├── verilator.f           # Verilator lint 文件清单（mycup lint 与 IDE 共用）
 ├── .vscode/settings.json # IDE lint 配置（与项目 lint 对齐）
 ├── programs/             # 仿真用机器码程序 (*.hex) 与用法说明
