@@ -33,6 +33,7 @@
   // ---------------------------------------------------------------------------
   "verilog.formatting.systemVerilog.formatter": "verible-verilog-format",
   "verilog.formatting.veribleVerilogFormatter.path": "verible-verilog-format",
+  "verilog.formatting.veribleVerilogFormatter.arguments": "--indentation_spaces=4",
 
   "[systemverilog]": {
     "editor.defaultFormatter": "mshr-h.veriloghdl",

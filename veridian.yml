@@ -20,6 +20,8 @@ verible:
   format:
     enabled: true
     path: "verible-verilog-format"
+    args:
+      - "--indentation_spaces=4"
 
 verilator:
   syntax:
