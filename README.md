@@ -150,12 +150,13 @@ MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 | 工具 | 用途 | 版本 | 安装位置 |
 | :-- | :-- | :-- | :-- |
 | **veridian** | Language Server：hover / 跳转定义 / 文档符号 / 补全 / 格式化 | 0.1.0 (nightly) | `~/.local/bin/veridian-real` |
-| **veridian-lsp** | 轻量 LSP 代理：丢弃 veridian 不可靠的诊断与 `didSave` | 本仓库脚本 | `~/.local/bin/veridian-lsp` |
+| **veridian-lsp** | 轻量 LSP 代理：丢弃 veridian 不可靠的诊断与 `didSave`，并修正 `documentSymbol` 的非法 range | 本仓库脚本 | `~/.local/bin/veridian-lsp` |
 | **verible** | `verible-verilog-format`（格式化）等 | v0.0-4296 | `~/.local/bin/verible-*` |
+| **slang-server** | 语义型 SV LSP（可选，试验中） | 0.3.1 | `~/.local/bin/slang-server` |
 
-> 为什么是 veridian：`slang` 的 release 里没有附带 `slangd`；`svls` 只做 svlint 风格诊断、**不提供导航**；`verible-verilog-ls` 对初始化参数较敏感。veridian 的 LSP 能力完整，且能被 `mshr-h.veriloghdl` 接管。
+> 为什么默认用 veridian：它轻量、启动快，hover / 跳转 / 符号 / 补全 / 格式化都能被 `mshr-h.veriloghdl` 接管。缺点是导航基于局部符号表，**不解析 `import cpu_pkg::*` 这类跨文件 package**；需要完整语义时用下面的 `slang-server`。`svls` 偏 svlint 风格诊断、导航较弱；`verible-verilog-ls` 对初始化参数较敏感。
 >
-> **为什么需要 `veridian-lsp` 代理**：veridian 内置诊断不接收 include/package 路径，会对多文件工程产生误报。代理只丢弃 `textDocument/publishDiagnostics` 与 `textDocument/didSave`，导航/补全/格式化原样转发；诊断统一交给 Verilator。
+> **为什么需要 `veridian-lsp` 代理**：veridian 内置诊断不接收 include/package 路径，会对多文件工程产生误报。代理丢弃 `textDocument/publishDiagnostics` 与 `textDocument/didSave`，并修正 veridian 对 `enum/struct/typedef` 生成的 `documentSymbol` 中 `selectionRange` 超出 `range` 的问题（否则 VSCode 会报 `selectionRange must be contained in fullRange`）；导航/补全/格式化原样转发，诊断统一交给 Verilator。
 
 ### 配置
 
@@ -182,14 +183,33 @@ MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 verible-verilog-format rtl/datapath/alu.sv
 ```
 
-### slang（可选，当前未接入）
+### slang-server（可选，试验中）
 
-`slang` 12.0 已安装在 `~/.local/bin/slang`，但**没有接入项目流程**。当前规模下
-Verilator + cocotb 已经足够；如果以后需要更严格的语义检查，可手动运行：
+`slang-server` 基于 slang 前端，会做 elaboration，能正确解析 `import cpu_pkg::*`，
+适合验证跨文件 package / typedef / struct 的导航。
 
-```bash
-slang --lint-only --timescale 1ns/1ps $(find rtl -name '*.sv')
-```
+- 二进制：`~/.local/bin/slang-server`（当前 v0.3.1）
+- 工作区文件：[`my_cup-slang.code-workspace`](my_cup-slang.code-workspace)
+- 配置：`.slang/server.json`（索引 `rtl` + `slang.f`）
+- 文件清单：[`slang.f`](slang.f)（新增 RTL 文件后需要同步；`verilator.f` 由 `mycup init` 生成）
+  ```bash
+  { echo rtl/cpu_pkg.sv; find rtl -name '*.sv' ! -name 'cpu_pkg.sv' | sort; } > slang.f
+  ```
+- VS Code 扩展：`Hudson-River-Trading.vscode-slang`（建议装在独立的 `slang` profile）
+
+用法：
+
+1. VS Code 打开 `my_cup-slang.code-workspace`；
+2. 切换到 `slang` profile；
+3. 打开 `rtl/cpu_top.sv`，执行 `slang: Set Top Level`（或 `slang: Select Top Level`）；
+4. hover `word_t` / `ctrl_t`，F12 应该跳到 `rtl/cpu_pkg.sv`。
+
+这个 workspace 会关闭 `mshr-h` 的 veridian/SVLS 外部 LSP，避免两个语言服务器同时接管
+`.sv` 文件。日常仍可继续用默认 profile 的 veridian；slang 只作为对照实验。
+如果 `slang-server` 不在 `PATH` 中，在 workspace 设置里把 `slang.path` 改成它的绝对路径。
+
+> 如果只想用 slang-server，记得把 `TerosHDL` 也禁用（或在专用 profile 中不启用），
+> 它的 ctags 导航会和 slang 的语义导航重复。
 
 ### 换机器时如何安装
 
@@ -206,6 +226,10 @@ slang --lint-only --timescale 1ns/1ps $(find rtl -name '*.sv')
 # LSP 代理（本仓库）
 uv sync
 ln -sf "$(pwd)/.venv/bin/veridian-lsp" ~/.local/bin/veridian-lsp
+
+# slang-server（可选，试验用）
+#   https://github.com/hudson-trading/slang-server/releases -> slang-server-linux-x64.tar.gz
+#   解压后：install -m 0755 slang-server ~/.local/bin/slang-server
 ```
 
 > 注意：`.vscode/settings.json` 依赖 `veridian-lsp` / `verible-verilog-format` 在 `PATH` 中；

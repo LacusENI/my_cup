@@ -12,3 +12,6 @@ __pycache__/
 
 .vscode/*
 !.vscode/settings.json
+
+# slang-server 的本地生成配置/构建文件
+.slang/local/

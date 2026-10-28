@@ -1,0 +1,7 @@
+{
+  "index": [
+    { "dirs": ["rtl"] }
+  ],
+  "build": "slang.f",
+  "buildRelativePaths": true
+}

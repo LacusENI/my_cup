@@ -1,0 +1,44 @@
+{
+  "folders": [
+    {
+      "name": "my_cup (slang)",
+      "path": "."
+    }
+  ],
+  "settings": {
+    // slang-server 从 PATH 查找；请把 slang-server 放到 PATH 中（如 ~/.local/bin）。
+    // 如果扩展找不到它，再显式设置："slang.path": "/absolute/path/to/slang-server"
+    //
+    // 这个 workspace 只启用 slang-server；把 mshr-h 自带的外部 LSP 全部关掉，
+    // 避免 veridian / svls / verible-ls 同时接管 .sv 文件。
+    "verilog.languageServer.veridian.enabled": false,
+    "verilog.languageServer.svls.enabled": false,
+    "verilog.languageServer.veribleVerilogLs.enabled": false,
+    "verilog.languageServer.hdlChecker.enabled": false,
+    "verilog.languageServer.rustHdl.enabled": false,
+    "verilog.languageServer.tclsp.enabled": false,
+
+    // slang-server 已经提供 lint；verilator 还没装，先关掉 mshr-h 的 lint，
+    // 项目级 lint 仍然用 `uv run mycup lint`。
+    "verilog.linting.linter": "none",
+
+    // 继续用 mshr-h + verible 做格式化；这里保留项目原来的 4 空格风格。
+    "verilog.formatting.systemVerilog.formatter": "verible-verilog-format",
+    "verilog.formatting.veribleVerilogFormatter.path": "verible-verilog-format",
+    "verilog.formatting.veribleVerilogFormatter.arguments": "--indentation_spaces=4",
+
+    "files.associations": {
+      "*.sv": "systemverilog",
+      "*.svh": "systemverilog"
+    },
+
+    "[systemverilog]": {
+      "editor.defaultFormatter": "mshr-h.veriloghdl",
+      "editor.formatOnSave": false
+    },
+    "[verilog]": {
+      "editor.defaultFormatter": "mshr-h.veriloghdl",
+      "editor.formatOnSave": false
+    }
+  }
+}

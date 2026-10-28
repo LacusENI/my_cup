@@ -1,0 +1,16 @@
+rtl/cpu_pkg.sv
+rtl/control/cond.sv
+rtl/control/ctrl.sv
+rtl/control/decoder.sv
+rtl/control/npc.sv
+rtl/control/pc.sv
+rtl/cpu_top.sv
+rtl/datapath/alu.sv
+rtl/datapath/ext.sv
+rtl/datapath/regfile.sv
+rtl/memory/datam.sv
+rtl/memory/instrm.sv
+rtl/pipe/ex_mem_reg.sv
+rtl/pipe/id_ex_reg.sv
+rtl/pipe/if_id_reg.sv
+rtl/pipe/mem_wb_reg.sv
