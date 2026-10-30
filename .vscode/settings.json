@@ -1,46 +1,33 @@
 {
-  // ---------------------------------------------------------------------------
-  // Lint：与项目 `mycup lint` 保持一致（single source of truth: verilator.f）
-  // ---------------------------------------------------------------------------
-  "verilog.linting.linter": "verilator",
-  "verilog.linting.verilator.runAtFileLocation": false,
+  // SystemVerilog LSP：只使用 slang-server。
+  // 安装：code --install-extension Hudson-River-Trading.vscode-slang
+  // 配置：.slang/server.json + slang.f
+  //
+  // 如果 slang-server 不在 PATH 中，改成它的绝对路径。
+  "slang.path": "slang-server",
 
-  // -Wall --timing --bbox-sys         : 与项目 lint 相同的 flags
-  // -f verilator.f                    : 复用项目 lint 的文件清单（跨模块实例化不误报）
-  // -Wno-MODDUP                       : 扩展会把当前打开的文件额外追加一次，与清单重复
-  // -Wno-TIMESCALEMOD/-Wno-MULTITOP   : 打开 testbench 时才出现的噪音
-  "verilog.linting.verilator.arguments": "-Wall --timing --bbox-sys -f verilator.f -Wno-MODDUP -Wno-TIMESCALEMOD -Wno-MULTITOP",
-
-  // ---------------------------------------------------------------------------
-  // Language Server：veridian（hover / 跳转定义 / 文档符号 / 补全）
-  // 经 mycup/veridian_lsp.py 代理启动：丢弃 veridian 不可靠的诊断与 didSave，
-  // 只保留导航/补全/格式化；lint 仍由上面的 Verilator 负责。
-  // 安装与配置见 README「SV 工具链」；项目配置在 veridian.yml
-  // ---------------------------------------------------------------------------
-  "verilog.languageServer.veridian.enabled": true,
-  "verilog.languageServer.veridian.path": "veridian-lsp",
-  "verilog.languageServer.svls.enabled": false,
-
-  // veridian 客户端只绑定 systemverilog 语言；项目文件统一使用 .sv/.svh。
+  // 文件类型关联；slang 扩展通过 systemverilog 语言接管 .sv/.svh。
   "files.associations": {
     "*.sv": "systemverilog",
     "*.svh": "systemverilog"
   },
 
-  // ---------------------------------------------------------------------------
-  // 格式化：verible-verilog-format（不自动保存格式化，避免大面积 diff）
-  // 手动格式化快捷键：Shift+Alt+F
-  // ---------------------------------------------------------------------------
-  "verilog.formatting.systemVerilog.formatter": "verible-verilog-format",
-  "verilog.formatting.veribleVerilogFormatter.path": "verible-verilog-format",
-  "verilog.formatting.veribleVerilogFormatter.arguments": "--indentation_spaces=4",
+  // slang 扩展支持外部格式化器：把文件内容从 stdin 交给 verible。
+  "slang.formatters": [
+    {
+      "command": "verible-verilog-format --indentation_spaces=4 -",
+      "dirs": ["rtl"],
+      "languageIds": ["systemverilog"]
+    }
+  ],
 
+  // 不自动保存格式化，避免大面积 diff；手动 Shift+Alt+F。
   "[systemverilog]": {
-    "editor.defaultFormatter": "mshr-h.veriloghdl",
+    "editor.defaultFormatter": "hudson-river-trading.vscode-slang",
     "editor.formatOnSave": false
   },
   "[verilog]": {
-    "editor.defaultFormatter": "mshr-h.veriloghdl",
+    "editor.defaultFormatter": "hudson-river-trading.vscode-slang",
     "editor.formatOnSave": false
   }
 }

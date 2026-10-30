@@ -5,7 +5,7 @@
     uv run mycup <command> [options]
 
 命令：
-    init     生成 verilator.f（lint 文件清单）
+    init     生成 verilator.f / slang.f（lint 与 LSP 文件清单）
     lint     Verilator 静态检查
     test     运行 cocotb + pytest
     prog     用指定 hex 程序运行指令级测试
@@ -41,6 +41,7 @@ WAVES_DIR = ROOT / "waves"
 LOGS_DIR = ROOT / "logs"
 
 VERILATOR_F = ROOT / "verilator.f"
+SLANG_F = ROOT / "slang.f"
 VERILATOR_FLAGS = ["--lint-only", "-Wall", "--timing", "--bbox-sys", "-Wno-MULTITOP"]
 LINT_LOG = LOGS_DIR / "lint.log"
 
@@ -93,19 +94,33 @@ def write_verilator_f() -> Path:
     return VERILATOR_F
 
 
+def write_slang_f() -> Path:
+    """生成 slang-server 用的纯文件清单（不带 flags/注释）。"""
+    lines = [rel(p) for p in rtl_files()]
+    SLANG_F.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return SLANG_F
+
+
+def write_filelists() -> None:
+    """verilator.f 和 slang.f 使用同一个 RTL 文件来源。"""
+    write_verilator_f()
+    write_slang_f()
+
+
 # --------------------------------------------------------------------------- #
 # commands
 # --------------------------------------------------------------------------- #
 def cmd_init(_: argparse.Namespace) -> None:
-    """只生成 verilator.f；IDE 和 lint 都复用这份清单。"""
-    write_verilator_f()
+    """生成 verilator.f 和 slang.f。"""
+    write_filelists()
     print(f"Generated {rel(VERILATOR_F)}")
+    print(f"Generated {rel(SLANG_F)}")
 
 
 def cmd_lint(_: argparse.Namespace) -> None:
-    """刷新 verilator.f，然后跑 Verilator 静态检查。"""
+    """刷新文件清单，然后跑 Verilator 静态检查。"""
     ensure_dirs()
-    write_verilator_f()
+    write_filelists()
     log_line(LINT_LOG, f"Linting: {now()}")
 
     proc = subprocess.run(

@@ -43,8 +43,7 @@
 ```
 my_cup/
 ├── mycup/                # Python 工具链
-│   ├── cli.py                # mycup lint / test / prog ...
-│   └── veridian_lsp.py       # veridian LSP 代理（安装为 `veridian-lsp`）
+│   └── cli.py                # mycup lint / test / prog ...
 ├── rtl/                  # 可综合的 RTL 源码
 │   ├── cpu_top.sv            # 顶层：实例化各单元并连线
 │   ├── cpu_pkg.sv            # package：参数、类型、控制编码、扩展函数
@@ -75,8 +74,10 @@ my_cup/
 ├── uv.lock               # 依赖锁定
 ├── docs/                 # 设计与文档（见 docs/README.md）
 ├── isa/                  # 机器可读 ISA 描述（rv32i.yaml）
-├── verilator.f           # Verilator lint 文件清单（mycup lint 与 IDE 共用）
-├── .vscode/settings.json # IDE lint 配置（与项目 lint 对齐）
+├── verilator.f           # Verilator lint 文件清单（mycup init/lint 生成）
+├── slang.f               # slang-server 文件清单（mycup init 同步生成）
+├── .slang/server.json    # slang-server 工程配置
+├── .vscode/settings.json # slang-server + verible 编辑器配置
 ├── programs/             # 仿真用机器码程序 (*.hex) 与用法说明
 ├── build/                # cocotb 构建产物 (gitignore)
 ├── waves/                # 生成的波形 (gitignore)
@@ -111,130 +112,106 @@ MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 
 ---
 
-## IDE lint 配置（VS Code）
+## Lint 与编辑器的分工
 
-目标：让编辑器里看到的告警/错误与命令行 `mycup lint` **完全一致**。
+项目 lint 的唯一门禁是：
 
-项目 lint 的「文件清单 + 参数」统一由 [`mycup/cli.py`](mycup/cli.py) 生成到
-[`verilator.f`](verilator.f)，作为**单一事实来源**：
-
-- `mycup lint` 直接 `verilator -f verilator.f`；
-- IDE（[`mshr-h.veriloghdl`](https://marketplace.visualstudio.com/items?itemName=mshr-h.veriloghdl) 扩展）
-  通过 [`.vscode/settings.json`](.vscode/settings.json) 复用同一个 `-f verilator.f`。
-
-```jsonc
-// .vscode/settings.json
-{
-  "verilog.linting.linter": "verilator",
-  "verilog.linting.verilator.runAtFileLocation": false,
-  "verilog.linting.verilator.arguments": "-f verilator.f -Wno-MODDUP -Wno-TIMESCALEMOD -Wno-MULTITOP"
-}
+```bash
+uv run mycup lint
 ```
 
-几点说明：
+它使用 Verilator，文件清单 [`verilator.f`](verilator.f) 由 `mycup init` / `mycup lint` 自动生成。
 
-- 扩展是**针对“当前打开的文件”**单独调用 verilator 的，且会把该文件**额外追加一次**
-  （清单里已有它 → 重复）。用 `-f verilator.f` 让它同时载入整个工程，再用 `-Wno-MODDUP`
-  容忍这次重复，从而使输出与项目 lint 对齐。
-- `-Wno-TIMESCALEMOD` / `-Wno-MULTITOP` 只在**打开 testbench** 时才会出现（此时会把 tb 与全部 RTL
-  一起 lint），项目 lint 仅针对 RTL，不会产生这些告警。
-- **新增/删除 RTL 文件后**执行 `mycup init`（或直接 `mycup lint`）刷新 `verilator.f`。
-- 若 `verilator` 不在 `PATH` 中，可在 `verilog.linting.path` 指定其安装目录。
+编辑器不再内嵌 Verilator lint。编辑器只负责：
+
+- **slang-server**：语义导航、hover、跳转、补全、诊断提示；
+- **verible-verilog-format**：格式化。
+
+slang 的诊断用于编辑体验，不作为 CI 门禁；最终仍以 `mycup lint` + `mycup test` 为准。
 
 ---
 
-## SV 工具链（LSP / format）
+## SV 工具链（slang + verible）
 
-在保留 Verilator lint 不变的前提下，补充了编辑器智能提示与格式化能力：
+编辑器只保留一个 SystemVerilog LSP：`slang-server`。
 
-| 工具 | 用途 | 版本 | 安装位置 |
-| :-- | :-- | :-- | :-- |
-| **veridian** | Language Server：hover / 跳转定义 / 文档符号 / 补全 / 格式化 | 0.1.0 (nightly) | `~/.local/bin/veridian-real` |
-| **veridian-lsp** | 轻量 LSP 代理：丢弃 veridian 不可靠的诊断与 `didSave`，并修正 `documentSymbol` 的非法 range | 本仓库脚本 | `~/.local/bin/veridian-lsp` |
-| **verible** | `verible-verilog-format`（格式化）等 | v0.0-4296 | `~/.local/bin/verible-*` |
-| **slang-server** | 语义型 SV LSP（可选，试验中） | 0.3.1 | `~/.local/bin/slang-server` |
-
-> 为什么默认用 veridian：它轻量、启动快，hover / 跳转 / 符号 / 补全 / 格式化都能被 `mshr-h.veriloghdl` 接管。缺点是导航基于局部符号表，**不解析 `import cpu_pkg::*` 这类跨文件 package**；需要完整语义时用下面的 `slang-server`。`svls` 偏 svlint 风格诊断、导航较弱；`verible-verilog-ls` 对初始化参数较敏感。
->
-> **为什么需要 `veridian-lsp` 代理**：veridian 内置诊断不接收 include/package 路径，会对多文件工程产生误报。代理丢弃 `textDocument/publishDiagnostics` 与 `textDocument/didSave`，并修正 veridian 对 `enum/struct/typedef` 生成的 `documentSymbol` 中 `selectionRange` 超出 `range` 的问题（否则 VSCode 会报 `selectionRange must be contained in fullRange`）；导航/补全/格式化原样转发，诊断统一交给 Verilator。
+| 工具 | 用途 | 位置 |
+| :-- | :-- | :-- |
+| **slang-server** | 语义 LSP：hover / 定义 / 补全 / 符号 / 诊断 | `~/.local/bin/slang-server` |
+| **Hudson-River-Trading.vscode-slang** | VS Code 的 slang 客户端 | VS Code 扩展 |
+| **verible** | `verible-verilog-format` 格式化 | `~/.local/bin/verible-*` |
+| **Verilator** | CLI lint | 系统包 |
+| **Icarus Verilog** | cocotb 仿真 | 系统包 |
 
 ### 配置
 
 - 编辑器：[`.vscode/settings.json`](.vscode/settings.json)
-  - `verilog.languageServer.veridian.enabled: true`
-  - `verilog.languageServer.veridian.path: "veridian-lsp"`（代理）
-  - `files.associations`: `.sv` / `.svh` 会被识别为 `systemverilog`（veridian 客户端绑定该语言）
-- 项目：[`veridian.yml`](veridian.yml)
-  - `include_dirs`: `[]`（没有头文件）
-  - `source_dirs`: `rtl`
-  - `auto_search_workdir: false`（避免递归扫到 `.venv` / `build`）
-  - 诊断交给项目 `mycup lint`，LSP 侧诊断关闭
-- 代理：[`mycup/veridian_lsp.py`](mycup/veridian_lsp.py)（安装为 `veridian-lsp`）
+  - `slang.path`: 默认 `slang-server`，不在 `PATH` 时改成绝对路径；
+  - `slang.formatters`: 调用 `verible-verilog-format`；
+  - `files.associations`: `.sv` / `.svh` → `systemverilog`。
+- 项目：[`.slang/server.json`](.slang/server.json)
+  - 索引 `rtl`；
+  - 构建文件清单为 [`slang.f`](slang.f)。
+- 文件清单：`slang.f` 由 `mycup init` 同时生成，**不要手工维护**。
+  ```bash
+  uv run mycup init
+  # 生成 verilator.f + slang.f
+  ```
+
+不再需要：
+
+- `veridian`
+- `veridian-lsp` 代理
+- `veridian.yml`
+- `mshr-h.veriloghdl`
+- `my_cup-slang.code-workspace`
+- `ctags`
 
 ### 用法
 
-```bash
-# 编辑器：重新加载窗口后生效
-#   Ctrl+Shift+P -> Developer: Reload Window
-#   悬停 / F12 跳转 / Ctrl+Shift+O 文档符号
-#   手动格式化：Shift+Alt+F（verible-verilog-format）
-
-# 格式化（默认不自动保存格式化，避免大面积 diff）
-verible-verilog-format rtl/datapath/alu.sv
-```
-
-### slang-server（可选，试验中）
-
-`slang-server` 基于 slang 前端，会做 elaboration，能正确解析 `import cpu_pkg::*`，
-适合验证跨文件 package / typedef / struct 的导航。
-
-- 二进制：`~/.local/bin/slang-server`（当前 v0.3.1）
-- 工作区文件：[`my_cup-slang.code-workspace`](my_cup-slang.code-workspace)
-- 配置：`.slang/server.json`（索引 `rtl` + `slang.f`）
-- 文件清单：[`slang.f`](slang.f)（新增 RTL 文件后需要同步；`verilator.f` 由 `mycup init` 生成）
-  ```bash
-  { echo rtl/cpu_pkg.sv; find rtl -name '*.sv' ! -name 'cpu_pkg.sv' | sort; } > slang.f
-  ```
-- VS Code 扩展：`Hudson-River-Trading.vscode-slang`（建议装在独立的 `slang` profile）
-
-用法：
-
-1. VS Code 打开 `my_cup-slang.code-workspace`；
-2. 切换到 `slang` profile；
-3. 打开 `rtl/cpu_top.sv`，执行 `slang: Set Top Level`（或 `slang: Select Top Level`）；
+1. 重新加载 VS Code 窗口：
+   ```text
+   Ctrl+Shift+P -> Developer: Reload Window
+   ```
+2. 打开项目文件夹（不是旧的 slang workspace 文件）。
+3. 打开 `rtl/cpu_top.sv`，执行：
+   ```text
+   slang: Set Top Level
+   ```
+   选择 `cpu_top`。
 4. hover `word_t` / `ctrl_t`，F12 应该跳到 `rtl/cpu_pkg.sv`。
+5. 手动格式化：
+   ```text
+   Shift+Alt+F
+   ```
 
-这个 workspace 会关闭 `mshr-h` 的 veridian/SVLS 外部 LSP，避免两个语言服务器同时接管
-`.sv` 文件。日常仍可继续用默认 profile 的 veridian；slang 只作为对照实验。
-如果 `slang-server` 不在 `PATH` 中，在 workspace 设置里把 `slang.path` 改成它的绝对路径。
+如果语言服务没启动：
 
-> 如果只想用 slang-server，记得把 `TerosHDL` 也禁用（或在专用 profile 中不启用），
-> 它的 ctags 导航会和 slang 的语义导航重复。
+- 查看 VS Code 输出面板的 `slang-server`；
+- 执行 `slang: Restart Language Server`；
+- 确认 `slang-server` 在 `PATH`，或在 `.vscode/settings.json` 里写绝对路径。
 
 ### 换机器时如何安装
 
-工具都在 `~/.local/bin`，扩展通过 `PATH` 查找：
-
 ```bash
+# VS Code 扩展
+code --install-extension Hudson-River-Trading.vscode-slang
+
 # verible（GitHub release）
-#   https://github.com/chipsalliance/verible/releases -> *-linux-static-x86_64.tar.gz
+#   https://github.com/chipsalliance/verible/releases
+#   解压后把 verible-verilog-format 放到 ~/.local/bin
 
-# veridian（GitHub nightly）
-#   https://github.com/vivekmalneedi/veridian/releases/tag/nightly -> veridian-ubuntu-22.04.tar.gz
-#   解压后：ln -sf /path/to/veridian ~/.local/bin/veridian-real
+# slang-server（GitHub release）
+#   https://github.com/hudson-trading/slang-server/releases
+#   下载 slang-server-linux-x64.tar.gz，解压后：
+install -m 0755 slang-server ~/.local/bin/slang-server
 
-# LSP 代理（本仓库）
+# Python 工具
 uv sync
-ln -sf "$(pwd)/.venv/bin/veridian-lsp" ~/.local/bin/veridian-lsp
-
-# slang-server（可选，试验用）
-#   https://github.com/hudson-trading/slang-server/releases -> slang-server-linux-x64.tar.gz
-#   解压后：install -m 0755 slang-server ~/.local/bin/slang-server
 ```
 
-> 注意：`.vscode/settings.json` 依赖 `veridian-lsp` / `verible-verilog-format` 在 `PATH` 中；
-> 若不在，可分别用 `verilog.languageServer.veridian.path` 和
-> `verilog.formatting.veribleVerilogFormatter.path` 指定绝对路径。
+> `slang-server` 和 VS Code 扩展缺一不可。只有扩展、没有 server 时，
+> 编辑器看起来会“没有任何语言服务”。
 
 ---
 
