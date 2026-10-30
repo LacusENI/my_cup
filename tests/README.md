@@ -71,7 +71,7 @@ tests/
 
 > `tests/hdl/ctrl_probe.sv` 是 **test-only probe**：它实例化 `ctrl`，
 > 把 `ctrl_t` 的字段摊平成普通端口，避免 Python 里手写 struct 位偏移。
-> 它不参与综合，也不在 `verilator.f` 的 lint 清单里；只由 `ctrl_sim` 编译。
+> 它不参与综合，也不在 `.verilator/verilator.f` 的 lint 清单里；只由 `ctrl_sim` 编译。
 
 ## 覆盖范围
 

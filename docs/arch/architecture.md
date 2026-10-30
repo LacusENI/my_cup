@@ -161,12 +161,13 @@ tests/<category>/test_*.py ──(pytest)──────────►  收�
 ```
 
 - `mycup test`：运行全部 cocotb + pytest 用例；
-- `mycup lint`：生成 `verilator.f`，再运行 `verilator -f verilator.f`；
+- `mycup lint`：生成 `.verilator/verilator.f`，再运行 `verilator -f .verilator/verilator.f`；
 - `mycup prog <hex>`：用 `+instr=` 装载程序，运行 `tests/cpu/test_prog.py::test_prog_demo`；
 - `mycup clean`：清理 `build/`、`waves/`、`logs/` 等生成物。
 
-`verilator.f` 由 [`mycup/cli.py`](../../mycup/cli.py) 生成（含 `-Wall --timing --bbox-sys`），
-**IDE 的 Verilog lint 也复用同一清单**，从而与命令行保持一致（详见 [README](../README.md#ide-lint-配置vs-code)）。
+`.verilator/verilator.f` 由 [`mycup/cli.py`](../../mycup/cli.py) 生成（含 `-Wall --timing --bbox-sys`），
+作为命令行 lint 的唯一清单。编辑器只负责导航/补全/格式化，不内嵌 Verilator lint
+（详见 [README](../README.md#lint-与编辑器的分工)）。
 
 ### 程序装载（仿真）
 

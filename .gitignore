@@ -12,6 +12,8 @@ __pycache__/
 
 .vscode/*
 !.vscode/settings.json
+!.vscode/extensions.json
 
-# slang-server 的本地生成配置/构建文件
+# slang-server / Verilator 的本地生成文件
 .slang/local/
+.verilator/

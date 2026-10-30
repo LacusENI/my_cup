@@ -1,7 +1,7 @@
 {
   // SystemVerilog LSP：只使用 slang-server。
   // 安装：code --install-extension Hudson-River-Trading.vscode-slang
-  // 配置：.slang/server.json + slang.f
+  // 配置：.slang/server.json + .slang/slang.f
   //
   // 如果 slang-server 不在 PATH 中，改成它的绝对路径。
   "slang.path": "slang-server",
