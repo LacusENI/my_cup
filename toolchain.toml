@@ -1,0 +1,58 @@
+# my_cup 工具链配置
+#
+# 这个文件只放“数据和命令参数”，不放实现逻辑。
+# 想改工具链时先看这里，再看 Makefile / mycup。
+
+[project]
+name = "my_cup"
+
+[paths]
+rtl = "rtl"
+build = "build"
+waves = "waves"
+logs = "logs"
+verilator_dir = ".verilator"
+slang_dir = ".slang"
+programs = "programs"
+tests = "tests"
+
+[sources]
+package = "rtl/cpu_pkg.sv"
+glob = "rtl/**/*.sv"
+
+[lint]
+tool = "verilator"
+args = [
+  "--lint-only",
+  "-Wall",
+  "--timing",
+  "--bbox-sys",
+  "-Wno-MULTITOP",
+]
+filelist = ".verilator/verilator.f"
+log = "logs/lint.log"
+
+[slang]
+filelist = ".slang/slang.f"
+
+[test]
+args = ["-v"]
+
+[prog]
+target = "tests/cpu/test_prog.py::test_prog_demo"
+
+[format]
+tool = "verible-verilog-format"
+args = ["--indentation_spaces=4"]
+glob = "rtl/**/*.sv"
+
+[doctor]
+required = [
+  "uv",
+  "iverilog",
+  "verilator",
+  "verible-verilog-format",
+]
+optional = [
+  "slang-server",
+]

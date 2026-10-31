@@ -9,7 +9,11 @@
     lint     Verilator 静态检查
     test     运行 cocotb + pytest
     prog     用指定 hex 程序运行指令级测试
+    fmt      用 verible-verilog-format 格式化 RTL
+    doctor   检查配置和必需工具
     clean    清理生成物
+
+路径、工具和参数在项目根目录的 toolchain.toml 中配置。
 """
 
 from __future__ import annotations
@@ -23,29 +27,38 @@ from datetime import datetime
 from pathlib import Path
 from typing import NoReturn
 
+from mycup.config import ConfigError, load
+
 ROOT_FALLBACK = Path.cwd()
 
 
 def _find_root(start: Path) -> Path:
     for candidate in (start, *start.parents):
-        if (candidate / "pyproject.toml").is_file() and (candidate / "rtl").is_dir():
+        if (candidate / "toolchain.toml").is_file() and (candidate / "rtl").is_dir():
             return candidate
     return ROOT_FALLBACK
 
 
 ROOT = _find_root(Path(__file__).resolve().parent)
 
-RTL_DIR = ROOT / "rtl"
-BUILD_DIR = ROOT / "build"
-WAVES_DIR = ROOT / "waves"
-LOGS_DIR = ROOT / "logs"
-VERILATOR_DIR = ROOT / ".verilator"
-SLANG_DIR = ROOT / ".slang"
+try:
+    CFG = load(ROOT)
+except ConfigError as exc:
+    print(f"mycup: {exc}", file=sys.stderr)
+    raise SystemExit(2) from exc
 
-VERILATOR_F = VERILATOR_DIR / "verilator.f"
-SLANG_F = SLANG_DIR / "slang.f"
-VERILATOR_FLAGS = ["--lint-only", "-Wall", "--timing", "--bbox-sys", "-Wno-MULTITOP"]
-LINT_LOG = LOGS_DIR / "lint.log"
+RTL_DIR = CFG.paths.rtl
+BUILD_DIR = CFG.paths.build
+WAVES_DIR = CFG.paths.waves
+LOGS_DIR = CFG.paths.logs
+VERILATOR_DIR = CFG.paths.verilator_dir
+SLANG_DIR = CFG.paths.slang_dir
+
+VERILATOR_F = CFG.lint.filelist
+SLANG_F = CFG.slang.filelist
+PACKAGE = CFG.sources.package
+VERILATOR_FLAGS = list(CFG.lint.args)
+LINT_LOG = CFG.lint.log
 
 
 # --------------------------------------------------------------------------- #
@@ -76,15 +89,17 @@ def fail(message: str, code: int = 1) -> NoReturn:
 
 
 def rtl_files() -> list[Path]:
-    """返回所有 RTL 源文件，并保证 cpu_pkg.sv 排在最前面。
+    """返回所有 RTL 源文件，并保证 package 文件排在最前面。
 
     SystemVerilog 的 package 必须先于使用它的模块被编译，
     而 iverilog / verilator 不会自动解析依赖，所以这里手动排序。
+    package 路径由 toolchain.toml 的 [sources] package 指定。
     """
-    files = sorted(p for p in RTL_DIR.rglob("*") if p.suffix == ".sv")
-    package = [p for p in files if p.name == "cpu_pkg.sv"]
-    others = [p for p in files if p.name != "cpu_pkg.sv"]
-    return package + others
+    if not PACKAGE.is_file():
+        fail(f"package not found: {PACKAGE}")
+    files = sorted(RTL_DIR.rglob("*.sv"))
+    others = [p for p in files if p != PACKAGE]
+    return [PACKAGE, *others]
 
 
 def write_verilator_f() -> Path:
@@ -128,7 +143,10 @@ def cmd_lint(_: argparse.Namespace) -> None:
     log_line(LINT_LOG, f"Linting: {now()}")
 
     proc = subprocess.run(
-        ["verilator", "-f", str(VERILATOR_F)], cwd=ROOT, capture_output=True, text=True
+        [CFG.lint.tool, "-f", str(VERILATOR_F)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
     )
     output = proc.stdout + proc.stderr
     sys.stdout.write(output)
@@ -144,7 +162,7 @@ def cmd_test(args: argparse.Namespace) -> None:
     extra = list(args.pytest_args)
     if extra and extra[0] == "--":
         extra = extra[1:]
-    cmd = [sys.executable, "-m", "pytest", "-v", *extra]
+    cmd = [sys.executable, "-m", "pytest", *CFG.test.args, *extra]
     raise SystemExit(subprocess.run(cmd, cwd=ROOT).returncode)
 
 
@@ -174,10 +192,53 @@ def cmd_prog(args: argparse.Namespace) -> None:
         sys.executable,
         "-m",
         "pytest",
-        "-v",
-        "tests/cpu/test_prog.py::test_prog_demo",
+        *CFG.test.args,
+        CFG.prog.target,
     ]
     raise SystemExit(subprocess.run(cmd, cwd=ROOT, env=env).returncode)
+
+
+def cmd_fmt(_: argparse.Namespace) -> None:
+    """用 toolchain.toml 指定的格式化工具原地格式化 RTL。"""
+    files = sorted(ROOT.glob(CFG.format.glob))
+    if not files:
+        fail(f"no files matched {CFG.format.glob!r}")
+    if shutil.which(CFG.format.tool) is None:
+        fail(f"formatter not found: {CFG.format.tool}")
+
+    # [format] args 同时适用于 stdin 和文件模式；--inplace 只在这里追加。
+    cmd = [
+        CFG.format.tool,
+        *CFG.format.args,
+        "--inplace",
+        *(rel(path) for path in files),
+    ]
+    raise SystemExit(subprocess.run(cmd, cwd=ROOT).returncode)
+
+
+def cmd_doctor(_: argparse.Namespace) -> None:
+    """检查 toolchain.toml 和外部工具是否可用。"""
+    print(f"config: {rel(ROOT / 'toolchain.toml')}")
+    print(f"project: {CFG.name}")
+
+    missing: list[str] = []
+    for tool in CFG.doctor.required:
+        location = shutil.which(tool)
+        if location:
+            print(f"[ok]      {tool}: {location}")
+        else:
+            print(f"[missing] {tool}")
+            missing.append(tool)
+
+    for tool in CFG.doctor.optional:
+        location = shutil.which(tool)
+        if location:
+            print(f"[ok]      {tool}: {location}")
+        else:
+            print(f"[warn]    {tool}: not found (optional)")
+
+    if missing:
+        fail(f"missing required tools: {', '.join(missing)}")
 
 
 def cmd_clean(_: argparse.Namespace) -> None:
@@ -188,13 +249,13 @@ def cmd_clean(_: argparse.Namespace) -> None:
         LOGS_DIR,
         VERILATOR_DIR,
         ROOT / ".pytest_cache",
-        ROOT / "tests" / "__pycache__",
+        CFG.paths.tests / "__pycache__",
     ):
         shutil.rmtree(directory, ignore_errors=True)
 
     # 兼容旧版本：早期 cocotb 结果会落在 tests/
     for pattern in ("*.result.xml", "results.xml"):
-        for old in (ROOT / "tests").glob(pattern):
+        for old in CFG.paths.tests.glob(pattern):
             old.unlink(missing_ok=True)
 
     print("Cleaned build/, waves/, logs/, .verilator/, .pytest_cache/")
@@ -226,6 +287,13 @@ def make_parser() -> argparse.ArgumentParser:
         "--cycles", type=int, default=4, help="程序跑完后等待的周期数（默认 4）"
     )
     p_prog.set_defaults(func=cmd_prog)
+
+    sub.add_parser("fmt", help="用 verible-verilog-format 格式化 RTL").set_defaults(
+        func=cmd_fmt
+    )
+    sub.add_parser("doctor", help="检查 toolchain.toml 和外部工具").set_defaults(
+        func=cmd_doctor
+    )
 
     sub.add_parser("clean", help="清理 build/ waves/ logs/ 等").set_defaults(
         func=cmd_clean

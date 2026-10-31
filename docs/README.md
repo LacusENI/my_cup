@@ -17,6 +17,7 @@
 | [arch/architecture.md](arch/architecture.md) | 整体框架、单周期数据通路、模块职责、信号连接、已知限制 | ✅ 已校对到 v0.3-mips |
 | [roadmap.md](roadmap.md) | 演进方向与阶段规划，重点为流水线改造 | ✅ 已校对到 v0.3-mips |
 | [ctrl/ctrl.md](ctrl/ctrl.md) | 控制信号真值表 | ✅ 与当前 8 条指令一致 |
+| [toolchain.md](toolchain.md) | `toolchain.toml`、Makefile 与 `mycup` 的分工 | ✅ |
 
 ## 2. 指令实现（按版本）
 

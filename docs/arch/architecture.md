@@ -160,14 +160,17 @@ tests/<category>/tb_*.py   ──(cocotb runner)──►  iverilog 编译  ─�
 tests/<category>/test_*.py ──(pytest)──────────►  收集 / 报告 / 参数化
 ```
 
-- `mycup test`：运行全部 cocotb + pytest 用例；
-- `mycup lint`：生成 `.verilator/verilator.f`，再运行 `verilator -f .verilator/verilator.f`；
-- `mycup prog <hex>`：用 `+instr=` 装载程序，运行 `tests/cpu/test_prog.py::test_prog_demo`；
-- `mycup clean`：清理 `build/`、`waves/`、`logs/` 等生成物。
+- `mycup test` / `make test`：运行全部 cocotb + pytest 用例；
+- `mycup lint` / `make lint`：生成 `.verilator/verilator.f`，再运行 `verilator -f .verilator/verilator.f`；
+- `mycup prog <hex>` / `make prog FILE=<hex>`：用 `+instr=` 装载程序，运行 `tests/cpu/test_prog.py::test_prog_demo`；
+- `mycup clean` / `make clean`：清理 `build/`、`waves/`、`logs/` 等生成物。
 
-`.verilator/verilator.f` 由 [`mycup/cli.py`](../../mycup/cli.py) 生成（含 `-Wall --timing --bbox-sys`），
+路径、工具和 lint flags 统一由 [`toolchain.toml`](../../toolchain.toml) 描述，
+再由 [`mycup/cli.py`](../../mycup/cli.py) 执行；完整说明见 [`docs/toolchain.md`](../toolchain.md)。
+
+`.verilator/verilator.f` 由 `mycup init` / `mycup lint` 生成（含 `-Wall --timing --bbox-sys`），
 作为命令行 lint 的唯一清单。编辑器只负责导航/补全/格式化，不内嵌 Verilator lint
-（详见 [README](../README.md#lint-与编辑器的分工)）。
+（详见 [工具链配置](../toolchain.md)）。
 
 ### 程序装载（仿真）
 
