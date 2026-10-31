@@ -1,5 +1,4 @@
 rtl/cpu_pkg.sv
-rtl/control/cond.sv
 rtl/control/ctrl.sv
 rtl/control/decoder.sv
 rtl/control/npc.sv

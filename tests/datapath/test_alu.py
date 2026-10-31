@@ -12,5 +12,10 @@ def test_alu_add(alu_sim, run_cocotb_case):
 
 
 def test_alu_sub(alu_sim, run_cocotb_case):
-    """减法：8 - 8 = 0，同时 zero 标志应该为 1。"""
+    """减法：8 - 8 = 0。"""
     run_cocotb_case(alu_sim, "tb_alu", "alu_sub_test")
+
+
+def test_alu_eq(alu_sim, run_cocotb_case):
+    """相等：244 == 244 = 1"""
+    run_cocotb_case(alu_sim, "tb_alu", "alu_eq_test")

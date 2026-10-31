@@ -13,7 +13,7 @@ module cpu_top (
     logic [15:0] jmp_offset;
 
     instr_t decoded;
-    ctrl_t  ctrl;
+    ctrl_t ctrl;
 
     // 当前 ISA 没有移位指令；shamt 先保留在 instr_t 里，未来使用。
     // 名字含 unused，Verilator 不会告警。
@@ -24,13 +24,13 @@ module cpu_top (
     word_t imm32;
     logic [25:0] instr_index;
 
-    logic [4:0]  reg_dst;
+    logic [4:0] reg_dst;
     word_t wb_data;
     word_t rs1_data, rs2_data;
 
     word_t alu_src1, alu_src2, alu_out;
-    logic        zero_f, neg_f, overflow_f, carry_f;
-    logic        cond_jmp;
+    logic cmp_result;
+    logic branch_taken;
 
     word_t addr, r_data, w_data;
 
@@ -49,7 +49,7 @@ module cpu_top (
     npc u_npc (
         .curr_pc(curr_pc),
         .npc_op(ctrl.npc_op),
-        .cond_jmp(cond_jmp),
+        .cond_jmp(branch_taken),
         .jmp_target(jmp_target),
         .jmp_offset(jmp_offset),
         .jmp_reg(jmp_reg),
@@ -86,19 +86,7 @@ module cpu_top (
         .alu_src2(alu_src2),
         .alu_op(ctrl.alu_op),
         .alu_out(alu_out),
-        .zero_f(zero_f),
-        .neg_f(neg_f),
-        .overflow_f(overflow_f),
-        .carry_f(carry_f)
-    );
-
-    cond u_cond (
-        .zero_f(zero_f),
-        .neg_f(neg_f),
-        .overflow_f(overflow_f),
-        .carry_f(carry_f),
-        .cond_type(ctrl.cond_type),
-        .cond_jmp(cond_jmp)
+        .cmp_result(cmp_result)
     );
 
     datam u_datam (
@@ -116,6 +104,7 @@ module cpu_top (
         .ctrl(ctrl)
     );
 
+    assign branch_taken = cmp_result; // TODO: branch_taken = cmp_result && is_branch
     assign instr_addr = curr_pc;
     assign jmp_target = instr_index;
     assign jmp_offset = imm16;

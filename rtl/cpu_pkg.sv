@@ -24,23 +24,41 @@ package cpu_pkg;
     localparam int DMEM_ADDR_W = $clog2(DMEM_WORDS);
 
     typedef logic [XLEN-1:0] word_t;
+    
+    typedef logic [4:0] reg_t;
+    typedef logic [6:0] funct7_t;
+    typedef logic [2:0] funct3_t;
+    typedef logic [6:0] opcode_t;
 
     // ---- ALU 操作码 ----
     typedef enum logic [3:0] {
+        ALU_NOP = 4'b0000,
         ALU_OP_ADD = 4'b0001,
-        ALU_OP_SUB = 4'b0010
-    } alu_op_t;
+        ALU_OP_SUB = 4'b0010,
+        ALU_AND = 4'b0011,
+        ALU_OR = 4'b0100,
+        ALU_XOR = 4'b0101,
+        ALU_SLL = 4'b0110,
+        ALU_SRA = 4'b0111,
+        ALU_SRL = 4'b1000,
+        ALU_EQ = 4'b1001,
+        ALU_NE = 4'b1010,
+        ALU_GE = 4'b1011,
+        ALU_GEU = 4'b1100,
+        ALU_LT = 4'b1101,
+        ALU_LTU = 4'b1110
+    } alu_op_t; // TODO: v0.3-rv32i
 
     // ---- 条件比较类型 ----
     typedef enum logic [1:0] {
         COND_TYPE_EQ = 2'b00
-    } cond_type_t;
+    } cond_type_t; // TODO: delete
 
     // ---- 立即数扩展类型 ----
     typedef enum logic {
         EXT_TYPE_ZERO_EXT = 1'b0,
         EXT_TYPE_SIGN_EXT = 1'b1
-    } ext_type_t;
+    } ext_type_t; // TODO: delete
 
     // ---- 下一 PC 的来源 ----
     typedef enum logic [1:0] {
@@ -48,21 +66,21 @@ package cpu_pkg;
         NPC_OP_BRANCH = 2'b01,
         NPC_OP_DIRECT = 2'b10,
         NPC_OP_RA     = 2'b11
-    } npc_op_t;
+    } npc_op_t; // TODO: v0.3-rv32i
 
     // ---- 写回目标寄存器选择 ----
     typedef enum logic [1:0] {
         RD_SEL_RT     = 2'b00,
         RD_SEL_RD     = 2'b01,
         RD_SEL_REG_RA = 2'b10
-    } rd_sel_t;
+    } rd_sel_t; // TODO: delete
 
     // ---- 写回数据选择 ----
     typedef enum logic [1:0] {
         WB_SEL_ALU_OUT = 2'b00,
         WB_SEL_R_DATA  = 2'b01,
         WB_SEL_PC_P4   = 2'b10
-    } wb_sel_t;
+    } wb_sel_t; // TODO: PC_P4 -> PC_PLUS_4
 
     // ---- ALU 第二操作数选择 ----
     typedef enum logic {
@@ -90,7 +108,24 @@ package cpu_pkg;
         logic [4:0] rd;
         logic [4:0] shamt;
         logic [5:0] funct;
-    } instr_t;
+    } instr_t; // TODO: delete
+
+    typedef struct packed {
+        funct7_t funct7;
+        funct3_t funct3;
+        opcode_t opcode;
+        reg_t rs2;
+        reg_t rs1;
+        reg_t rd;
+    } decoded_t;
+
+    typedef enum logic [2:0] { 
+        IMM_NONE,
+        IMM_I,
+        IMM_S,
+        IMM_B,
+        IMM_J
+     } imm_type_t;
 
     // ---- 控制信号打包 ----
     typedef struct packed {
@@ -104,7 +139,7 @@ package cpu_pkg;
         rd_sel_t    rd_sel;
         wb_sel_t    wb_sel;
         src2_sel_t  src2_sel;
-    } ctrl_t;
+    } ctrl_t; // TODO: v0.3-rv32i
 
     // ---- 流水线级间数据 ----
     typedef struct packed {

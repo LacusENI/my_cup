@@ -20,7 +20,7 @@
 | 测试 | 49 个 cocotb/pytest 用例 |
 | CI | GitHub Actions：`mycup lint` + `mycup test` |
 
-### 已支持指令（最小集，已冻结）
+### 已支持指令
 
 | 类别 | 指令 |
 | :-- | :-- |
@@ -29,7 +29,7 @@
 | 访存 | `lw` `sw` |
 | 分支/跳转 | `beq` `j` `jal` |
 
-> 当前 ISA 已冻结为最小集。`sb/sh` 与 `lb/lbu/lh/lhu` 作为**子字访问整体延后**
+> `sb/sh` 与 `lb/lbu/lh/lhu` 作为**子字访问整体延后**
 > （涉及端序、字节掩码 `wstrb`、DM 控制器），详见 [路线图](docs/roadmap.md#明确延后deferred)。
 
 > **已知语义差异**：当前 `beq` 的分支目标基址是**当前 PC**，不是标准 MIPS 的 `PC+4`。
@@ -70,18 +70,19 @@ my_cup/
 │   ├── cocotb_utils.py        # 时钟 / 复位 / 程序装载的小工具
 │   ├── tb_*.py                # cocotb 测试内容
 │   └── test_*.py              # pytest 入口
-├── pyproject.toml        # uv 管理的 Python 依赖（cocotb / pytest）
-├── uv.lock               # 依赖锁定
+├── pyproject.toml        # uv 管理的 Python 依赖
+├── uv.lock               # uv 的依赖锁定
 ├── docs/                 # 设计与文档（见 docs/README.md）
 ├── isa/                  # 机器可读 ISA 描述（rv32i.yaml）
-├── verilator.f           # Verilator lint 文件清单（mycup init/lint 生成）
-├── slang.f               # slang-server 文件清单（mycup init 同步生成）
+├── .opencode/agents/     # OpenCode subagent 定义
+├── .verilator/verilator.f # Verilator lint 文件清单（生成，不提交）
+├── .slang/slang.f        # slang-server 文件清单（mycup init 生成）
 ├── .slang/server.json    # slang-server 工程配置
 ├── .vscode/settings.json # slang-server + verible 编辑器配置
 ├── programs/             # 仿真用机器码程序 (*.hex) 与用法说明
-├── build/                # cocotb 构建产物 (gitignore)
-├── waves/                # 生成的波形 (gitignore)
-└── logs/                 # lint 日志 (gitignore)
+├── build/                # cocotb 构建产物
+├── waves/                # 生成的波形
+└── logs/                 # lint 日志
 ```
 
 ---
@@ -93,7 +94,7 @@ my_cup/
 ```bash
 uv sync                              # 首次：创建 .venv
 
-uv run mycup test                    # 运行全部 49 个用例
+uv run mycup test                    # 运行全部测试用例
 uv run mycup lint                    # Verilator 静态检查
 uv run mycup prog programs/demo.hex  # 装载 hex 程序跑指令级测试
 uv run mycup clean                   # 清理 build/ waves/ logs/
@@ -112,28 +113,22 @@ MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 
 ---
 
-## Lint 与编辑器的分工
+## Lint 
 
-项目 lint 的唯一门禁是：
+若要进行项目 lint，运行：
 
 ```bash
 uv run mycup lint
 ```
 
-它使用 Verilator，文件清单 [`verilator.f`](verilator.f) 由 `mycup init` / `mycup lint` 自动生成。
-
-编辑器不再内嵌 Verilator lint。编辑器只负责：
-
-- **slang-server**：语义导航、hover、跳转、补全、诊断提示；
-- **verible-verilog-format**：格式化。
-
-slang 的诊断用于编辑体验，不作为 CI 门禁；最终仍以 `mycup lint` + `mycup test` 为准。
+本项目的 lint 使用 Verilator，文件清单 `.verilator/verilator.f`，
+由 `mycup init` / `mycup lint` 自动生成。
 
 ---
 
-## SV 工具链（slang + verible）
+## 编辑器工具链（slang + verible）
 
-编辑器只保留一个 SystemVerilog LSP：`slang-server`。
+项目推荐使用 SystemVerilog LSP：`slang-server` 和自动格式化工具：`verible`。
 
 | 工具 | 用途 | 位置 |
 | :-- | :-- | :-- |
@@ -151,21 +146,12 @@ slang 的诊断用于编辑体验，不作为 CI 门禁；最终仍以 `mycup li
   - `files.associations`: `.sv` / `.svh` → `systemverilog`。
 - 项目：[`.slang/server.json`](.slang/server.json)
   - 索引 `rtl`；
-  - 构建文件清单为 [`slang.f`](slang.f)。
-- 文件清单：`slang.f` 由 `mycup init` 同时生成，**不要手工维护**。
+  - 构建文件清单为 [`.slang/slang.f`](.slang/slang.f)。
+- 文件清单：`.slang/slang.f` 由 `mycup init` 同时生成，**不要手工维护**。
   ```bash
   uv run mycup init
-  # 生成 verilator.f + slang.f
+  # 生成 .verilator/verilator.f + .slang/slang.f
   ```
-
-不再需要：
-
-- `veridian`
-- `veridian-lsp` 代理
-- `veridian.yml`
-- `mshr-h.veriloghdl`
-- `my_cup-slang.code-workspace`
-- `ctags`
 
 ### 用法
 
@@ -173,7 +159,7 @@ slang 的诊断用于编辑体验，不作为 CI 门禁；最终仍以 `mycup li
    ```text
    Ctrl+Shift+P -> Developer: Reload Window
    ```
-2. 打开项目文件夹（不是旧的 slang workspace 文件）。
+2. 打开项目文件夹。
 3. 打开 `rtl/cpu_top.sv`，执行：
    ```text
    slang: Set Top Level
@@ -212,6 +198,30 @@ uv sync
 
 > `slang-server` 和 VS Code 扩展缺一不可。只有扩展、没有 server 时，
 > 编辑器看起来会“没有任何语言服务”。
+
+---
+
+## OpenCode subagents
+
+项目在 `.opencode/agents/` 下定义了四个 subagent，用来把“设计”和“落地”分开：
+
+| Agent | 用途 | 权限 |
+| :-- | :-- | :-- |
+| `implementer` | 按明确任务改 RTL/测试/文档，跑 lint/test | 可编辑，不能 commit/push |
+| `rtl-reviewer` | 只读审查 RTL/测试/文档改动 | 只读 |
+| `verifier` | 只跑 lint/test，报告失败 | 只读 |
+| `doc-checker` | 检查文档链接、路径、命令、状态一致性 | 只读 |
+
+建议工作流：
+
+```text
+主会话（架构/设计/文档）
+  -> implementer 做局部编码
+  -> rtl-reviewer / verifier / doc-checker 做独立检查
+  -> 主会话决定是否合并/提交
+```
+
+`implementer` 不会替你做架构决策；如果任务需要改公共接口或 ISA 语义，它应该停下来报告。
 
 ---
 

@@ -9,9 +9,10 @@ from utils.cocotb_utils import Signal, assert_fields
 
 
 # ALU 操作码是对外契约：数值不要随意改。
+ALU_NOP = 0b0000
 ALU_OP_ADD = 0b0001
 ALU_OP_SUB = 0b0010
-
+ALU_EQ = 0b1001
 
 # ALU 的公开字段：测试依赖哪些，就列哪些。
 class AluDut(Protocol):
@@ -19,7 +20,7 @@ class AluDut(Protocol):
     alu_src1: Signal
     alu_src2: Signal
     alu_out: Signal
-    zero_f: Signal
+    cmp_result: Signal
 
 
 REQUIRED_FIELDS = (
@@ -27,7 +28,7 @@ REQUIRED_FIELDS = (
     "alu_src1",
     "alu_src2",
     "alu_out",
-    "zero_f",
+    "cmp_result",
 )
 
 
@@ -44,7 +45,7 @@ async def alu_add_test(dut: AluDut):
     dut.alu_src2.value = 3
     await Timer(1, unit="ns")
     assert int(dut.alu_out.value) == 8
-    assert int(dut.zero_f.value) == 0
+    assert int(dut.cmp_result.value) == 0
 
 
 @cocotb.test()
@@ -54,4 +55,13 @@ async def alu_sub_test(dut: AluDut):
     dut.alu_src2.value = 8
     await Timer(1, unit="ns")
     assert int(dut.alu_out.value) == 0
-    assert int(dut.zero_f.value) == 1
+    assert int(dut.cmp_result.value) == 0
+
+@cocotb.test()
+async def alu_eq_test(dut: AluDut):
+    dut.alu_op.value = ALU_EQ
+    dut.alu_src1.value = 244
+    dut.alu_src2.value = 244
+    await Timer(1, unit="ns")
+    assert int(dut.alu_out.value) == 0
+    assert int(dut.cmp_result.value) == 1
