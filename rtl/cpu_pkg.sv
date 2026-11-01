@@ -4,15 +4,13 @@
 // -----------------------------------------------------------------------------
 // cpu_pkg: 全项目共享的类型、常量与纯函数
 //
+// v0.3-rv32i 只保留当前 7 条指令需要的类型：
+//   add, addi, beq, lw, sw, jal, jalr
+//
 // 说明：
 //   - 控制信号用 typedef enum，而不是裸 localparam，获得类型检查；
 //   - 指令字段用 struct packed，decoder 直接输出结构体；
-//   - 控制信号用 struct packed 打包成 ctrl_t，方便以后做流水线寄存器。
-//
-// 注意：
-//   - 这里的枚举值、opcode/funct 同时是测试可见的对外契约；
-//   - 已发布的数值不要修改；新增指令时只追加，保持向后兼容；
-//   - 如果确实要改，测试会失败，提醒这是一次破坏性变更。
+//   - 控制信号打包成 ctrl_t，方便以后做流水线寄存器。
 // -----------------------------------------------------------------------------
 package cpu_pkg;
 
@@ -24,63 +22,35 @@ package cpu_pkg;
     localparam int DMEM_ADDR_W = $clog2(DMEM_WORDS);
 
     typedef logic [XLEN-1:0] word_t;
-    
+
+    // ---- 指令字段 ----
     typedef logic [4:0] reg_t;
     typedef logic [6:0] funct7_t;
     typedef logic [2:0] funct3_t;
     typedef logic [6:0] opcode_t;
 
     // ---- ALU 操作码 ----
-    typedef enum logic [3:0] {
-        ALU_NOP = 4'b0000,
-        ALU_OP_ADD = 4'b0001,
-        ALU_OP_SUB = 4'b0010,
-        ALU_AND = 4'b0011,
-        ALU_OR = 4'b0100,
-        ALU_XOR = 4'b0101,
-        ALU_SLL = 4'b0110,
-        ALU_SRA = 4'b0111,
-        ALU_SRL = 4'b1000,
-        ALU_EQ = 4'b1001,
-        ALU_NE = 4'b1010,
-        ALU_GE = 4'b1011,
-        ALU_GEU = 4'b1100,
-        ALU_LT = 4'b1101,
-        ALU_LTU = 4'b1110
-    } alu_op_t; // TODO: v0.3-rv32i
-
-    // ---- 条件比较类型 ----
+    // 本批只做加法、相等比较和空操作。
     typedef enum logic [1:0] {
-        COND_TYPE_EQ = 2'b00
-    } cond_type_t; // TODO: delete
-
-    // ---- 立即数扩展类型 ----
-    typedef enum logic {
-        EXT_TYPE_ZERO_EXT = 1'b0,
-        EXT_TYPE_SIGN_EXT = 1'b1
-    } ext_type_t; // TODO: delete
+        ALU_NOP = 2'b00,
+        ALU_ADD = 2'b01,
+        ALU_EQ  = 2'b10
+    } alu_op_t;
 
     // ---- 下一 PC 的来源 ----
     typedef enum logic [1:0] {
-        NPC_OP_PLUS4  = 2'b00,
-        NPC_OP_BRANCH = 2'b01,
-        NPC_OP_DIRECT = 2'b10,
-        NPC_OP_RA     = 2'b11
-    } npc_op_t; // TODO: v0.3-rv32i
-
-    // ---- 写回目标寄存器选择 ----
-    typedef enum logic [1:0] {
-        RD_SEL_RT     = 2'b00,
-        RD_SEL_RD     = 2'b01,
-        RD_SEL_REG_RA = 2'b10
-    } rd_sel_t; // TODO: delete
+        NPC_PLUS4  = 2'b00,
+        NPC_BRANCH = 2'b01,
+        NPC_JAL    = 2'b10,
+        NPC_JALR   = 2'b11
+    } npc_op_t;
 
     // ---- 写回数据选择 ----
     typedef enum logic [1:0] {
         WB_SEL_ALU_OUT = 2'b00,
         WB_SEL_R_DATA  = 2'b01,
-        WB_SEL_PC_P4   = 2'b10
-    } wb_sel_t; // TODO: PC_P4 -> PC_PLUS_4
+        WB_SEL_PC_PLUS4 = 2'b10
+    } wb_sel_t;
 
     // ---- ALU 第二操作数选择 ----
     typedef enum logic {
@@ -88,60 +58,47 @@ package cpu_pkg;
         SRC2_SEL_IMM = 1'b1
     } src2_sel_t;
 
-    // ---- opcode / funct（保持 6 位常量，便于和 instr 字段比较）----
-    localparam logic [5:0] OP_R     = 6'b000000;
-    localparam logic [5:0] OP_ADDIU = 6'b001001;
-    localparam logic [5:0] OP_BEQ   = 6'b000100;
-    localparam logic [5:0] OP_LW    = 6'b100011;
-    localparam logic [5:0] OP_SW    = 6'b101011;
-    localparam logic [5:0] OP_J     = 6'b000010;
-    localparam logic [5:0] OP_JAL   = 6'b000011;
+    // ---- RV32I opcode / funct3 / funct7 ----
+    localparam opcode_t OP_LOAD   = 7'b0000011;
+    localparam opcode_t OP_IMM    = 7'b0010011;
+    localparam opcode_t OP_STORE  = 7'b0100011;
+    localparam opcode_t OP_R      = 7'b0110011;
+    localparam opcode_t OP_BRANCH = 7'b1100011;
+    localparam opcode_t OP_JALR   = 7'b1100111;
+    localparam opcode_t OP_JAL    = 7'b1101111;
 
-    localparam logic [5:0] FUNCT_ADDU = 6'b100001;
-    localparam logic [5:0] FUNCT_JR   = 6'b001000;
+    localparam funct3_t F3_ADD  = 3'b000;
+    localparam funct3_t F3_LW   = 3'b010;
+    localparam funct3_t F3_SW   = 3'b010;
+    localparam funct3_t F3_BEQ  = 3'b000;
+    localparam funct3_t F3_JALR = 3'b000;
+
+    localparam funct7_t F7_ADD = 7'b0000000;
 
     // ---- 指令字段 ----
-    typedef struct packed {
-        logic [5:0] op;
-        logic [4:0] rs;
-        logic [4:0] rt;
-        logic [4:0] rd;
-        logic [4:0] shamt;
-        logic [5:0] funct;
-    } instr_t; // TODO: delete
-
+    // 位序与 RV32I 32 位指令一致：funct7 在最高位，opcode 在最低位。
     typedef struct packed {
         funct7_t funct7;
+        reg_t    rs2;
+        reg_t    rs1;
         funct3_t funct3;
+        reg_t    rd;
         opcode_t opcode;
-        reg_t rs2;
-        reg_t rs1;
-        reg_t rd;
-    } decoded_t;
-
-    typedef enum logic [2:0] { 
-        IMM_NONE,
-        IMM_I,
-        IMM_S,
-        IMM_B,
-        IMM_J
-     } imm_type_t;
+    } instr_t;
 
     // ---- 控制信号打包 ----
     typedef struct packed {
         npc_op_t    npc_op;
         logic       reg_write;
         alu_op_t    alu_op;
-        logic       mem_write;
         logic       mem_read;
-        cond_type_t cond_type;
-        ext_type_t  ext_type;
-        rd_sel_t    rd_sel;
+        logic       mem_write;
         wb_sel_t    wb_sel;
         src2_sel_t  src2_sel;
-    } ctrl_t; // TODO: v0.3-rv32i
+        logic       inst_illegal;
+    } ctrl_t;
 
-    // ---- 流水线级间数据 ----
+    // ---- 流水线级间数据（本批不上流水线，只保留结构定义）----
     typedef struct packed {
         logic  valid;
         word_t pc;
@@ -177,15 +134,6 @@ package cpu_pkg;
         instr_t instr;
         ctrl_t  ctrl;
     } mem_wb_t;
-
-    // ---- 位宽扩展函数 ----
-    function automatic word_t s_ext_16_32(input logic [15:0] in);
-        return {{16{in[15]}}, in};
-    endfunction
-
-    function automatic word_t z_ext_16_32(input logic [15:0] in);
-        return {16'b0, in};
-    endfunction
 
 endpackage
 

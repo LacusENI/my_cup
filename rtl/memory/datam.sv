@@ -28,6 +28,13 @@ module datam
             $readmemh(init_file, mem);
     end
 
+    // 仿真断言：本批只支持 4 字节对齐的整字访存。
+    // 放到时钟沿检查，避免组合逻辑在指令切换时出现瞬态毛刺。
+    always_ff @(posedge clk) begin
+        if ((mem_read || mem_write) && (addr[1:0] != 2'b00))
+            $fatal(1, "datam: unaligned address %0h", addr);
+    end
+
     // 读操作：当前仅支持整字访问
     always_comb begin
         if (mem_read)

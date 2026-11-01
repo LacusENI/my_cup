@@ -3,88 +3,86 @@
 module ctrl
     import cpu_pkg::*;
 (
-    input  logic [5:0] op,
-    input  logic [5:0] funct,
-    output ctrl_t      ctrl
+    input  opcode_t opcode,
+    input  funct3_t funct3,
+    input  funct7_t funct7,
+    input  logic    valid_encoding,
+    output ctrl_t   ctrl
 );
 
-    // 先给所有控制信号一个安全默认值，再按 opcode/funct 覆盖。
-    // 未定义的指令保持默认值（不写回、不访存、顺序执行）。
+    // funct3/funct7 的合法性已经在 decoder 中检查；ctrl 这里保留端口，
+    // 方便以后把更多指令加入控制表。
+    logic unused_funct;
+    assign unused_funct = &{1'b0, funct3, funct7};
+
+    // 先给所有控制信号一个安全默认值，再按 opcode 覆盖。
+    // 非法指令保持这些默认值，同时把 inst_illegal 置 1。
     always_comb begin
-        ctrl.npc_op    = NPC_OP_PLUS4;
-        ctrl.reg_write = 1'b0;
-        ctrl.alu_op    = ALU_OP_ADD;
-        ctrl.mem_write = 1'b0;
-        ctrl.mem_read  = 1'b0;
-        ctrl.cond_type = COND_TYPE_EQ;
-        ctrl.ext_type  = EXT_TYPE_SIGN_EXT;
-        ctrl.rd_sel    = RD_SEL_RT;
-        ctrl.wb_sel    = WB_SEL_ALU_OUT;
-        ctrl.src2_sel  = SRC2_SEL_RS2;
+        ctrl.npc_op       = NPC_PLUS4;
+        ctrl.reg_write    = 1'b0;
+        ctrl.alu_op       = ALU_NOP;
+        ctrl.mem_read     = 1'b0;
+        ctrl.mem_write    = 1'b0;
+        ctrl.wb_sel       = WB_SEL_ALU_OUT;
+        ctrl.src2_sel     = SRC2_SEL_RS2;
+        ctrl.inst_illegal = !valid_encoding;
 
-        unique case (op)
-            OP_R: begin
-                unique case (funct)
-                    FUNCT_ADDU: begin
-                        ctrl.reg_write = 1'b1;
-                        ctrl.rd_sel    = RD_SEL_RD;
-                        ctrl.wb_sel    = WB_SEL_ALU_OUT;
-                        ctrl.alu_op    = ALU_OP_ADD;
-                    end
-                    FUNCT_JR: begin
-                        ctrl.npc_op = NPC_OP_RA;
-                    end
-                    default: ;  // 未定义的 R 型指令
-                endcase
-            end
+        if (valid_encoding) begin
+            unique case (opcode)
+                OP_R: begin
+                    ctrl.reg_write = 1'b1;
+                    ctrl.alu_op    = ALU_ADD;
+                    ctrl.wb_sel    = WB_SEL_ALU_OUT;
+                    ctrl.src2_sel  = SRC2_SEL_RS2;
+                end
 
-            OP_ADDIU: begin
-                ctrl.reg_write = 1'b1;
-                ctrl.rd_sel    = RD_SEL_RT;
-                ctrl.wb_sel    = WB_SEL_ALU_OUT;
-                ctrl.src2_sel  = SRC2_SEL_IMM;
-                ctrl.ext_type  = EXT_TYPE_SIGN_EXT;
-                ctrl.alu_op    = ALU_OP_ADD;
-            end
+                OP_IMM: begin
+                    ctrl.reg_write = 1'b1;
+                    ctrl.alu_op    = ALU_ADD;
+                    ctrl.wb_sel    = WB_SEL_ALU_OUT;
+                    ctrl.src2_sel  = SRC2_SEL_IMM;
+                end
 
-            OP_BEQ: begin
-                ctrl.npc_op    = NPC_OP_BRANCH;
-                ctrl.cond_type = COND_TYPE_EQ;
-                ctrl.alu_op    = ALU_OP_SUB;
-                ctrl.src2_sel  = SRC2_SEL_RS2;
-            end
+                OP_BRANCH: begin
+                    ctrl.npc_op   = NPC_BRANCH;
+                    ctrl.alu_op   = ALU_EQ;
+                    ctrl.src2_sel = SRC2_SEL_RS2;
+                end
 
-            OP_LW: begin
-                ctrl.reg_write = 1'b1;
-                ctrl.rd_sel    = RD_SEL_RT;
-                ctrl.wb_sel    = WB_SEL_R_DATA;
-                ctrl.src2_sel  = SRC2_SEL_IMM;
-                ctrl.ext_type  = EXT_TYPE_SIGN_EXT;
-                ctrl.alu_op    = ALU_OP_ADD;
-                ctrl.mem_read  = 1'b1;
-            end
+                OP_LOAD: begin
+                    ctrl.reg_write = 1'b1;
+                    ctrl.alu_op    = ALU_ADD;
+                    ctrl.mem_read  = 1'b1;
+                    ctrl.wb_sel    = WB_SEL_R_DATA;
+                    ctrl.src2_sel  = SRC2_SEL_IMM;
+                end
 
-            OP_SW: begin
-                ctrl.src2_sel  = SRC2_SEL_IMM;
-                ctrl.ext_type  = EXT_TYPE_SIGN_EXT;
-                ctrl.alu_op    = ALU_OP_ADD;
-                ctrl.mem_write = 1'b1;
-            end
+                OP_STORE: begin
+                    ctrl.alu_op    = ALU_ADD;
+                    ctrl.mem_write = 1'b1;
+                    ctrl.src2_sel  = SRC2_SEL_IMM;
+                end
 
-            OP_J: begin
-                ctrl.npc_op = NPC_OP_DIRECT;
-            end
+                OP_JAL: begin
+                    ctrl.npc_op    = NPC_JAL;
+                    ctrl.reg_write = 1'b1;
+                    ctrl.alu_op    = ALU_NOP;
+                    ctrl.wb_sel    = WB_SEL_PC_PLUS4;
+                end
 
-            OP_JAL: begin
-                ctrl.npc_op    = NPC_OP_DIRECT;
-                ctrl.reg_write = 1'b1;
-                ctrl.rd_sel    = RD_SEL_REG_RA;
-                ctrl.wb_sel    = WB_SEL_PC_P4;
-            end
+                OP_JALR: begin
+                    ctrl.npc_op    = NPC_JALR;
+                    ctrl.reg_write = 1'b1;
+                    ctrl.alu_op    = ALU_ADD;
+                    ctrl.wb_sel    = WB_SEL_PC_PLUS4;
+                    ctrl.src2_sel  = SRC2_SEL_IMM;
+                end
 
-            default: ;  // 未定义的 opcode
-        endcase
+                default: ;
+            endcase
+        end
     end
+
 endmodule
 
 `default_nettype wire

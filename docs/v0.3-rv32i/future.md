@@ -28,7 +28,7 @@
 
 后续加移位时：
 
-- `slli/srli/srai` 在 `imm_type` 上仍统一为 `I`；
+- `slli/srli/srai` 的立即数仍按 I 型格式处理；
 - `imm` 包含 `funct7`，ALU 只取 `alu_src2[4:0]`；
 - 汇编器/YAML 用 `shift_imm: true` 区分 `funct7+shamt` 与普通 `imm12`；
 - 不需要 `IMM_SHAMT`；

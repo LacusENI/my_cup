@@ -1,6 +1,6 @@
 # v0.3-rv32i 设计落地
 
-> 状态：规划中，尚未开始 RTL 实现
+> 状态：**RTL 已落地，测试已通过**（单周期 RV32I 最小子集）
 > 前置版本：`v0.3-mips`（单周期 MIPS 子集，已打 tag）
 
 > 相关文档：
@@ -145,21 +145,19 @@ mem_write = 0
 ### 6.1 RTL
 
 - `cpu_pkg.sv`：类型、枚举、`instr_t`、`ctrl_t`、流水线 struct 更新；
-- `decoder.sv`：RV32I 字段、`valid_encoding`、隐藏 `imm_gen`；
-- 新增 `imm_gen.sv`；
+- `decoder.sv`：RV32I 字段、`valid_encoding`、内部 `imm_gen` 纯函数；
 - `ctrl.sv`：7 条控制表、`inst_illegal`、安全控制；
 - `alu.sv`：ADD / EQ / NOP、`cmp_result`、删 flags；
 - `npc.sv`：新接口、JAL/JALR、非法 hold；
 - `regfile.sv`：端口改名、删 `rd_sel`；
 - `datam.sv`：字节地址模型、边界断言；
-- `instrm.sv`：收尾改名（可选）；
+- `instrm.sv`：本批暂不改名，保留现有测试路径；
 - `cpu_top.sv`：删旧模块、接新接口、输出 `inst_illegal`；
 - 删除 `ext.sv`、`cond.sv`。
 
 ### 6.2 测试
 
-- 新增 `tests/control/tb_imm_gen.py` / `test_imm_gen.py`；
-- 新增 `tests/control/tb_decoder.py` / `test_decoder.py`；
+- 新增 `tests/control/tb_decoder.py` / `test_decoder.py`（立即数通过 decoder.imm 测试）；
 - 更新 `tb_alu`：ADD/EQ/NOP、`cmp_result`、无 flags；
 - 更新 `tb_npc`：新端口/opcode、illegal hold、B/J 偏移；
 - 更新 `tb_ctrl` + `ctrl_probe`：新 `ctrl_t` 字段、`inst_illegal`；
@@ -167,7 +165,7 @@ mem_write = 0
 - 更新 `tb_datam`：字节地址模型/对齐断言；
 - 更新 `tb_instr`：7 条指令、`jalr rd==rs1`、`rd=x0`、非法 stop；
 - 更新 `tb_prog` 和 `programs/demo.hex`：RV32I 程序；
-- `mips_asm.py` -> `riscv_asm.py`，更新 `test_asm`；
+- 新增 `riscv_asm.py`，更新 `test_asm`；`mips_asm.py` 保留为历史参考；
 - 更新 `tests/utils/cocotb_utils.py`（如 `u_instrm` 改名）；
 - 更新 `tests/README` 覆盖表和契约字段。
 

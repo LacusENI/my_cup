@@ -1,36 +1,29 @@
 `default_nettype none
 
 module cpu_top (
-    input logic clk,
-    input logic rst
+    input  logic clk,
+    input  logic rst,
+    output logic inst_illegal
 );
     import cpu_pkg::*;
 
     word_t instr_addr;
     word_t instr;
-    word_t curr_pc, next_pc, pc_plus4, jmp_reg;
-    logic [25:0] jmp_target;
-    logic [15:0] jmp_offset;
+    word_t curr_pc, next_pc, pc_plus4;
 
     instr_t decoded;
-    ctrl_t ctrl;
+    ctrl_t  ctrl;
 
-    // 当前 ISA 没有移位指令；shamt 先保留在 instr_t 里，未来使用。
-    // 名字含 unused，Verilator 不会告警。
-    logic [4:0] unused_shamt;
-    assign unused_shamt = decoded.shamt;
+    word_t imm;
+    logic  valid_encoding;
 
-    logic [15:0] imm16;
-    word_t imm32;
-    logic [25:0] instr_index;
-
-    logic [4:0] reg_dst;
-    word_t wb_data;
+    reg_t  rs1, rs2, rd;
     word_t rs1_data, rs2_data;
+    word_t wb_data;
 
     word_t alu_src1, alu_src2, alu_out;
-    logic cmp_result;
-    logic branch_taken;
+    logic  cmp_result;
+    logic  branch_taken;
 
     word_t addr, r_data, w_data;
 
@@ -47,38 +40,36 @@ module cpu_top (
     );
 
     npc u_npc (
-        .curr_pc(curr_pc),
+        .inst_pc(curr_pc),
         .npc_op(ctrl.npc_op),
-        .cond_jmp(branch_taken),
-        .jmp_target(jmp_target),
-        .jmp_offset(jmp_offset),
-        .jmp_reg(jmp_reg),
+        .branch_taken(branch_taken),
+        .pc_offset(imm),
+        .jalr_target(alu_out),
+        .inst_illegal(ctrl.inst_illegal),
         .pc_plus4(pc_plus4),
         .next_pc(next_pc)
     );
 
     decoder u_decoder (
-        .instr(instr),
+        .inst(instr),
         .decoded(decoded),
-        .imm16(imm16),
-        .instr_index(instr_index)
+        .imm(imm),
+        .valid_encoding(valid_encoding)
     );
+
+    assign rs1 = decoded.rs1;
+    assign rs2 = decoded.rs2;
+    assign rd  = decoded.rd;
 
     regfile u_regfile (
         .clk(clk),
-        .reg_src1(decoded.rs),
-        .reg_src2(decoded.rt),
-        .reg_dst(reg_dst),
+        .rs1(rs1),
+        .rs2(rs2),
+        .rd(rd),
         .wb_data(wb_data),
         .reg_write(ctrl.reg_write),
         .rs1_data(rs1_data),
         .rs2_data(rs2_data)
-    );
-
-    ext u_ext (
-        .imm16(imm16),
-        .ext_type(ctrl.ext_type),
-        .imm32(imm32)
     );
 
     alu u_alu (
@@ -99,42 +90,33 @@ module cpu_top (
     );
 
     ctrl u_ctrl (
-        .op(decoded.op),
-        .funct(decoded.funct),
+        .opcode(decoded.opcode),
+        .funct3(decoded.funct3),
+        .funct7(decoded.funct7),
+        .valid_encoding(valid_encoding),
         .ctrl(ctrl)
     );
 
-    assign branch_taken = cmp_result; // TODO: branch_taken = cmp_result && is_branch
-    assign instr_addr = curr_pc;
-    assign jmp_target = instr_index;
-    assign jmp_offset = imm16;
-    assign jmp_reg = rs1_data;
-
-    // 写回目标寄存器：rd / rt / $ra
-    always_comb begin
-        unique case (ctrl.rd_sel)
-            RD_SEL_RD:     reg_dst = decoded.rd;
-            RD_SEL_RT:     reg_dst = decoded.rt;
-            RD_SEL_REG_RA: reg_dst = 5'd31;
-            default:       reg_dst = '0;
-        endcase
-    end
-
-    // 写回数据：内存读出 / ALU 结果 / PC+4
-    always_comb begin
-        unique case (ctrl.wb_sel)
-            WB_SEL_R_DATA:  wb_data = r_data;
-            WB_SEL_ALU_OUT: wb_data = alu_out;
-            WB_SEL_PC_P4:   wb_data = pc_plus4;
-            default:        wb_data = '0;
-        endcase
-    end
+    assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
+    assign inst_illegal = ctrl.inst_illegal;
+    assign instr_addr   = curr_pc;
 
     assign alu_src1 = rs1_data;
-    assign alu_src2 = (ctrl.src2_sel == SRC2_SEL_IMM) ? imm32 : rs2_data;
+    assign alu_src2 = (ctrl.src2_sel == SRC2_SEL_IMM) ? imm : rs2_data;
 
-    assign addr = alu_out;
+    assign addr   = alu_out;
     assign w_data = rs2_data;
+
+    // 写回数据：ALU 结果 / 内存读出 / PC+4
+    always_comb begin
+        unique case (ctrl.wb_sel)
+            WB_SEL_ALU_OUT:  wb_data = alu_out;
+            WB_SEL_R_DATA:   wb_data = r_data;
+            WB_SEL_PC_PLUS4: wb_data = pc_plus4;
+            default:         wb_data = '0;
+        endcase
+    end
+
 endmodule
 
 `default_nettype wire

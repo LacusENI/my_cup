@@ -98,6 +98,21 @@ def ctrl_sim():
 
 
 @pytest.fixture(scope="session")
+def decoder_sim():
+    """单元级：decoder（纯组合逻辑），通过 test-only probe 观察字段和立即数。"""
+    return _build(
+        "decoder_probe",
+        [
+            PKG,
+            RTL / "control" / "decoder.sv",
+            TESTS / "hdl" / "decoder_probe.sv",
+        ],
+        "decoder_probe",
+        "control",
+    )
+
+
+@pytest.fixture(scope="session")
 def datam_sim():
     """单元级：datam（数据存储器）。"""
     return _build("datam", [PKG, RTL / "memory" / "datam.sv"], "datam", "memory")

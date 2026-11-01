@@ -1,13 +1,13 @@
 # Python 验证（cocotb + pytest）
 
-项目的验证现在**只有这一条链路**：cocotb 写测试内容，pytest 负责收集和报告。
+项目的验证链路：cocotb 写测试内容，pytest 负责收集和报告。
 旧的 HDL TB 与 `sim/tb`、`lib/vtest.vh` 已经全部移除。
 
 ## 快速开始
 
 ```bash
 uv sync            # 首次：创建 .venv，安装 cocotb / pytest
-uv run mycup test  # 跑全部 49 个用例
+uv run mycup test  # 跑全部用例
 uv run pytest -v   # 同上（直接调 pytest）
 ```
 
@@ -20,28 +20,29 @@ tests/
 ├── conftest.py        # fixture：编译 DUT + run_cocotb_case
 ├── utils/
 │   ├── cocotb_utils.py  # 时钟 / 复位 / 等待 + CPU 顶层共享访问器
-│   ├── mips_asm.py      # MIPS 子集指令编码器
-│   └── test_asm.py      # 编码器自检
+│   ├── riscv_asm.py     # RV32I 7 条指令编码器
+│   ├── mips_asm.py      # MIPS 历史编码器（保留参考）
+│   └── test_asm.py      # RV32I 编码器自检
 ├── hdl/
-│   └── ctrl_probe.sv    # test-only：把 ctrl_t 摊平给 cocotb
+│   ├── ctrl_probe.sv    # test-only：把 ctrl_t 摊平给 cocotb
+│   └── decoder_probe.sv # test-only：把 instr_t 摊平给 cocotb
 ├── control/
-│   ├── tb_ctrl.py       # ctrl cocotb 用例 + 契约（使用 ctrl_probe）
-│   ├── test_ctrl.py
-│   ├── tb_npc.py        # npc cocotb 用例 + 契约
-│   └── test_npc.py
+│   ├── tb_decoder.py    # decoder 字段 / 立即数 / 合法编码
+│   ├── tb_ctrl.py       # ctrl 控制表 / 非法指令
+│   ├── tb_npc.py        # npc 分支 / 跳转 / illegal hold
+│   └── test_*.py
 ├── datapath/
-│   ├── tb_alu.py        # alu cocotb 用例 + 契约
-│   ├── test_alu.py
-│   ├── tb_regfile.py    # regfile cocotb 用例 + 契约
-│   └── test_regfile.py
+│   ├── tb_alu.py        # ADD / EQ / NOP
+│   ├── tb_regfile.py    # 32x32 寄存器堆
+│   └── test_*.py
 ├── memory/
-│   ├── tb_datam.py      # datam cocotb 用例 + 契约
+│   ├── tb_datam.py      # 整字数据存储器
 │   └── test_datam.py
 ├── pipe/
-│   ├── tb_pipe_regs.py  # 四个流水线寄存器 + 契约
+│   ├── tb_pipe_regs.py  # 四个流水线寄存器（尚未接入 top）
 │   └── test_pipe_regs.py
 └── cpu/
-    ├── tb_instr.py      # ISA 级单指令 + cpu_top 契约
+    ├── tb_instr.py      # RV32I 单指令 ISA + cpu_top 契约
     ├── test_instr.py
     ├── tb_prog.py       # program 级：$readmemh 程序装载
     └── test_prog.py
@@ -49,7 +50,7 @@ tests/
 
 目录按 RTL 职责划分：
 
-- `control/`：`ctrl`、`npc`
+- `control/`：`decoder`、`ctrl`、`npc`
 - `datapath/`：`alu`、`regfile`
 - `memory/`：`datam`
 - `pipe/`：流水线级间寄存器
@@ -62,39 +63,38 @@ tests/
 - `REQUIRED_FIELDS`（测试依赖的字段列表）；
 - 一个 `contract_test`，在仿真里确认这些字段还在。
 
-`tb_prog.py` 是 program 级冒烟测试，不是模块 tb，所以复用 `utils/cocotb_utils.py` 里的 CPU 访问器。
-
 命名约定：
 
 - `tb_*.py`：**cocotb 测试内容**，由仿真器在 Python 进程里加载，pytest 不会直接收集；
 - `test_*.py`：**pytest 入口**，负责调用 `runner.test()`，只做“选择和报告”。
 
-> `tests/hdl/ctrl_probe.sv` 是 **test-only probe**：它实例化 `ctrl`，
-> 把 `ctrl_t` 的字段摊平成普通端口，避免 Python 里手写 struct 位偏移。
-> 它不参与综合，也不在 `.verilator/verilator.f` 的 lint 清单里；只由 `ctrl_sim` 编译。
+> `tests/hdl/ctrl_probe.sv` 和 `decoder_probe.sv` 是 **test-only probe**：
+> 它们实例化 RTL，把 packed struct 字段摊平成普通端口，避免 Python 里手写位偏移。
+> 它们不参与综合，也不在 `.verilator/verilator.f` 的 lint 清单里。
 
 ## 覆盖范围
 
 | 测试文件 | 覆盖内容 | 用例数 |
 | :-- | :-- | :-- |
-| `datapath/test_alu.py` | 加法、减法、zero 标志、alu 契约 | 3 |
-| `control/test_ctrl.py` | 8 条指令的控制信号、ctrl 契约 | 9 |
-| `memory/test_datam.py` | 整字读写、写禁用、读禁用、datam 契约 | 4 |
-| `control/test_npc.py` | plus4 / 分支 / 回跳 / 直接跳 / jr、npc 契约 | 7 |
-| `datapath/test_regfile.py` | 读写、`$0`、双读端口、写禁用、regfile 契约 | 5 |
-| `pipe/test_pipe_regs.py` | IF/ID、ID/EX、EX/MEM、MEM/WB 的行为 + 契约 | 8 |
-| `utils/test_asm.py` | MIPS 指令编码器自检（已知机器码） | 1 |
-| `cpu/test_instr.py` | 单指令 ISA + cpu_top 契约 | 11 |
+| `control/test_decoder.py` | RV32I 字段切分、I/S/B/J 立即数、非法编码 | 10 |
+| `control/test_ctrl.py` | 7 条指令控制表、非法指令安全控制 | 9 |
+| `control/test_npc.py` | PLUS4 / BRANCH / JAL / JALR / illegal hold | 8 |
+| `datapath/test_alu.py` | ADD / EQ / NOP、32 位回绕 | 6 |
+| `datapath/test_regfile.py` | 读写、x0、双读端口、写禁用 | 5 |
+| `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
+| `pipe/test_pipe_regs.py` | 四个流水线寄存器的行为 + 契约 | 8 |
+| `utils/test_asm.py` | RV32I 编码器、范围和伪指令检查 | 25 |
+| `cpu/test_instr.py` | 7 条单指令 ISA + 非法停止 + 契约 | 18 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **49 个用例**。
+合计 **94 个用例**。
 
 > 流水线寄存器用 `struct packed`（`if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`）承载数据；
 > 由于 Icarus VPI 不暴露 struct 字段，测试里把 struct 当成一个整数来读写。
 
-## 怎么写一个新测试（3 步）
+## 怎么写一个新测试
 
-以 `npc` 为例：
+以 `npc` 为例。
 
 ### 1. 在 `conftest.py` 加一个 fixture
 
@@ -118,29 +118,30 @@ from typing import Protocol
 import cocotb
 from utils.cocotb_utils import Signal, assert_fields, settle
 
-# 常量直接写死：它们是对外契约，不跟着 RTL 自动变
-NPC_OP_PLUS4 = 0b00
+NPC_PLUS4 = 0
 
-# NpcDut 就在本文件顶部声明
 class NpcDut(Protocol):
-    curr_pc: Signal
+    inst_pc: Signal
     npc_op: Signal
-    ...
+    branch_taken: Signal
+    pc_offset: Signal
+    jalr_target: Signal
+    inst_illegal: Signal
+    pc_plus4: Signal
+    next_pc: Signal
 
 @cocotb.test()
 async def plus4_test(dut: NpcDut):
-    """普通情况：PC = PC + 4。"""
-    dut.curr_pc.value = 0x10
-    dut.npc_op.value = NPC_OP_PLUS4   # 0b00 是测试里写死的契约
-    dut.cond_jmp.value = 0
+    """普通情况：PC + 4。"""
+    dut.inst_pc.value = 0x10
+    dut.npc_op.value = NPC_PLUS4
+    dut.branch_taken.value = 0
+    dut.pc_offset.value = 0
+    dut.jalr_target.value = 0
+    dut.inst_illegal.value = 0
     await settle()
     assert int(dut.next_pc.value) == 0x14
 ```
-
-- `@cocotb.test()` 注册用例；
-- `dut` 是 HDL 顶层句柄；
-- `dut: NpcDut` 只是给 IDE / 类型检查器看的，运行时不会检查；
-- `await settle()` 等组合逻辑稳定。
 
 ### 3. 写 `tests/control/test_npc.py`（pytest 入口）
 
@@ -163,17 +164,14 @@ def test_npc_plus4(npc_sim, run_cocotb_case):
 
 ```python
 from utils.cocotb_utils import read_pc, read_reg
-from utils.mips_asm import addu
-
-# CpuTop 在 tb_instr.py 顶部声明（class CpuTop(CpuAccess, Protocol)）
-
+from utils.riscv_asm import add
 
 @cocotb.test()
-async def addu_test(dut: CpuTop):
-    """addu $3, $1, $2：5 + 3 = 8。"""
+async def add_test(dut: CpuTop):
+    """add x3, x1, x2：5 + 3 = 8。"""
     await run_one_instruction(
         dut,
-        addu(rd=3, rs=1, rt=2),   # 编码器生成机器码，不手写 0x00221821
+        add(rd=3, rs1=1, rs2=2),   # 编码器生成机器码
         registers={1: 5, 2: 3},
     )
     assert read_reg(dut, 3) == 8
@@ -209,9 +207,9 @@ class AluDut(Protocol):
     alu_src1: Signal
     alu_src2: Signal
     alu_out: Signal
-    zero_f: Signal
+    cmp_result: Signal
 
-REQUIRED_FIELDS = ("alu_op", "alu_src1", "alu_src2", "alu_out", "zero_f")
+REQUIRED_FIELDS = ("alu_op", "alu_src1", "alu_src2", "alu_out", "cmp_result")
 
 @cocotb.test()
 async def contract_test(dut: AluDut):
@@ -244,40 +242,31 @@ assert read_mem(dut, 2) == 0x1122_3344
 
 ## 常量是对外契约
 
-测试里直接写死常量，例如：
+测试里直接写死控制值，例如：
 
 ```python
-ALU_OP_ADD = 0b0001
-ALU_OP_SUB = 0b0010
-NPC_OP_PLUS4 = 0b00
+ALU_ADD = 1
+ALU_EQ = 2
+NPC_BRANCH = 1
 ```
 
-`tests/utils/mips_asm.py` 里也直接写死 opcode / funct。
+`tests/utils/riscv_asm.py` 里也直接写死 RV32I opcode / funct3。
 
-`tb_ctrl.py` 不再手写 `ctrl_t` 的字段位偏移，而是通过
+`tb_ctrl.py` 不手写 `ctrl_t` 的字段位偏移，而是通过
 `tests/hdl/ctrl_probe.sv` 把字段摊平后直接读取：
 
 ```python
-assert int(dut.alu_op.value) == ALU_OP_ADD
+assert int(dut.alu_op.value) == ALU_ADD
 ```
 
 这样常量数值仍然是测试契约，但 struct 布局由 SV wrapper 在编译期检查。
-
-这样做的含义是：
-
-- `ALU_OP_ADD`、`NPC_OP_PLUS4`、opcode、funct 都是**对外契约**；
-- 已发布的数值不要修改；新增指令时只追加，保持向后兼容；
-- 如果 RTL 改了这些值，测试会失败——这是故意的，提醒这是一次破坏性变更；
-- 如果确实要改，必须同时改 RTL 和测试，并明确记录为 breaking change。
-
-`cpu_pkg.sv` 顶部也有同样的注释。
 
 ## 常用命令
 
 ```bash
 uv run mycup test                                      # 全部
 uv run pytest -v tests/cpu/test_instr.py               # 单指令 ISA 测试
-uv run pytest -v tests/cpu/test_instr.py::test_addu    # 单个用例
+uv run pytest -v tests/cpu/test_instr.py::test_add     # 单个用例
 uv run pytest -v tests/cpu/test_prog.py                # 程序装载测试
 uv run mycup prog programs/demo.hex                    # 跑 hex 程序
 MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
@@ -295,4 +284,4 @@ MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 5. **Icarus 不支持 `'{...}` 结构体赋值模式**（仿真侧用逐字段赋值）。
 6. `build()` 默认会复用已有构建；RTL 改动后如需强制重编，可传 `always=True`。
 7. **组合逻辑测试用 `await settle()`**（等 1ns）；时序逻辑测试用 `await RisingEdge(clk)` + `await ReadOnly()`。
-8. **未写过的寄存器是 `X`**：分支/跳转测试里，如果要断言“某条指令被跳过”，先把目标寄存器预置成 0，否则 `int(X)` 会报错。
+8. **未写过的寄存器是 `X`**：`read_reg` 对 x0 直接返回 0，但其他寄存器测试前应先预置。

@@ -3,30 +3,41 @@
 module npc
     import cpu_pkg::*;
 (
-    input  word_t curr_pc,
-    input  npc_op_t     npc_op,
-    input  logic        cond_jmp,
-    input  logic [25:0] jmp_target,
-    input  logic [15:0] jmp_offset,
-    input  word_t jmp_reg,
-    output word_t pc_plus4,
-    output word_t next_pc
+    input  word_t    inst_pc,
+    input  npc_op_t  npc_op,
+    input  logic     branch_taken,
+    input  word_t    pc_offset,
+    input  word_t    jalr_target,
+    input  logic     inst_illegal,
+    output word_t    pc_plus4,
+    output word_t    next_pc
 );
 
-    word_t pc_target;
-    word_t pc_offset;
-    assign pc_target = {curr_pc[XLEN-1:28], jmp_target, 2'b00};
-    assign pc_offset = {{14{jmp_offset[15]}}, jmp_offset, 2'b00};
-    assign pc_plus4 = curr_pc + 32'd4;
+    assign pc_plus4 = inst_pc + 32'd4;
+
+    // 仿真断言：RV32I 没有 C 扩展，jalr 目标必须 4 字节对齐。
+    // bit0 由 NPC 清除；bit1 必须为 0。
+    always_comb begin
+        if (!inst_illegal && (npc_op == NPC_JALR) && jalr_target[1])
+            $fatal(1, "npc: unaligned jalr target %0h", jalr_target);
+    end
 
     always_comb begin
-        unique case (npc_op)
-            NPC_OP_DIRECT: next_pc = pc_target;
-            NPC_OP_BRANCH: next_pc = cond_jmp ? (curr_pc + pc_offset) : pc_plus4;
-            NPC_OP_RA:     next_pc = jmp_reg;
-            default:       next_pc = pc_plus4;
-        endcase
+        if (inst_illegal) begin
+            // 非法指令停止取指：PC 保持，后续不会再执行新指令。
+            next_pc = inst_pc;
+        end
+        else begin
+            unique case (npc_op)
+                NPC_PLUS4: next_pc = pc_plus4;
+                NPC_BRANCH: next_pc = branch_taken ? (inst_pc + pc_offset) : pc_plus4;
+                NPC_JAL:   next_pc = inst_pc + pc_offset;
+                NPC_JALR:  next_pc = jalr_target & 32'hFFFF_FFFE;
+                default:   next_pc = pc_plus4;
+            endcase
+        end
     end
+
 endmodule
 
 `default_nettype wire

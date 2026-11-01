@@ -71,7 +71,18 @@ def read_pc(dut: CpuAccess) -> int:
 
 
 def read_reg(dut: CpuAccess, index: int) -> int:
-    """读通用寄存器。"""
+    """读通用寄存器；x0 按架构语义恒为 0。"""
+    if index == 0:
+        return 0
+    return int(dut.u_regfile.regs[index].value)
+
+
+def read_reg_raw(dut: CpuAccess, index: int) -> int:
+    """直接读内部寄存器数组，用于验证 x0 写保护。
+
+    正常测试请使用 read_reg；这个函数会暴露未初始化寄存器的 X，
+    所以调用前应先把目标寄存器预置成已知值。
+    """
     return int(dut.u_regfile.regs[index].value)
 
 

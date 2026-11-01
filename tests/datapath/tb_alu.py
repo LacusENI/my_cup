@@ -1,20 +1,17 @@
-"""cocotb 测试模块：ALU（由 test_alu.py 通过 simulator 调起，pytest 不直接收集）"""
+"""cocotb 测试模块：ALU（由 test_alu.py 通过 simulator 调起，pytest 不直接收集）。"""
 
 from typing import Protocol
 
 import cocotb
-from cocotb.triggers import Timer
 
-from utils.cocotb_utils import Signal, assert_fields
+from utils.cocotb_utils import Signal, assert_fields, settle
 
 
-# ALU 操作码是对外契约：数值不要随意改。
-ALU_NOP = 0b0000
-ALU_OP_ADD = 0b0001
-ALU_OP_SUB = 0b0010
-ALU_EQ = 0b1001
+ALU_NOP = 0
+ALU_ADD = 1
+ALU_EQ = 2
 
-# ALU 的公开字段：测试依赖哪些，就列哪些。
+
 class AluDut(Protocol):
     alu_op: Signal
     alu_src1: Signal
@@ -34,34 +31,65 @@ REQUIRED_FIELDS = (
 
 @cocotb.test()
 async def contract_test(dut: AluDut):
-    """契约：ALU 仍然暴露测试依赖的端口。"""
+    """契约：ALU 暴露输入、结果和比较位。"""
     assert_fields(dut, REQUIRED_FIELDS, "alu")
 
 
 @cocotb.test()
 async def alu_add_test(dut: AluDut):
-    dut.alu_op.value = ALU_OP_ADD
+    """ADD：5 + 3 = 8，cmp_result 必须为 0。"""
+    dut.alu_op.value = ALU_ADD
     dut.alu_src1.value = 5
     dut.alu_src2.value = 3
-    await Timer(1, unit="ns")
+    await settle()
+
     assert int(dut.alu_out.value) == 8
     assert int(dut.cmp_result.value) == 0
 
 
 @cocotb.test()
-async def alu_sub_test(dut: AluDut):
-    dut.alu_op.value = ALU_OP_SUB
-    dut.alu_src1.value = 8
-    dut.alu_src2.value = 8
-    await Timer(1, unit="ns")
+async def alu_add_wrap_test(dut: AluDut):
+    """ADD 是 32 位回绕，不产生溢出异常。"""
+    dut.alu_op.value = ALU_ADD
+    dut.alu_src1.value = 0xFFFF_FFFF
+    dut.alu_src2.value = 1
+    await settle()
+
     assert int(dut.alu_out.value) == 0
     assert int(dut.cmp_result.value) == 0
 
+
 @cocotb.test()
-async def alu_eq_test(dut: AluDut):
+async def alu_eq_true_test(dut: AluDut):
+    """EQ：相等时 cmp_result=1，alu_out=0。"""
     dut.alu_op.value = ALU_EQ
     dut.alu_src1.value = 244
     dut.alu_src2.value = 244
-    await Timer(1, unit="ns")
+    await settle()
+
     assert int(dut.alu_out.value) == 0
     assert int(dut.cmp_result.value) == 1
+
+
+@cocotb.test()
+async def alu_eq_false_test(dut: AluDut):
+    """EQ：不相等时 cmp_result=0。"""
+    dut.alu_op.value = ALU_EQ
+    dut.alu_src1.value = 244
+    dut.alu_src2.value = 245
+    await settle()
+
+    assert int(dut.alu_out.value) == 0
+    assert int(dut.cmp_result.value) == 0
+
+
+@cocotb.test()
+async def alu_nop_test(dut: AluDut):
+    """NOP：输出和比较位都为 0。"""
+    dut.alu_op.value = ALU_NOP
+    dut.alu_src1.value = 0x1234_5678
+    dut.alu_src2.value = 0x1234_5678
+    await settle()
+
+    assert int(dut.alu_out.value) == 0
+    assert int(dut.cmp_result.value) == 0

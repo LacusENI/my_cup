@@ -5,7 +5,6 @@ rtl/control/npc.sv
 rtl/control/pc.sv
 rtl/cpu_top.sv
 rtl/datapath/alu.sv
-rtl/datapath/ext.sv
 rtl/datapath/regfile.sv
 rtl/memory/datam.sv
 rtl/memory/instrm.sv

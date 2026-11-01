@@ -7,7 +7,7 @@ def test_contract(npc_sim, run_cocotb_case):
 
 
 def test_npc_plus4(npc_sim, run_cocotb_case):
-    """顺序执行：PC + 4。"""
+    """顺序执行：PC+4。"""
     run_cocotb_case(npc_sim, "tb_npc", "plus4_test")
 
 
@@ -26,11 +26,16 @@ def test_npc_branch_backward(npc_sim, run_cocotb_case):
     run_cocotb_case(npc_sim, "tb_npc", "branch_backward_test")
 
 
-def test_npc_direct_jump(npc_sim, run_cocotb_case):
-    """j / jal 的直接跳转。"""
-    run_cocotb_case(npc_sim, "tb_npc", "direct_jump_test")
+def test_npc_jal(npc_sim, run_cocotb_case):
+    """jal 的 PC 目标。"""
+    run_cocotb_case(npc_sim, "tb_npc", "jal_test")
 
 
-def test_npc_jump_register(npc_sim, run_cocotb_case):
-    """jr 的寄存器跳转。"""
-    run_cocotb_case(npc_sim, "tb_npc", "jump_register_test")
+def test_npc_jalr(npc_sim, run_cocotb_case):
+    """jalr 的寄存器目标。"""
+    run_cocotb_case(npc_sim, "tb_npc", "jalr_test")
+
+
+def test_npc_illegal_hold(npc_sim, run_cocotb_case):
+    """非法指令保持 PC。"""
+    run_cocotb_case(npc_sim, "tb_npc", "illegal_hold_test")

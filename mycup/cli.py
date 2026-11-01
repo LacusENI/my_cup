@@ -284,7 +284,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_prog.add_argument("hex", help="指令存储器 hex 文件")
     p_prog.add_argument("--data", help="数据存储器 hex 文件（可选）")
     p_prog.add_argument(
-        "--cycles", type=int, default=4, help="程序跑完后等待的周期数（默认 4）"
+        "--cycles", type=int, default=8, help="程序跑完后等待的周期数（默认 8）"
     )
     p_prog.set_defaults(func=cmd_prog)
 

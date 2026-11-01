@@ -9,14 +9,13 @@
 | 模块 | 职责 |
 | :-- | :-- |
 | `cpu_pkg` | 类型、枚举、`instr_t`、`ctrl_t`、流水线 struct |
-| `decoder` | RV32I 字段切分、`valid_encoding`、封装 `imm_gen` |
-| `imm_gen` | I/S/B/J 立即数拼接与扩展 |
+| `decoder` | RV32I 字段切分、`valid_encoding`、内部 `imm_gen` 纯函数 |
 | `ctrl` | 控制信号、`inst_illegal`、非法时安全控制 |
 | `alu` | ADD / EQ / NOP、分支比较结果 |
 | `npc` | PLUS4 / BRANCH / JAL / JALR / illegal hold |
 | `regfile` | 32x32 寄存器堆，x0 恒 0 |
 | `datam` | 整字数据存储器，字节地址模型 |
-| `instrm` | 指令存储器（收尾阶段改名 `instm`） |
+| `instrm` | 指令存储器（本批保留现名） |
 | `cpu_top` | 顶层实例化与连线，输出 `inst_illegal` |
 
 ## 1. 模块设计
@@ -28,18 +27,12 @@
 ```systemverilog
 typedef logic [4:0] reg_t;
 
-typedef enum logic [2:0] {
-    IMM_NONE,
-    IMM_I,
-    IMM_S,
-    IMM_B,
-    IMM_J
-} imm_type_t;
+// 立即数格式由 decoder 内部函数按 opcode 选择，不再需要 imm_type_t。
 
-typedef enum logic [3:0] {
-    ALU_ADD,
-    ALU_EQ,
-    ALU_NOP
+typedef enum logic [1:0] {
+    ALU_NOP = 2'b00,
+    ALU_ADD = 2'b01,
+    ALU_EQ  = 2'b10
 } alu_op_t;
 
 typedef enum logic [1:0] {
@@ -122,7 +115,7 @@ module decoder
 职责：
 
 - 按 RV32I 切分 `opcode/rd/funct3/rs1/rs2/funct7`；
-- 实例化 `imm_gen`，对外隐藏 `imm_type`；
+- 内部调用 `imm_gen` 函数，对外只输出 `imm`；
 - 输出 `valid_encoding`；
 - 删除 `instr_index`、`opcode_illegal`。
 
@@ -132,17 +125,20 @@ module decoder
 
 后续扩展完整 RV32I 时，再把它扩展为标准合法性，并在 `ctrl` 里区分“合法但未实现”。
 
-`decoder` 内部：
+`decoder` 内部使用纯函数生成立即数，不单独例化模块：
 
 ```systemverilog
-imm_type_t imm_type;
-assign imm_type = decode_imm_type(inst[6:0]);
-
-imm_gen u_imm_gen (
-    .inst(inst),
-    .imm_type(imm_type),
-    .imm(imm)
-);
+function automatic word_t imm_gen(input word_t inst);
+    case (inst[6:0])
+        OP_IMM, OP_LOAD, OP_JALR: return imm_i(inst[31:20]);
+        OP_STORE:                 return imm_s({inst[31:25], inst[11:7]});
+        OP_BRANCH:                return imm_b({inst[31], inst[7],
+                                                 inst[30:25], inst[11:8], 1'b0});
+        OP_JAL:                   return imm_j({inst[31], inst[19:12],
+                                                 inst[20], inst[30:21], 1'b0});
+        default:                  return '0;
+    endcase
+endfunction
 ```
 
 `funct7` 仍然要单独输出：
@@ -153,17 +149,10 @@ assign decoded.funct7 = inst[31:25];
 
 因为 I 型移位指令的 `funct7` 包含在 `imm[11:5]` 里，但 `ctrl` 仍需要它来选择 `SLLI/SRLI/SRAI`。
 
-### 1.3 `imm_gen.sv`
+### 1.3 `imm_gen` 函数
 
-```systemverilog
-module imm_gen
-    import cpu_pkg::*;
-(
-    input  word_t     inst,
-    input  imm_type_t imm_type,
-    output word_t     imm
-);
-```
+立即数生成作为 `decoder` 内部的 `automatic function`，对外只暴露 `imm`。
+它不单独建模块，也不单独建 testbench；测试通过 `tb_decoder` 覆盖 `decoder.imm`。
 
 支持：
 
@@ -325,9 +314,9 @@ NPC_JALR     -> next_pc = jalr_target & 32'hFFFF_FFFE
 
 ### 1.9 `instrm.sv`
 
-- 本批收尾阶段执行改名：`instrm -> instm`，`instr_addr -> inst_addr`；
-- 同步 `cpu_top`、`tests/utils/cocotb_utils.py`、契约测试和文档；
-- `inst_addr` 是字节地址，内部取字索引 `inst_addr[IMEM_ADDR_W+1:2]`；
+- 本批保留 `instrm` / `instr_addr` 命名，避免为了改名扩大迁移 diff；
+- 后续接流水线时再统一更名为 `instm` / `inst_addr`；
+- `instr_addr` 是字节地址，内部取字索引 `instr_addr[IMEM_ADDR_W+1:2]`；
 - 没有压缩指令，取指固定 32 位；
 - PC 4 字节对齐只做断言。
 
@@ -339,7 +328,7 @@ NPC_JALR     -> next_pc = jalr_target & 32'hFFFF_FFFE
 - 实例化 `decoder`，拿 `decoded / imm / valid_encoding`；
 - 实例化 `ctrl`，拿 `ctrl_t`；
 - `inst_illegal` 直接由 `ctrl.inst_illegal` 输出到顶层；
-- `reg_dst = decoded.rd`；
+- 写回目标直接使用 `decoded.rd`；
 - `branch_taken = alu.cmp_result & (ctrl.npc_op == NPC_BRANCH)`；
 - `jalr_target = alu.alu_out`；
 - `wb_data` MUX：`ALU_OUT / R_DATA / PC_PLUS4`；

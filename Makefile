@@ -1,7 +1,7 @@
 # 常用命令；具体路径、工具和参数在 toolchain.toml 中配置。
 UV ?= uv
 MYCUP := $(UV) run mycup
-CYCLES ?= 4
+CYCLES ?= 8
 
 .PHONY: help init lint test check fmt prog doctor clean
 
@@ -11,7 +11,7 @@ help:
 	@echo "make test                运行 cocotb + pytest"
 	@echo "make check               lint + test"
 	@echo "make fmt                 用 verible 格式化 RTL（原地修改）"
-	@echo "make prog FILE=<hex>     运行程序；可选 DATA=<hex> CYCLES=4"
+	@echo "make prog FILE=<hex>     运行程序；可选 DATA=<hex> CYCLES=8"
 	@echo "make doctor              检查 toolchain.toml 和外部工具"
 	@echo "make clean               清理生成物"
 
@@ -30,7 +30,7 @@ fmt:
 	$(MYCUP) fmt
 
 prog:
-	@test -n "$(FILE)" || { echo "usage: make prog FILE=programs/demo.hex [DATA=...] [CYCLES=4]" >&2; exit 1; }
+	@test -n "$(FILE)" || { echo "usage: make prog FILE=programs/demo.hex [DATA=...] [CYCLES=8]" >&2; exit 1; }
 	$(MYCUP) prog "$(FILE)" $(if $(DATA),--data "$(DATA)") --cycles "$(CYCLES)"
 
 doctor:

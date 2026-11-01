@@ -1,6 +1,6 @@
 # my_cup
 
-一个用 **SystemVerilog** 从零手写的 **MIPS32 指令集子集单周期 CPU**，
+一个用 **SystemVerilog** 从零手写的 **RISC-V RV32I 子集单周期 CPU**，
 配有 cocotb + pytest 的统一验证流程。
 
 > 设计目标：以"可读、可验证、可演进"的方式逐步从一个单周期内核走向流水线内核。
@@ -12,29 +12,28 @@
 
 | 项 | 状态 |
 | :-- | :-- |
-| 版本 | `v0.3-mips`（见 `docs/instr/`） |
+| 版本 | `v0.3-rv32i`（RV32I 最小子集，见 `docs/v0.3-rv32i/`） |
 | 微架构 | 单周期（组合数据通路 + 时序状态） |
-| 指令集 | MIPS32 子集（8 条，已冻结） |
+| 指令集 | RV32I 最小子集（7 条） |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
-| 测试 | 49 个 cocotb/pytest 用例 |
+| 测试 | 94 个 cocotb/pytest 用例 |
 | CI | GitHub Actions：`mycup lint` + `mycup test` |
 
 ### 已支持指令
 
 | 类别 | 指令 |
 | :-- | :-- |
-| R 型 | `addu` `jr` |
-| 立即数 | `addiu` |
+| R 型 | `add` |
+| 立即数 | `addi` |
 | 访存 | `lw` `sw` |
-| 分支/跳转 | `beq` `j` `jal` |
+| 分支/跳转 | `beq` `jal` `jalr` |
 
-> `sb/sh` 与 `lb/lbu/lh/lhu` 作为**子字访问整体延后**
-> （涉及端序、字节掩码 `wstrb`、DM 控制器），详见 [路线图](docs/roadmap.md#明确延后deferred)。
+> `lui/auipc`、`sub`、逻辑/移位/比较、子字访存 `lb/lh/sb/sh`、
+> 其他分支和 `fence/ecall/ebreak` 不在本批范围，详见
+> [`docs/v0.3-rv32i/future.md`](docs/v0.3-rv32i/future.md)。
 
-> **已知语义差异**：当前 `beq` 的分支目标基址是**当前 PC**，不是标准 MIPS 的 `PC+4`。
-> 这是 `v0.3-mips` 的既定行为，详见 [`docs/unit/npc.md`](docs/unit/npc.md)。
-> 后续迁移 RV32I 时，这个基址正好与 RISC-V 的 PC 相对分支一致。
+> 伪指令由汇编器展开：`j -> jal x0`、`jr -> jalr x0`、`ret -> jalr x0, ra`、`nop -> addi x0, x0, 0`。
 
 ---
 
@@ -46,16 +45,14 @@ my_cup/
 │   └── cli.py                # mycup lint / test / prog ...
 ├── rtl/                  # 可综合的 RTL 源码
 │   ├── cpu_top.sv            # 顶层：实例化各单元并连线
-│   ├── cpu_pkg.sv            # package：参数、类型、控制编码、扩展函数
+│   ├── cpu_pkg.sv            # package：参数、类型、控制编码
 │   ├── control/              # 控制 / 取指 / 分支
 │   │   ├── pc.sv
 │   │   ├── npc.sv
-│   │   ├── decoder.sv
-│   │   ├── ctrl.sv
-│   │   └── cond.sv
+│   │   ├── decoder.sv        # 字段 + imm_gen 函数 + valid_encoding
+│   │   └── ctrl.sv
 │   ├── datapath/             # 数据通路
 │   │   ├── alu.sv
-│   │   ├── ext.sv
 │   │   └── regfile.sv
 │   ├── memory/               # 存储器
 │   │   ├── instrm.sv
@@ -67,7 +64,8 @@ my_cup/
 │       └── mem_wb_reg.sv
 ├── tests/                # 全部验证（cocotb + pytest）
 │   ├── conftest.py            # session 级 build fixture
-│   ├── cocotb_utils.py        # 时钟 / 复位 / 程序装载的小工具
+│   ├── utils/                 # cocotb_utils / riscv_asm
+│   ├── hdl/                   # test-only probes
 │   ├── tb_*.py                # cocotb 测试内容
 │   └── test_*.py              # pytest 入口
 ├── pyproject.toml        # uv 管理的 Python 依赖
@@ -96,11 +94,11 @@ uv sync                              # 首次：创建 .venv
 
 uv run mycup test                    # 运行全部测试用例
 uv run mycup lint                    # Verilator 静态检查
-uv run mycup prog programs/demo.hex  # 装载 hex 程序跑指令级测试
-uv run mycup clean                   # 清理 build/ waves/ logs/
+uv run mycup prog programs/demo.hex  # 装载 RV32I hex 程序
+uv run mycup clean                   # 清理 build/ waves/ logs/ .verilator/ 等
 
 uv run pytest -v tests/cpu/test_instr.py               # 单个文件
-uv run pytest -v tests/cpu/test_instr.py::test_addu    # 单个用例
+uv run pytest -v tests/cpu/test_instr.py::test_add    # 单个用例
 MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
 ```
 
@@ -230,20 +228,20 @@ uv sync
 - **[docs/README.md](docs/README.md)** —— 文档总索引与各文档的时效性标注
 - **[docs/arch/architecture.md](docs/arch/architecture.md)** —— 整体框架、数据通路、模块职责、已知限制
 - **[docs/roadmap.md](docs/roadmap.md)** —— 下一步演进方向（重点：单周期 → 流水线）
-- `docs/unit/` —— 各功能单元的端口与行为
-- `docs/instr/` —— 分版本的指令实现说明
-- `docs/ctrl/ctrl.md` —— 控制信号真值表
+- **[docs/v0.3-rv32i/units.md](docs/v0.3-rv32i/units.md)** —— 当前 RV32I 模块接口与控制表
+- **[docs/v0.3-rv32i/instruction-paths.md](docs/v0.3-rv32i/instruction-paths.md)** —— 7 条指令的数据流
+- `docs/unit/` 的 `pc/instrm/datam` 仍有效；其余 MIPS 单元/指令文档为历史参考
 
 ---
 
 ## 设计约定
 
-- **字节序**：大端；当前只做整字访问，端序对功能无影响（子字访问延后）。
+- **字节序**：当前只做整字访问；后续子字访存按小端序实现。
 - **语言风格**：SystemVerilog。共享常量/函数放在 `cpu_pkg.sv`，模块用 `import cpu_pkg::*;`，不使用 `include` 头文件。
 - **位宽/深度**：用 `cpu_pkg.sv` 的 `word_t` / `XLEN` / `IMEM_WORDS` / `DMEM_WORDS` 参数化，不写死 32 或 2048。
 - **组合/时序**：单驱动信号用 `logic`；组合逻辑用 `always_comb`；时序逻辑用 `always_ff`；`case` 优先用 `unique case`，并显式给默认值（避免 `x`）。
 - **隐式网络**：每个 RTL 文件用 `` `default_nettype none `` / `` `default_nettype wire `` 包住，拼错信号名会直接报错。
-- **互联方式**：单元模块通过显式端口互联；顶层 `cpu_top` 用 `.*` 隐式连接同名信号。
+- **互联方式**：单元模块通过显式端口互联；顶层 `cpu_top` 也使用显式命名连接。
 - **提交信息**：采用 `<type>(<scope>): <desc>` 形式（`feat` / `fix` / `refactor` / `test` / `doc` / `chore`）。
 - **分支**：`master` 为主干，特性在主题分支上开发后合并。
 

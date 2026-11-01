@@ -92,7 +92,7 @@ mycup            实际执行：生成文件清单、调用工具
 
 ```bash
 make prog FILE=programs/demo.hex
-make prog FILE=programs/demo.hex DATA=programs/demo_data.hex CYCLES=8
+make prog FILE=programs/demo.hex DATA=programs/data.hex CYCLES=8
 ```
 
 ---

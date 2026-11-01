@@ -11,11 +11,21 @@ def test_alu_add(alu_sim, run_cocotb_case):
     run_cocotb_case(alu_sim, "tb_alu", "alu_add_test")
 
 
-def test_alu_sub(alu_sim, run_cocotb_case):
-    """减法：8 - 8 = 0。"""
-    run_cocotb_case(alu_sim, "tb_alu", "alu_sub_test")
+def test_alu_add_wrap(alu_sim, run_cocotb_case):
+    """加法回绕。"""
+    run_cocotb_case(alu_sim, "tb_alu", "alu_add_wrap_test")
 
 
-def test_alu_eq(alu_sim, run_cocotb_case):
-    """相等：244 == 244 = 1"""
-    run_cocotb_case(alu_sim, "tb_alu", "alu_eq_test")
+def test_alu_eq_true(alu_sim, run_cocotb_case):
+    """相等比较：相等。"""
+    run_cocotb_case(alu_sim, "tb_alu", "alu_eq_true_test")
+
+
+def test_alu_eq_false(alu_sim, run_cocotb_case):
+    """相等比较：不相等。"""
+    run_cocotb_case(alu_sim, "tb_alu", "alu_eq_false_test")
+
+
+def test_alu_nop(alu_sim, run_cocotb_case):
+    """空操作。"""
+    run_cocotb_case(alu_sim, "tb_alu", "alu_nop_test")

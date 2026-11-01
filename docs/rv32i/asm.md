@@ -1,6 +1,6 @@
 # RV32I 汇编
 
-version: v0.4
+version: v0.3-rv32i
 
 > 0.3
 
