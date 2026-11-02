@@ -1,11 +1,11 @@
-# RV32I instruction table
+# RV32I instuction table
 #
 # Generated from riscv-opcodes extensions/rv_i + extensions/rv32_i.
 #
 # How to read this file:
 #   - opcodes: opcode mnemonic -> 7-bit opcode value.
-#   - formats: instruction type -> ordered fields from bit 31 to bit 0.
-#     'bits' is the field position [msb, lsb] in the instruction word.
+#   - formats: instuction type -> ordered fields from bit 31 to bit 0.
+#     'bits' is the field position [msb, lsb] in the instuction word.
 #     'imm_bits' maps the field bits to the final immediate bit indices.
 #     Each imm_bits entry is either:
 #       - an integer: one immediate bit, or
@@ -13,20 +13,20 @@
 #     Ranges are expanded MSB-first, matching the field bits.
 #     Example: [12, [10, 5]] means field bit 0 -> imm[12],
 #              field bits 1..6 -> imm[10..5].
-#     Fields without a fixed value in an instruction are variable.
-#   - instructions: mnemonic -> type, opcode name, and fixed field values.
+#     Fields without a fixed value in an instuction are variable.
+#   - instuctions: mnemonic -> type, opcode name, and fixed field values.
 #   - implemented: the subset this project currently implements.
-#   - pseudo: assembler pseudoinstructions and their expansions.
+#   - pseudo: assembler pseudoinstuctions and their expansions.
 #
 # Decoding:
-#   - For every field in the instruction's format:
-#       if the instruction entry has a fixed value, check
+#   - For every field in the instuction's format:
+#       if the instuction entry has a fixed value, check
 #         ((inst >> lsb) & ((1 << width) - 1)) == value
 #       otherwise the field is variable.
-#   - The opcode field is compared against opcodes[instruction.opcode].
+#   - The opcode field is compared against opcodes[instuction.opcode].
 #
 # Immediate reconstruction:
-#   - Each field with 'imm_bits' contributes its instruction bits,
+#   - Each field with 'imm_bits' contributes its instuction bits,
 #     MSB first, to the listed final immediate bit positions:
 #         imm |= ((inst >> inst_bit) & 1) << imm_bit
 #   - Bits in 'zero_bits' are always 0.
@@ -138,7 +138,7 @@ formats:
       - {name: opcode, bits: [6, 0]}
     immediate: null
 
-instructions:
+instuctions:
   # R-type
   add: {type: R, funct7: 0x00, funct3: 0x0, opcode: OP}
   and: {type: R, funct7: 0x00, funct3: 0x7, opcode: OP}

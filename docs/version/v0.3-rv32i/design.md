@@ -5,7 +5,7 @@
 
 > 相关文档：
 > - 模块接口与实现细节：[units.md](units.md)
-> - 单指令数据流：[instruction-paths.md](instruction-paths.md)
+> - 单指令数据流：[instuction-paths.md](instuction-paths.md)
 > - 整体数据通路图：[datapath.drawio](datapath.drawio)
 > - 后续批次与待议：[future.md](future.md)
 
@@ -69,7 +69,7 @@ trap / CSR / 异常
 ## 3. 数据通路总览
 
 整体框图见 [datapath.drawio](datapath.drawio)；每条指令的数据流见
-[instruction-paths.md](instruction-paths.md)。模块接口和内部细节统一放在
+[instuction-paths.md](instuction-paths.md)。模块接口和内部细节统一放在
 [units.md](units.md)，本文不重复。
 
 ## 4. 指令行为
@@ -144,14 +144,14 @@ mem_write = 0
 
 ### 6.1 RTL
 
-- `cpu_pkg.sv`：类型、枚举、`instr_t`、`ctrl_t`、流水线 struct 更新；
+- `cpu_pkg.sv`：类型、枚举、`inst_t`、`ctrl_t`、流水线 struct 更新；
 - `decoder.sv`：RV32I 字段、`valid_encoding`、内部 `imm_gen` 纯函数；
 - `ctrl.sv`：7 条控制表、`inst_illegal`、安全控制；
 - `alu.sv`：ADD / EQ / NOP、`cmp_result`、删 flags；
 - `npc.sv`：新接口、JAL/JALR、非法 hold；
 - `regfile.sv`：端口改名、删 `rd_sel`；
 - `datam.sv`：字节地址模型、边界断言；
-- `instrm.sv`：本批暂不改名，保留现有测试路径；
+- `instm.sv`：本批暂不改名，保留现有测试路径；
 - `cpu_top.sv`：删旧模块、接新接口、输出 `inst_illegal`；
 - 删除 `ext.sv`、`cond.sv`。
 
@@ -163,10 +163,10 @@ mem_write = 0
 - 更新 `tb_ctrl` + `ctrl_probe`：新 `ctrl_t` 字段、`inst_illegal`；
 - 更新 `tb_regfile`：端口改名；
 - 更新 `tb_datam`：字节地址模型/对齐断言；
-- 更新 `tb_instr`：7 条指令、`jalr rd==rs1`、`rd=x0`、非法 stop；
+- 更新 `tb_inst`：7 条指令、`jalr rd==rs1`、`rd=x0`、非法 stop；
 - 更新 `tb_prog` 和 `programs/demo.hex`：RV32I 程序；
 - 新增 `riscv_asm.py`，更新 `test_asm`；`mips_asm.py` 保留为历史参考；
-- 更新 `tests/utils/cocotb_utils.py`（如 `u_instrm` 改名）；
+- 更新 `tests/utils/cocotb_utils.py`（如 `u_instm` 改名）；
 - 更新 `tests/README` 覆盖表和契约字段。
 
 ### 6.3 文档/数据

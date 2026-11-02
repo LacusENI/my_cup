@@ -3,10 +3,10 @@
 module decoder
     import cpu_pkg::*;
 (
-    input  word_t  inst,
-    output instr_t decoded,
-    output word_t  imm,
-    output logic   valid_encoding
+    input  word_t inst,
+    output inst_t decoded,
+    output word_t imm,
+    output logic  valid_encoding
 );
 
     // ----------------------------------------------------------------------- //

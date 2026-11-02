@@ -91,10 +91,10 @@ async def imm_i_test(dut: DecoderDut):
         (lw(rd=2, offset=-4, rs1=1), 0xFFFF_FFFC),
         (jalr(rd=1, offset=-4, rs1=2), 0xFFFF_FFFC),
     ]
-    for instruction, expected in cases:
-        dut.inst.value = instruction
+    for instuction, expected in cases:
+        dut.inst.value = instuction
         await settle()
-        assert int(dut.imm.value) == expected, f"I 型立即数错误: {instruction:#010x}"
+        assert int(dut.imm.value) == expected, f"I 型立即数错误: {instuction:#010x}"
 
 
 @cocotb.test()
@@ -106,10 +106,10 @@ async def imm_s_test(dut: DecoderDut):
         (sw(rs2=3, offset=-4, rs1=1), 0xFFFF_FFFC),
         (sw(rs2=3, offset=-2048, rs1=1), 0xFFFF_F800),
     ]
-    for instruction, expected in cases:
-        dut.inst.value = instruction
+    for instuction, expected in cases:
+        dut.inst.value = instuction
         await settle()
-        assert int(dut.imm.value) == expected, f"S 型立即数错误: {instruction:#010x}"
+        assert int(dut.imm.value) == expected, f"S 型立即数错误: {instuction:#010x}"
 
 
 @cocotb.test()
@@ -122,10 +122,10 @@ async def imm_b_test(dut: DecoderDut):
         (beq(rs1=1, rs2=2, offset=4094), 4094),
         (beq(rs1=1, rs2=2, offset=-4096), 0xFFFF_F000),
     ]
-    for instruction, expected in cases:
-        dut.inst.value = instruction
+    for instuction, expected in cases:
+        dut.inst.value = instuction
         await settle()
-        assert int(dut.imm.value) == expected, f"B 型立即数错误: {instruction:#010x}"
+        assert int(dut.imm.value) == expected, f"B 型立即数错误: {instuction:#010x}"
 
 
 @cocotb.test()
@@ -138,10 +138,10 @@ async def imm_j_test(dut: DecoderDut):
         (jal(rd=1, offset=1048574), 1048574),
         (jal(rd=1, offset=-1048576), 0xFFF0_0000),
     ]
-    for instruction, expected in cases:
-        dut.inst.value = instruction
+    for instuction, expected in cases:
+        dut.inst.value = instuction
         await settle()
-        assert int(dut.imm.value) == expected, f"J 型立即数错误: {instruction:#010x}"
+        assert int(dut.imm.value) == expected, f"J 型立即数错误: {instuction:#010x}"
 
 
 @cocotb.test()
@@ -180,7 +180,7 @@ async def invalid_funct3_matrix_test(dut: DecoderDut):
         i_type(opcode=JALR, rd=1, funct3=1, rs1=0, imm=0),       # 非法 jalr
         r_type(opcode=OP, rd=1, funct3=1, rs1=0, rs2=1, funct7=0),
     ]
-    for instruction in cases:
-        dut.inst.value = instruction
+    for instuction in cases:
+        dut.inst.value = instuction
         await settle()
-        assert int(dut.valid_encoding.value) == 0, f"不应接受 {instruction:#010x}"
+        assert int(dut.valid_encoding.value) == 0, f"不应接受 {instuction:#010x}"

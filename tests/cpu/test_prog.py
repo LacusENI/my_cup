@@ -12,7 +12,7 @@ DATA_FILE = os.environ.get("MYCUP_DATA")
 
 def test_prog_demo(cpu_sim, run_cocotb_case):
     """用 hex 程序验证 $readmemh 程序装载（默认 programs/demo.hex）。"""
-    plusargs = [f"+instr={PROGRAM}"]
+    plusargs = [f"+inst={PROGRAM}"]
     if DATA_FILE:
         plusargs.append(f"+data={DATA_FILE}")
     run_cocotb_case(

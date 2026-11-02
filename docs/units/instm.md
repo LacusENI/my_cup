@@ -9,15 +9,15 @@ date: 2026/10/24
 ## 端口
 
 input
-- `instr_addr(32)`：读取指令的字节地址
+- `inst_addr(32)`：读取指令的字节地址
 
 output
-- `instr(32)`：读出的指令
+- `inst(32)`：读出的指令
 
 ## 行为
 
-- `mem_addr = instr_addr[IMEM_ADDR_W+1:2]`；
-- `instr = mem[mem_addr]`；
+- `mem_addr = inst_addr[IMEM_ADDR_W+1:2]`；
+- `inst = mem[mem_addr]`；
 - 容量由 `IMEM_WORDS` 决定（默认 2048 字 / 8 KiB）。
 
 ## 断言
@@ -26,7 +26,7 @@ output
 
 ## 仿真期装载
 
-`instrm` 内含 `initial` + `$readmemh`，可通过 vvp 的 plusarg 装载程序：
+`instm` 内含 `initial` + `$readmemh`，可通过 vvp 的 plusarg 装载程序：
 
 ```bash
 uv run mycup prog programs/demo.hex

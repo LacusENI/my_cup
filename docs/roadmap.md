@@ -98,7 +98,7 @@ IF ──► ID ──► EX ──► MEM ──► WB
 
 | 寄存器 | 携带内容（示意） |
 | :-- | :-- |
-| `IF/ID` | `pc_plus4`、`instr` |
+| `IF/ID` | `pc_plus4`、`inst` |
 | `ID/EX` | 读出的 `rs1/rs2 数据`、`imm32`、`rs/rt/rd`、**全部控制信号** |
 | `EX/MEM` | `alu_out`、`rs2 数据`(写内存用)、目标寄存器号、`MEM/WB` 相关控制 |
 | `MEM/WB` | `r_data`、`alu_out`、`pc_plus4`、`wb_sel`、`reg_dst`、`reg_write` |
@@ -119,7 +119,7 @@ IF ──► ID ──► EX ──► MEM ──► WB
 
 **(d) 结构冒险**
 
-- **已天然规避**：`instrm` 与 `datam` 是两个独立存储体（哈佛结构），取指与访存不冲突；
+- **已天然规避**：`instm` 与 `datam` 是两个独立存储体（哈佛结构），取指与访存不冲突；
 - 需处理 `regfile` 的**同拍写读**：让寄存器堆"先写后读"（write-first）或利用半周期时序，保证 `WB` 写与 `ID` 读不冲突。
 
 ### 2.3 迁移策略（二选一）
@@ -154,7 +154,7 @@ IF ──► ID ──► EX ──► MEM ──► WB
 > 备注：有可能会能力有限，不会做这些。
 
 - **异常/中断/CSR**：引入 `mepc/mcause/mstatus` 等，支持 `ecall/ebreak` 与中断入口。
-- **存储/总线接口**：把 `instrm/datam` 抽象为统一的**总线接口**（如类 Wishbone/AXI-Lite 的简化握手），便于接外部内存模型或 FPGA BRAM。
+- **存储/总线接口**：把 `instm/datam` 抽象为统一的**总线接口**（如类 Wishbone/AXI-Lite 的简化握手），便于接外部内存模型或 FPGA BRAM。
 - **Cache**：为访存加一级 Cache（正好可检验流水线在停顿下的正确性）。
 - **压缩指令 / 更多扩展**：视目标 ISA 而定。
 
@@ -163,7 +163,7 @@ IF ──► ID ──► EX ──► MEM ──► WB
 ## 阶段 4 · 验证与对标
 
 - **随机指令生成**：随机构造指令流并与**参考模型**（如用 C/Python 写的 ISS，或 Spike/rv8）逐步比对。
-- **RVFI / 追踪接口**：暴露"每退休一条指令的 (pc, instr, rd, wdata, ...)"，让差分测试自动化。
+- **RVFI / 追踪接口**：暴露"每退休一条指令的 (pc, inst, rd, wdata, ...)"，让差分测试自动化。
 - **覆盖率**：用 Verilator coverage 收集行/翻转/功能覆盖率，驱动补齐测试。
 - **形式化（可选）**：对 `alu/cond` 等纯组合单元做等价性检查（SAT/等价工具）。
 

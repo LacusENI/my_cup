@@ -43,7 +43,7 @@ add, addi, beq, lw, sw, jal, jalr
 | `cpu_top` | `cpu_top.sv` | 顶层：实例化、连线、写回 MUX，输出 `inst_illegal` |
 | `pc`      | `pc.sv`      | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
 | `npc`     | `npc.sv`     | 计算 `next_pc`，处理分支跳转 |
-| `instrm`  | `instrm.sv`  | 指令存储器（IMEM），组合读 |
+| `instm`  | `instm.sv`  | 指令存储器（IMEM），组合读 |
 | `decoder` | `decoder.sv` | RV32I 字段切分、内部 `imm_gen` 函数、`valid_encoding` |
 | `ctrl`    | `ctrl.sv`    | 7 条指令控制表、`inst_illegal`、非法时安全控制 |
 | `regfile` | `regfile.sv` | 32×32 寄存器堆；`x0` 恒 0；上升沿写 |
@@ -59,7 +59,7 @@ add, addi, beq, lw, sw, jal, jalr
 
 | 阶段    | 动作 |
 | :------ | :----------------------------- |
-| **IF**  | `instrm` 输出指令              |
+| **IF**  | `instm` 输出指令              |
 | **ID**  | `decoder` 译码；`ctrl` 产生控制信号；`regfile` 读 |
 | **EX**  | ALU 计算地址/结果/比较         |
 | **MEM** | `datam` 读或写                 |
@@ -70,7 +70,7 @@ add, addi, beq, lw, sw, jal, jalr
 ```verilog
 assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
 assign inst_illegal = ctrl.inst_illegal;
-assign instr_addr   = curr_pc;
+assign inst_addr   = curr_pc;
 assign alu_src1     = rs1_data;
 assign alu_src2     = (ctrl.src2_sel == SRC2_SEL_IMM) ? imm : rs2_data;
 assign addr         = alu_out;
@@ -108,15 +108,15 @@ inst_pc / npc_op / branch_taken / pc_offset / jalr_target / inst_illegal
 
 ## 6. 存储器模型
 
-| | 指令存储器 `instrm` | 数据存储器 `datam` |
+| | 指令存储器 `instm` | 数据存储器 `datam` |
 | :-- | :-- | :-- |
 | 容量 | `IMEM_WORDS`（默认 2048 字 / 8 KiB） | `DMEM_WORDS`（默认 2048 字 / 8 KiB） |
-| 地址解码 | `instr_addr[IMEM_ADDR_W+1:2]` | `addr[DMEM_ADDR_W+1:2]` |
+| 地址解码 | `inst_addr[IMEM_ADDR_W+1:2]` | `addr[DMEM_ADDR_W+1:2]` |
 | 访问 | 组合读 | 组合读 / 上升沿写 |
 | 位宽访问 | 固定 32 位 | 固定 32 位（整字访问；子字访问延后） |
 
 > 二者是相互独立的存储体（哈佛结构），对后续上流水线有利。
-> 仿真期通过 plusarg `+instr=` / `+data=` 和 `$readmemh` 装载，
+> 仿真期通过 plusarg `+inst=` / `+data=` 和 `$readmemh` 装载，
 > 该入口仅仿真有效、不参与综合。
 
 ---
@@ -150,7 +150,7 @@ uv run mycup clean
 1. 仅实现 RV32I 最小 7 条指令；未实现指令统一 `inst_illegal` + stop。
 2. 单周期关键路径较长；流水线寄存器已存在但未接入。
 3. `datam` 只支持整字访问，没有字节掩码/子字访存。
-4. 地址对齐用仿真断言检查（`datam` / `instrm` / `npc`），本批不 trap。
+4. 地址对齐用仿真断言检查（`datam` / `instm` / `npc`），本批不 trap。
 5. 文档中的 MIPS 单元/指令说明保留为 `v0.3-mips` 历史参考。
 
 ---

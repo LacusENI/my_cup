@@ -25,7 +25,7 @@ tests/
 │   └── test_asm.py      # RV32I 编码器自检
 ├── hdl/
 │   ├── ctrl_probe.sv    # test-only：把 ctrl_t 摊平给 cocotb
-│   └── decoder_probe.sv # test-only：把 instr_t 摊平给 cocotb
+│   └── decoder_probe.sv # test-only：把 inst_t 摊平给 cocotb
 ├── control/
 │   ├── tb_decoder.py    # decoder 字段 / 立即数 / 合法编码
 │   ├── tb_ctrl.py       # ctrl 控制表 / 非法指令
@@ -42,8 +42,8 @@ tests/
 │   ├── tb_pipe_regs.py  # 四个流水线寄存器（尚未接入 top）
 │   └── test_pipe_regs.py
 └── cpu/
-    ├── tb_instr.py      # RV32I 单指令 ISA + cpu_top 契约
-    ├── test_instr.py
+    ├── tb_inst.py      # RV32I 单指令 ISA + cpu_top 契约
+    ├── test_inst.py
     ├── tb_prog.py       # program 级：$readmemh 程序装载
     └── test_prog.py
 ```
@@ -57,7 +57,7 @@ tests/
 - `cpu/`：`cpu_top` 级测试（ISA / program）
 - `utils/`：测试工具，不是 DUT 测试
 
-每个**模块级** `tb_*.py`（`tb_alu` / `tb_ctrl` / ... / `tb_instr`）里都自带：
+每个**模块级** `tb_*.py`（`tb_alu` / `tb_ctrl` / ... / `tb_inst`）里都自带：
 
 - 本模块的 `Protocol`（例如 `AluDut`）；
 - `REQUIRED_FIELDS`（测试依赖的字段列表）；
@@ -84,7 +84,7 @@ tests/
 | `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
 | `pipe/test_pipe_regs.py` | 四个流水线寄存器的行为 + 契约 | 8 |
 | `utils/test_asm.py` | RV32I 编码器、范围和伪指令检查 | 25 |
-| `cpu/test_instr.py` | 7 条单指令 ISA + 非法停止 + 契约 | 18 |
+| `cpu/test_inst.py` | 7 条单指令 ISA + 非法停止 + 契约 | 18 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
 合计 **94 个用例**。
@@ -160,7 +160,7 @@ def test_npc_plus4(npc_sim, run_cocotb_case):
 
 ## 指令级测试怎么写
 
-`tb_instr.py` 是 **ISA 级单指令测试**：每个用例只执行一条指令，只断言架构状态（PC / 寄存器 / 内存）：
+`tb_inst.py` 是 **ISA 级单指令测试**：每个用例只执行一条指令，只断言架构状态（PC / 寄存器 / 内存）：
 
 ```python
 from utils.cocotb_utils import read_pc, read_reg
@@ -169,7 +169,7 @@ from utils.riscv_asm import add
 @cocotb.test()
 async def add_test(dut: CpuTop):
     """add x3, x1, x2：5 + 3 = 8。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         add(rd=3, rs1=1, rs2=2),   # 编码器生成机器码
         registers={1: 5, 2: 3},
@@ -178,7 +178,7 @@ async def add_test(dut: CpuTop):
     assert read_pc(dut) == 4
 ```
 
-`run_one_instruction` 会：
+`run_one_instuction` 会：
 
 1. 启动时钟；
 2. 预置寄存器和数据内存；
@@ -227,8 +227,8 @@ async def contract_test(dut: AluDut):
 
 > `tests/utils/cocotb_utils.py` 里只保留**多个测试共享**的 CPU 访问器
 > （`CpuAccess` / `read_pc` / `read_reg` / `read_mem`），因为
-> `tb_instr`、`tb_prog` 和 `run_program` 都要用。
-> `cpu_top` 自己的 `CpuTop` 协议仍然在 `tests/cpu/tb_instr.py` 顶部声明。
+> `tb_inst`、`tb_prog` 和 `run_program` 都要用。
+> `cpu_top` 自己的 `CpuTop` 协议仍然在 `tests/cpu/tb_inst.py` 顶部声明。
 
 常见架构状态不直接写 `dut.u_regfile.regs[3]`，而是走访问器：
 
@@ -265,11 +265,11 @@ assert int(dut.alu_op.value) == ALU_ADD
 
 ```bash
 uv run mycup test                                      # 全部
-uv run pytest -v tests/cpu/test_instr.py               # 单指令 ISA 测试
-uv run pytest -v tests/cpu/test_instr.py::test_add     # 单个用例
+uv run pytest -v tests/cpu/test_inst.py               # 单指令 ISA 测试
+uv run pytest -v tests/cpu/test_inst.py::test_add     # 单个用例
 uv run pytest -v tests/cpu/test_prog.py                # 程序装载测试
 uv run mycup prog programs/demo.hex                    # 跑 hex 程序
-MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
+MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_inst.py # 导出波形
 ```
 
 波形路径：`build/cocotb/<toplevel>_wave/<toplevel>.fst`，可用 GTKWave 打开。

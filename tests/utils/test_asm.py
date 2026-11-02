@@ -74,7 +74,7 @@ def test_jalr():
 # --------------------------------------------------------------------------- #
 # 伪指令展开
 # --------------------------------------------------------------------------- #
-def test_pseudo_instructions():
+def test_pseudo_instuctions():
     # j offset -> jal x0, offset
     assert j(offset=8) == 0x0080006F
     # jr rs1 -> jalr x0, 0(rs1)

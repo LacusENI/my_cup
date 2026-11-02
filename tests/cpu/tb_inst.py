@@ -23,7 +23,7 @@ from utils.cocotb_utils import (
     read_pc,
     read_reg,
     read_reg_raw,
-    run_one_instruction,
+    run_one_instuction,
 )
 from utils.riscv_asm import add, addi, beq, jal, jalr, lw, sw
 
@@ -41,7 +41,7 @@ CPU_TOP_FIELDS = (
     "u_pc.curr_pc",
     "u_pc.next_pc",
     "u_regfile.regs",
-    "u_instrm.mem",
+    "u_instm.mem",
     "u_datam.mem",
 )
 
@@ -58,7 +58,7 @@ async def contract_test(dut: CpuTop):
 @cocotb.test()
 async def add_test(dut: CpuTop):
     """add x3, x1, x2：5 + 3 = 8，PC 前进到 4。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         add(rd=3, rs1=1, rs2=2),
         registers={1: 5, 2: 3},
@@ -71,7 +71,7 @@ async def add_test(dut: CpuTop):
 @cocotb.test()
 async def add_wrap_test(dut: CpuTop):
     """add 是 32 位回绕：0xFFFFFFFF + 1 = 0。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         add(rd=3, rs1=1, rs2=2),
         registers={1: 0xFFFF_FFFF, 2: 1},
@@ -84,7 +84,7 @@ async def add_wrap_test(dut: CpuTop):
 @cocotb.test()
 async def addi_positive_test(dut: CpuTop):
     """addi x1, x0, 8：正数立即数。"""
-    await run_one_instruction(dut, addi(rd=1, rs1=0, imm=8))
+    await run_one_instuction(dut, addi(rd=1, rs1=0, imm=8))
 
     assert read_reg(dut, 1) == 8
     assert read_pc(dut) == 4
@@ -93,7 +93,7 @@ async def addi_positive_test(dut: CpuTop):
 @cocotb.test()
 async def addi_negative_test(dut: CpuTop):
     """addi x2, x0, -1：验证 12 位立即数符号扩展。"""
-    await run_one_instruction(dut, addi(rd=2, rs1=0, imm=-1))
+    await run_one_instuction(dut, addi(rd=2, rs1=0, imm=-1))
 
     assert read_reg(dut, 2) == 0xFFFF_FFFF
     assert read_pc(dut) == 4
@@ -102,7 +102,7 @@ async def addi_negative_test(dut: CpuTop):
 @cocotb.test()
 async def addi_x0_test(dut: CpuTop):
     """写 x0 必须被丢弃。"""
-    await run_one_instruction(dut, addi(rd=0, rs1=0, imm=8), registers={0: 0})
+    await run_one_instuction(dut, addi(rd=0, rs1=0, imm=8), registers={0: 0})
 
     assert read_reg_raw(dut, 0) == 0
     assert read_pc(dut) == 4
@@ -114,7 +114,7 @@ async def addi_x0_test(dut: CpuTop):
 @cocotb.test()
 async def beq_taken_test(dut: CpuTop):
     """beq 成立：PC = 0 + 8 = 8。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         beq(rs1=1, rs2=2, offset=8),
         registers={1: 8, 2: 8},
@@ -126,7 +126,7 @@ async def beq_taken_test(dut: CpuTop):
 @cocotb.test()
 async def beq_not_taken_test(dut: CpuTop):
     """beq 不成立：PC = 4。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         beq(rs1=1, rs2=2, offset=8),
         registers={1: 8, 2: 9},
@@ -141,7 +141,7 @@ async def beq_not_taken_test(dut: CpuTop):
 @cocotb.test()
 async def jal_test(dut: CpuTop):
     """jal x1, 8：PC=8，x1=PC+4=4。"""
-    await run_one_instruction(dut, jal(rd=1, offset=8))
+    await run_one_instuction(dut, jal(rd=1, offset=8))
 
     assert read_pc(dut) == 8
     assert read_reg(dut, 1) == 4
@@ -150,7 +150,7 @@ async def jal_test(dut: CpuTop):
 @cocotb.test()
 async def jal_x0_test(dut: CpuTop):
     """jal x0, 8：不写 x0。"""
-    await run_one_instruction(dut, jal(rd=0, offset=8), registers={0: 0})
+    await run_one_instuction(dut, jal(rd=0, offset=8), registers={0: 0})
 
     assert read_pc(dut) == 8
     assert read_reg_raw(dut, 0) == 0
@@ -159,7 +159,7 @@ async def jal_x0_test(dut: CpuTop):
 @cocotb.test()
 async def jalr_test(dut: CpuTop):
     """jalr x1, 0(x2)：PC=x2=8，x1=4。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         jalr(rd=1, offset=0, rs1=2),
         registers={2: 8},
@@ -172,7 +172,7 @@ async def jalr_test(dut: CpuTop):
 @cocotb.test()
 async def jalr_rd_equals_rs1_test(dut: CpuTop):
     """jalr x1, 4(x1)：目标必须用旧的 x1 计算。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         jalr(rd=1, offset=4, rs1=1),
         registers={1: 8},
@@ -185,7 +185,7 @@ async def jalr_rd_equals_rs1_test(dut: CpuTop):
 @cocotb.test()
 async def jalr_x0_test(dut: CpuTop):
     """jalr x0, 0(x2)：不写 x0。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         jalr(rd=0, offset=0, rs1=2),
         registers={0: 0, 2: 8},
@@ -201,7 +201,7 @@ async def jalr_x0_test(dut: CpuTop):
 @cocotb.test()
 async def lw_test(dut: CpuTop):
     """lw x2, 0(x1)：从地址 8 读一个字到 x2。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         lw(rd=2, offset=0, rs1=1),
         registers={1: 8},
@@ -215,7 +215,7 @@ async def lw_test(dut: CpuTop):
 @cocotb.test()
 async def lw_negative_offset_test(dut: CpuTop):
     """lw x2, -4(x1)：负偏移地址计算。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         lw(rd=2, offset=-4, rs1=1),
         registers={1: 8},
@@ -229,7 +229,7 @@ async def lw_negative_offset_test(dut: CpuTop):
 @cocotb.test()
 async def sw_test(dut: CpuTop):
     """sw x3, 0(x1)：把 x3 写到地址 8，不写寄存器。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         sw(rs2=3, offset=0, rs1=1),
         registers={1: 8, 3: 0x1122_3344},
@@ -244,7 +244,7 @@ async def sw_test(dut: CpuTop):
 @cocotb.test()
 async def sw_negative_offset_test(dut: CpuTop):
     """sw x3, -4(x1)：负偏移地址计算。"""
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         sw(rs2=3, offset=-4, rs1=1),
         registers={1: 8, 3: 0x5566_7788},
@@ -263,7 +263,7 @@ async def illegal_stop_test(dut: CpuTop):
     """非法编码：PC 保持，寄存器/内存都不改变。"""
     # sub x3, x1, x2 的 funct7=0x20；本批只实现 add。
     illegal = 0x4020_81B3
-    await run_one_instruction(
+    await run_one_instuction(
         dut,
         illegal,
         registers={1: 5, 2: 3, 3: 0x1234_5678},

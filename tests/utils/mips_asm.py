@@ -80,7 +80,7 @@ def i_type(opcode: int, rs: int, rt: int, imm: int) -> int:
 def j_type(opcode: int, target: int) -> int:
     """J 型指令：
 
-        opcode(6) instr_index(26)
+        opcode(6) inst_index(26)
     """
     _check_range(opcode, 6, "opcode")
     _check_range(target, 26, "target")
@@ -117,12 +117,12 @@ def beq(*, rs: int, rt: int, offset: int) -> int:
 
 
 def j(*, target: int) -> int:
-    """j target（target 是 26 位 instr_index）"""
+    """j target（target 是 26 位 inst_index）"""
     return j_type(OP_J, target=target)
 
 
 def jal(*, target: int) -> int:
-    """jal target（target 是 26 位 instr_index）"""
+    """jal target（target 是 26 位 inst_index）"""
     return j_type(OP_JAL, target=target)
 
 

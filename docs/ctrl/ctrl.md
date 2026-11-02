@@ -2,7 +2,7 @@
 
 当前控制表由 `rtl/control/ctrl.sv` 产生；`valid_encoding` 来自 decoder。
 
-| instr | opcode | funct3 | funct7 | npc_op | src2_sel | reg_write | wb_sel | alu_op | mem_read | mem_write |
+| inst | opcode | funct3 | funct7 | npc_op | src2_sel | reg_write | wb_sel | alu_op | mem_read | mem_write |
 | :---: | :----: | :----: | :----: | :----: | :------: | :-------: | :----: | :----: | :------: | :-------: |
 | add   | 0110011 | 000 | 0000000 | plus4  | rs2 | 1 | alu_out | add | 0 | 0 |
 | addi  | 0010011 | 000 | x | plus4 | imm | 1 | alu_out | add | 0 | 0 |

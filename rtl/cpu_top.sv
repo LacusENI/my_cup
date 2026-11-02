@@ -7,15 +7,15 @@ module cpu_top (
 );
     import cpu_pkg::*;
 
-    word_t instr_addr;
-    word_t instr;
+    word_t inst_addr;
+    word_t inst;
     word_t curr_pc, next_pc, pc_plus4;
 
-    instr_t decoded;
-    ctrl_t  ctrl;
+    inst_t decoded;
+    ctrl_t ctrl;
 
-    word_t  imm;
-    logic   valid_encoding;
+    word_t imm;
+    logic  valid_encoding;
 
     reg_t rs1, rs2, rd;
     word_t rs1_data, rs2_data;
@@ -27,9 +27,9 @@ module cpu_top (
 
     word_t addr, r_data, w_data;
 
-    instrm u_instrm (
-        .instr_addr(instr_addr),
-        .instr(instr)
+    instm u_instm (
+        .inst_addr(inst_addr),
+        .inst(inst)
     );
 
     pc u_pc (
@@ -51,7 +51,7 @@ module cpu_top (
     );
 
     decoder u_decoder (
-        .inst(instr),
+        .inst(inst),
         .decoded(decoded),
         .imm(imm),
         .valid_encoding(valid_encoding)
@@ -99,7 +99,7 @@ module cpu_top (
 
     assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
     assign inst_illegal = ctrl.inst_illegal;
-    assign instr_addr = curr_pc;
+    assign inst_addr = curr_pc;
 
     assign alu_src1 = rs1_data;
     assign alu_src2 = (ctrl.src2_sel == SRC2_SEL_IMM) ? imm : rs2_data;

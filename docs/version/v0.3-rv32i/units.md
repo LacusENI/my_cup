@@ -1,21 +1,21 @@
 # v0.3-rv32i 模块设计
 
 > 本文是 [design.md](design.md) 的模块级展开：接口、职责、控制表和实现注意点。
-> 单指令数据流见 [instruction-paths.md](instruction-paths.md)，整体图见
+> 单指令数据流见 [instuction-paths.md](instuction-paths.md)，整体图见
 > [datapath.drawio](datapath.drawio)。
 
 ## 模块概览
 
 | 模块 | 职责 |
 | :-- | :-- |
-| `cpu_pkg` | 类型、枚举、`instr_t`、`ctrl_t`、流水线 struct |
+| `cpu_pkg` | 类型、枚举、`inst_t`、`ctrl_t`、流水线 struct |
 | `decoder` | RV32I 字段切分、`valid_encoding`、内部 `imm_gen` 纯函数 |
 | `ctrl` | 控制信号、`inst_illegal`、非法时安全控制 |
 | `alu` | ADD / EQ / NOP、分支比较结果 |
 | `npc` | PLUS4 / BRANCH / JAL / JALR / illegal hold |
 | `regfile` | 32x32 寄存器堆，x0 恒 0 |
 | `datam` | 整字数据存储器，字节地址模型 |
-| `instrm` | 指令存储器（本批保留现名） |
+| `instm` | 指令存储器（本批保留现名） |
 | `cpu_top` | 顶层实例化与连线，输出 `inst_illegal` |
 
 ## 1. 模块设计
@@ -64,7 +64,7 @@ MIPS 的 op/funct 常量
 s_ext_16_32 / z_ext_16_32（如无其他使用者）
 ```
 
-`instr_t` 按 RV32I 字段重排：
+`inst_t` 按 RV32I 字段重排：
 
 ```systemverilog
 typedef struct packed {
@@ -74,7 +74,7 @@ typedef struct packed {
     logic [2:0] funct3;
     logic [4:0] rd;
     logic [6:0] opcode;
-} instr_t;
+} inst_t;
 ```
 
 `ctrl_t`：
@@ -95,7 +95,7 @@ typedef struct packed {
 `is_branch` 不单独放进 `ctrl_t`，由 `npc_op == NPC_BRANCH` 派生。
 `inst_illegal` 放在 `ctrl_t` 里，方便以后随流水线一起打拍。
 
-流水线 struct 同步更新 `instr_t` / `ctrl_t` 字段和宽度。
+流水线 struct 同步更新 `inst_t` / `ctrl_t` 字段和宽度。
 
 ### 1.2 `decoder.sv`
 
@@ -106,7 +106,7 @@ module decoder
     import cpu_pkg::*;
 (
     input  word_t inst,
-    output instr_t decoded,
+    output inst_t decoded,
     output word_t  imm,
     output logic   valid_encoding
 );
@@ -117,7 +117,7 @@ module decoder
 - 按 RV32I 切分 `opcode/rd/funct3/rs1/rs2/funct7`；
 - 内部调用 `imm_gen` 函数，对外只输出 `imm`；
 - 输出 `valid_encoding`；
-- 删除 `instr_index`、`opcode_illegal`。
+- 删除 `inst_index`、`opcode_illegal`。
 
 `valid_encoding` 的当前定义：
 
@@ -312,11 +312,11 @@ NPC_JALR     -> next_pc = jalr_target & 32'hFFFF_FFFE
 - 文档先约定 **小端序**，避免后续加 `lb/lh/sb/sh` 时返工；
 - `addr[1:0] != 0` 只做仿真断言，行为后续再议。
 
-### 1.9 `instrm.sv`
+### 1.9 `instm.sv`
 
-- 本批保留 `instrm` / `instr_addr` 命名，避免为了改名扩大迁移 diff；
+- 本批保留 `instm` / `inst_addr` 命名，避免为了改名扩大迁移 diff；
 - 后续接流水线时再统一更名为 `instm` / `inst_addr`；
-- `instr_addr` 是字节地址，内部取字索引 `instr_addr[IMEM_ADDR_W+1:2]`；
+- `inst_addr` 是字节地址，内部取字索引 `inst_addr[IMEM_ADDR_W+1:2]`；
 - 没有压缩指令，取指固定 32 位；
 - PC 4 字节对齐只做断言。
 

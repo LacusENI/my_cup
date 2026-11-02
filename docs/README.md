@@ -24,9 +24,9 @@
 
 | 文档 | 覆盖指令 | 时效性 |
 | :-- | :-- | :-- |
-| [instr/instr_v0.1.md](instr/instr_v0.1.md) | `addu` `addiu` `lw` `sw` `beq` `j` | 📜 历史 MIPS 版本 |
-| [instr/instr_v0.2.md](instr/instr_v0.2.md) | `jal` `jr` | 📜 历史 MIPS 版本 |
-| [instr/instr_v0.3.md](instr/instr_v0.3.md) | `sb` `sh` + `lb/lbu/lh/lhu` | ⏸ 已延后（不在当前 ISA） |
+| [inst/inst_v0.1.md](inst/inst_v0.1.md) | `addu` `addiu` `lw` `sw` `beq` `j` | 📜 历史 MIPS 版本 |
+| [inst/inst_v0.2.md](inst/inst_v0.2.md) | `jal` `jr` | 📜 历史 MIPS 版本 |
+| [inst/inst_v0.3.md](inst/inst_v0.3.md) | `sb` `sh` + `lb/lbu/lh/lhu` | ⏸ 已延后（不在当前 ISA） |
 
 ## 3. 功能单元
 
@@ -34,7 +34,7 @@
 | :-- | :-- | :-- |
 | [unit/pc.md](unit/pc.md) | `pc` | ✅ |
 | [unit/npc.md](unit/npc.md) | `npc` | 📜 历史 MIPS 版本；当前见 `v0.3-rv32i/units.md` |
-| [unit/instrm.md](unit/instrm.md) | `instrm` | ✅ |
+| [unit/instm.md](unit/instm.md) | `instm` | ✅ |
 | [unit/regfile.md](unit/regfile.md) | `regfile` | 📜 历史端口命名 |
 | [unit/ext.md](unit/ext.md) | `ext` | 🗑 RTL 已删除（由 decoder 内部 imm 函数取代） |
 | [unit/alu.md](unit/alu.md) | `alu` | 📜 历史 MIPS 版本；当前见 `v0.3-rv32i/units.md` |
@@ -47,7 +47,7 @@
 | :-- | :-- | :-- |
 | [v0.3-rv32i/design.md](v0.3-rv32i/design.md) | v0.3-rv32i 设计落地、范围、非法策略与验证标准 | ✅ 已实现 |
 | [v0.3-rv32i/units.md](v0.3-rv32i/units.md) | 各模块接口、控制表和实现细节 | ✅ 已实现 |
-| [v0.3-rv32i/instruction-paths.md](v0.3-rv32i/instruction-paths.md) | 每条指令的 Mermaid 数据流图 | ✅ 已实现 |
+| [v0.3-rv32i/instuction-paths.md](v0.3-rv32i/instuction-paths.md) | 每条指令的 Mermaid 数据流图 | ✅ 已实现 |
 | [v0.3-rv32i/future.md](v0.3-rv32i/future.md) | 后续批次与待议设计 | 📋 规划中 |
 | [v0.3-rv32i/datapath.drawio](v0.3-rv32i/datapath.drawio) | 整个单周期 CPU 的 draw.io 设计图 | ✅ 已实现 |
 | [rv32i/format.md](rv32i/format.md) | RV32I 六种指令格式与立即数拼接 | ✅ |
@@ -62,7 +62,7 @@
 以下为整理过程中发现的问题，当前均已处理或明确延后：
 
 1. ~~**`ctrl/ctrl.md`**：`sb/sh` 行 opcode 错误、缺少 `lb/lbu/lh/lhu` 行~~ ✅ 已重写为当前 RV32I 7 条指令。
-2. **`instr/instr_v0.3.md`**：`sb/sh` 的 opcode 写法有误；该文档已整体标记为**延后**，保留作为未来参考（不视为待修）。
+2. **`inst/inst_v0.3.md`**：`sb/sh` 的 opcode 写法有误；该文档已整体标记为**延后**，保留作为未来参考（不视为待修）。
 3. **`unit/npc.md`**：MIPS 端口描述已过时，当前 RV32I 接口见 `v0.3-rv32i/units.md`。
 4. **`unit/cond.md`**：MIPS 历史文档；当前 RTL 已删除 `cond`，分支比较并入 ALU。
 5. **`unit/alu.md`**：MIPS 历史文档；当前 ALU 为 `ADD/EQ/NOP`，见 `v0.3-rv32i/units.md`。

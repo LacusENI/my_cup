@@ -1,7 +1,7 @@
 `default_nettype none
 
 // ***************************************************************
-// test-only probe：把 decoder 的 instr_t 输出摊平成普通端口
+// test-only probe：把 decoder 的 inst_t 输出摊平成普通端口
 //
 // Icarus 的 VPI 不会把 packed struct 的字段暴露成子对象，
 // 所以单元测试通过这个 probe 读取 opcode/rd/rs1/rs2/funct3/funct7。
@@ -21,7 +21,7 @@ module decoder_probe
     output logic    valid_encoding
 );
 
-    instr_t decoded;
+    inst_t decoded;
 
     decoder u_decoder (
         .inst(inst),

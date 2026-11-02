@@ -55,7 +55,7 @@ my_cup/
 │   │   ├── alu.sv
 │   │   └── regfile.sv
 │   ├── memory/               # 存储器
-│   │   ├── instrm.sv
+│   │   ├── instm.sv
 │   │   └── datam.sv
 │   └── pipe/                 # 流水线级间寄存器（已就位，尚未接入）
 │       ├── if_id_reg.sv
@@ -97,9 +97,9 @@ uv run mycup lint                    # Verilator 静态检查
 uv run mycup prog programs/demo.hex  # 装载 RV32I hex 程序
 uv run mycup clean                   # 清理 build/ waves/ logs/ .verilator/ 等
 
-uv run pytest -v tests/cpu/test_instr.py               # 单个文件
-uv run pytest -v tests/cpu/test_instr.py::test_add    # 单个用例
-MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_instr.py # 导出波形
+uv run pytest -v tests/cpu/test_inst.py               # 单个文件
+uv run pytest -v tests/cpu/test_inst.py::test_add    # 单个用例
+MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_inst.py # 导出波形
 ```
 
 > 验证说明：
@@ -229,8 +229,8 @@ uv sync
 - **[docs/arch/architecture.md](docs/arch/architecture.md)** —— 整体框架、数据通路、模块职责、已知限制
 - **[docs/roadmap.md](docs/roadmap.md)** —— 下一步演进方向（重点：单周期 → 流水线）
 - **[docs/v0.3-rv32i/units.md](docs/v0.3-rv32i/units.md)** —— 当前 RV32I 模块接口与控制表
-- **[docs/v0.3-rv32i/instruction-paths.md](docs/v0.3-rv32i/instruction-paths.md)** —— 7 条指令的数据流
-- `docs/unit/` 的 `pc/instrm/datam` 仍有效；其余 MIPS 单元/指令文档为历史参考
+- **[docs/v0.3-rv32i/instuction-paths.md](docs/v0.3-rv32i/instuction-paths.md)** —— 7 条指令的数据流
+- `docs/unit/` 的 `pc/instm/datam` 仍有效；其余 MIPS 单元/指令文档为历史参考
 
 ---
 

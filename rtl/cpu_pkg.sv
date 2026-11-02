@@ -84,7 +84,7 @@ package cpu_pkg;
         funct3_t funct3;
         reg_t    rd;
         opcode_t opcode;
-    } instr_t;
+    } inst_t;
 
     // ---- 控制信号打包 ----
     typedef struct packed {
@@ -103,36 +103,36 @@ package cpu_pkg;
         logic  valid;
         word_t pc;
         word_t pc_plus4;
-        word_t instr;
+        word_t inst;
     } if_id_t;
 
     typedef struct packed {
-        logic   valid;
-        word_t  pc;
-        word_t  pc_plus4;
-        instr_t instr;
-        word_t  rs1_data;
-        word_t  rs2_data;
-        word_t  imm32;
-        ctrl_t  ctrl;
+        logic  valid;
+        word_t pc;
+        word_t pc_plus4;
+        inst_t inst;
+        word_t rs1_data;
+        word_t rs2_data;
+        word_t imm32;
+        ctrl_t ctrl;
     } id_ex_t;
 
     typedef struct packed {
-        logic   valid;
-        word_t  pc_plus4;
-        word_t  alu_out;
-        word_t  rs2_data;
-        instr_t instr;
-        ctrl_t  ctrl;
+        logic  valid;
+        word_t pc_plus4;
+        word_t alu_out;
+        word_t rs2_data;
+        inst_t inst;
+        ctrl_t ctrl;
     } ex_mem_t;
 
     typedef struct packed {
-        logic   valid;
-        word_t  pc_plus4;
-        word_t  alu_out;
-        word_t  r_data;
-        instr_t instr;
-        ctrl_t  ctrl;
+        logic  valid;
+        word_t pc_plus4;
+        word_t alu_out;
+        word_t r_data;
+        inst_t inst;
+        ctrl_t ctrl;
     } mem_wb_t;
 
 endpackage

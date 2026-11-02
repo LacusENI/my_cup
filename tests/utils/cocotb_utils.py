@@ -50,7 +50,7 @@ class Memory(Protocol):
 class CpuAccess(Protocol):
     """共享访问器需要的最小 CPU 顶层接口。
 
-    cpu_top 的完整公开字段在 tb_instr.py 里声明；
+    cpu_top 的完整公开字段在 tb_inst.py 里声明；
     这里只是让 run_program / read_reg 等工具函数有个类型可写。
     """
 
@@ -58,7 +58,7 @@ class CpuAccess(Protocol):
     rst: Signal
     u_pc: Pc
     u_regfile: RegFile
-    u_instrm: Memory
+    u_instm: Memory
     u_datam: Memory
 
 
@@ -101,9 +101,9 @@ def write_mem(dut: CpuAccess, word_index: int, value: int) -> None:
     dut.u_datam.mem[word_index].value = value
 
 
-def write_instr(dut: CpuAccess, word_index: int, instruction: int) -> None:
+def write_inst(dut: CpuAccess, word_index: int, instuction: int) -> None:
     """把机器码写进指令存储器。"""
-    dut.u_instrm.mem[word_index].value = instruction
+    dut.u_instm.mem[word_index].value = instuction
 
 
 # --------------------------------------------------------------------------- #
@@ -179,7 +179,7 @@ async def wait_cycles(dut: HasClock, count: int):
 # --------------------------------------------------------------------------- #
 async def run_program(
     dut: CpuAccess,
-    instructions,
+    instuctions,
     registers=None,
     memory=None,
     extra_cycles=2,
@@ -187,7 +187,7 @@ async def run_program(
     """装载一个“小程序”，复位，然后跑若干周期。
 
     参数：
-      instructions : 机器码列表，从 mem[0] 开始依次写入
+      instuctions : 机器码列表，从 mem[0] 开始依次写入
       registers    : 预置寄存器，例如 {1: 8} 表示 R1 = 8
       memory       : 预置数据内存，例如 {2: 0} 表示 mem[2] = 0（按字索引）
       extra_cycles : 指令跑完后额外多等几拍，保证写回完成
@@ -205,19 +205,19 @@ async def run_program(
         write_mem(dut, word_index, value)
 
     # 装载指令
-    for index, instruction in enumerate(instructions):
-        write_instr(dut, index, instruction)
+    for index, instuction in enumerate(instuctions):
+        write_inst(dut, index, instuction)
 
-    # 复位，然后跑 len(instructions) + extra_cycles 个周期
+    # 复位，然后跑 len(instuctions) + extra_cycles 个周期
     await reset_and_wait(dut)
-    await wait_cycles(dut, len(instructions) + extra_cycles)
+    await wait_cycles(dut, len(instuctions) + extra_cycles)
 
     # 等到只读阶段再断言，确保所有信号都已经稳定
     await ReadOnly()
 
 
-async def run_one_instruction(
-    dut: CpuAccess, instruction, registers=None, memory=None
+async def run_one_instuction(
+    dut: CpuAccess, instuction, registers=None, memory=None
 ):
     """执行“一条”指令，然后停在只读阶段。
 
@@ -231,7 +231,7 @@ async def run_one_instruction(
     """
     await run_program(
         dut,
-        instructions=[instruction],
+        instuctions=[instuction],
         registers=registers,
         memory=memory,
         extra_cycles=0,
