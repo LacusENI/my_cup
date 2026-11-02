@@ -1,7 +1,7 @@
 # v0.3-rv32i 单指令数据流
 
 > 本文只画每条指令的**数据流**，控制信号（`ctrl`）省略，避免图太乱。
-> 整体结构见 [datapath.drawio](datapath.drawio)，模块接口见 [units.md](units.md)。
+> 整体结构见 [datapath.drawio](../../arch/datapath.drawio)，模块接口见 [units.md](units.md)。
 
 ## add
 
@@ -118,7 +118,7 @@ flowchart LR
 
 - `add/addi` 的 ALU 结果是写回数据；
 - `lw/sw/jalr` 的 ALU ADD 结果是地址/target；
-- `beq` 的 ALU 只产生 `cmp_result`；
+- `beq` 的 ALU 只产生 `cmp_result`；实际 `branch_taken = cmp_result && (npc_op == NPC_BRANCH)`，图中为简化只画 `cmp_result`；
 - `jal` 不经过 ALU，ALU 保持 `ALU_NOP`；
 - `pc_plus4` 始终由 NPC 从 `inst_pc` 计算，用于 `jal/jalr` 的 link；
 - 分支目标使用本条指令的 `inst_pc + pc_offset`，不是 IF 级最新 PC。

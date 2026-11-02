@@ -2,7 +2,7 @@
 
 version: v0.3-rv32i
 
-> 0.3
+> 说明：当前 RTL 实现前 7 条；`lui` 属于后续批次规划。
 
 ## add rd, rs1, rs2
 ```
@@ -50,9 +50,7 @@ target = (R[rs1] + imm) & 32'hFFFF_FFFE
 PC, R[rd] = target, PC + 4
 ```
 
-> v0.4
-
-## lui rd, hi
+## lui rd, hi（后续批次）
 ```
 hi: u20, imm = hi << 12
 R[rd] = imm

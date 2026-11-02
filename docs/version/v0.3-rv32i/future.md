@@ -50,7 +50,7 @@
 
 ### 1.6 其他待议
 
-- `instm/inst_addr` 改名是否在本批收尾执行；
+- `instm/inst_addr` 命名已稳定，不再作为待议项；
 - `fence` 作为 NOP 还是 illegal；
 - 非对齐地址是 trap、支持还是断言；
 - 是否引入 `sim_err` / test-only checker；

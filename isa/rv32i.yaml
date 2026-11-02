@@ -74,7 +74,7 @@ formats:
   SHIFT:
     fields:
       - {name: funct7, bits: [31, 25]}
-      - {name: shamtw, bits: [24, 20], imm_bits: [[4, 0]]}
+      - {name: shamt, bits: [24, 20], imm_bits: [[4, 0]]}
       - {name: rs1, bits: [19, 15]}
       - {name: funct3, bits: [14, 12]}
       - {name: rd, bits: [11, 7]}

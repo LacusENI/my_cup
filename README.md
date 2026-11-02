@@ -12,7 +12,7 @@
 
 | 项 | 状态 |
 | :-- | :-- |
-| 版本 | `v0.3-rv32i`（RV32I 最小子集，见 `docs/v0.3-rv32i/`） |
+| 版本 | `v0.3-rv32i`（RV32I 最小子集，见 `docs/version/v0.3-rv32i/`） |
 | 微架构 | 单周期（组合数据通路 + 时序状态） |
 | 指令集 | RV32I 最小子集（7 条） |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
@@ -31,9 +31,9 @@
 
 > `lui/auipc`、`sub`、逻辑/移位/比较、子字访存 `lb/lh/sb/sh`、
 > 其他分支和 `fence/ecall/ebreak` 不在本批范围，详见
-> [`docs/v0.3-rv32i/future.md`](docs/v0.3-rv32i/future.md)。
+> [`docs/version/v0.3-rv32i/future.md`](docs/version/v0.3-rv32i/future.md)。
 
-> 伪指令由汇编器展开：`j -> jal x0`、`jr -> jalr x0`、`ret -> jalr x0, ra`、`nop -> addi x0, x0, 0`。
+> 伪指令由汇编器展开：`j -> jal x0`、`jr -> jalr x0`、`ret -> jalr x0, 0(ra)`、`nop -> addi x0, x0, 0`。
 
 ---
 
@@ -42,7 +42,7 @@
 ```
 my_cup/
 ├── mycup/                # Python 工具链
-│   └── cli.py                # mycup lint / test / prog ...
+│   └── cli.py                # mycup init / lint / test / prog / fmt / doctor / clean
 ├── rtl/                  # 可综合的 RTL 源码
 │   ├── cpu_top.sv            # 顶层：实例化各单元并连线
 │   ├── cpu_pkg.sv            # package：参数、类型、控制编码
@@ -66,8 +66,11 @@ my_cup/
 │   ├── conftest.py            # session 级 build fixture
 │   ├── utils/                 # cocotb_utils / riscv_asm
 │   ├── hdl/                   # test-only probes
-│   ├── tb_*.py                # cocotb 测试内容
-│   └── test_*.py              # pytest 入口
+│   ├── control/               # decoder / ctrl / npc
+│   ├── datapath/              # alu / regfile
+│   ├── memory/                # datam
+│   ├── pipe/                  # 流水线级间寄存器
+│   └── cpu/                   # ISA / program 级测试
 ├── pyproject.toml        # uv 管理的 Python 依赖
 ├── uv.lock               # uv 的依赖锁定
 ├── docs/                 # 设计与文档（见 docs/README.md）
@@ -228,9 +231,9 @@ uv sync
 - **[docs/README.md](docs/README.md)** —— 文档总索引与各文档的时效性标注
 - **[docs/arch/architecture.md](docs/arch/architecture.md)** —— 整体框架、数据通路、模块职责、已知限制
 - **[docs/roadmap.md](docs/roadmap.md)** —— 下一步演进方向（重点：单周期 → 流水线）
-- **[docs/v0.3-rv32i/units.md](docs/v0.3-rv32i/units.md)** —— 当前 RV32I 模块接口与控制表
-- **[docs/v0.3-rv32i/instuction-paths.md](docs/v0.3-rv32i/instuction-paths.md)** —— 7 条指令的数据流
-- `docs/unit/` 的 `pc/instm/datam` 仍有效；其余 MIPS 单元/指令文档为历史参考
+- **[docs/version/v0.3-rv32i/units.md](docs/version/v0.3-rv32i/units.md)** —— 当前 RV32I 模块接口与控制表
+- **[docs/version/v0.3-rv32i/instruction-paths.md](docs/version/v0.3-rv32i/instruction-paths.md)** —— 7 条指令的数据流
+- `docs/units/` 是当前 RV32I 单元接口说明
 
 ---
 

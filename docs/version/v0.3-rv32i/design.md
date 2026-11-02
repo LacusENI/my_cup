@@ -5,8 +5,8 @@
 
 > 相关文档：
 > - 模块接口与实现细节：[units.md](units.md)
-> - 单指令数据流：[instuction-paths.md](instuction-paths.md)
-> - 整体数据通路图：[datapath.drawio](datapath.drawio)
+> - 单指令数据流：[instruction-paths.md](instruction-paths.md)
+> - 整体数据通路图：[datapath.drawio](../../arch/datapath.drawio)
 > - 后续批次与待议：[future.md](future.md)
 
 ## 1. 本批范围
@@ -64,14 +64,16 @@ trap / CSR / 异常
 - **32 位运算回绕**：add/addi 不产生溢出异常。
 - **复位抑制写操作**：`cpu_top` 用 `!rst` 门控 `reg_write` / `mem_write`；
   `regfile` / `datam` 接口保持不变。
+- **复位向量与基地址**：`pc` 复位到 `0x0000_0000`；IMEM / DMEM 基地址为 0，
+  内部按字索引。
 - **编码数据源**：`isa/rv32i.yaml` 是机器可读编码表；`implemented` 只列本批 7 条。
 
 ---
 
 ## 3. 数据通路总览
 
-整体框图见 [datapath.drawio](datapath.drawio)；每条指令的数据流见
-[instuction-paths.md](instuction-paths.md)。模块接口和内部细节统一放在
+整体框图见 [datapath.drawio](../../arch/datapath.drawio)；每条指令的数据流见
+[instruction-paths.md](instruction-paths.md)。模块接口和内部细节统一放在
 [units.md](units.md)，本文不重复。
 
 ## 4. 指令行为
@@ -142,7 +144,7 @@ mem_write = 0
 
 ---
 
-## 6. 落地任务
+## 6. 落地记录（已完成）
 
 ### 6.1 RTL
 
@@ -153,7 +155,7 @@ mem_write = 0
 - `npc.sv`：新接口、JAL/JALR、非法 hold；
 - `regfile.sv`：端口改名、删 `rd_sel`；
 - `datam.sv`：字节地址模型、边界断言；
-- `instm.sv`：本批暂不改名，保留现有测试路径；
+- `instm.sv`：保持当前 `instm` / `inst_addr` 命名，不再改回 `instrm` / `instr_addr`；
 - `cpu_top.sv`：删旧模块、接新接口、输出 `inst_illegal`；
 - 删除 `ext.sv`、`cond.sv`。
 
@@ -168,7 +170,7 @@ mem_write = 0
 - 更新 `tb_inst`：7 条指令、`jalr rd==rs1`、`rd=x0`、非法 stop；
 - 更新 `tb_prog` 和 `programs/demo.hex`：RV32I 程序；
 - 新增 `riscv_asm.py`，更新 `test_asm`；`mips_asm.py` 保留为历史参考；
-- 更新 `tests/utils/cocotb_utils.py`（如 `u_instm` 改名）；
+- 更新 `tests/utils/cocotb_utils.py`，与当前 `u_instm` 路径和命名保持一致；
 - 更新 `tests/README` 覆盖表和契约字段。
 
 ### 6.3 文档/数据

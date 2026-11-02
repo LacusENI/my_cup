@@ -1,8 +1,8 @@
 # v0.3-rv32i 模块设计
 
 > 本文是 [design.md](design.md) 的模块级展开：接口、职责、控制表和实现注意点。
-> 单指令数据流见 [instuction-paths.md](instuction-paths.md)，整体图见
-> [datapath.drawio](datapath.drawio)。
+> 单指令数据流见 [instruction-paths.md](instruction-paths.md)，整体图见
+> [datapath.drawio](../../arch/datapath.drawio)。
 
 ## 模块概览
 
@@ -202,9 +202,9 @@ inst_illegal = !valid_encoding
 | `beq` | BRANCH | 0 | EQ | RS2 | x | 0 | 0 |
 | `lw` | PLUS4 | 1 | ADD | IMM | R_DATA | 1 | 0 |
 | `sw` | PLUS4 | 0 | ADD | IMM | x | 0 | 1 |
-| `jal` | JAL | 1 | NOP | x | PC_PLUS4 | 0 | 0 |
+| `jal` | JAL | 1 | NOP | RS2 | PC_PLUS4 | 0 | 0 |
 | `jalr` | JALR | 1 | ADD | IMM | PC_PLUS4 | 0 | 0 |
-| illegal | PLUS4 | 0 | NOP | x | x | 0 | 0 |
+| illegal | PLUS4 | 0 | NOP | RS2 | ALU_OUT | 0 | 0 |
 
 非法时：
 
@@ -294,6 +294,7 @@ NPC_JALR     -> next_pc = jalr_target & 32'hFFFF_FFFE
 - `inst_illegal` 优先级最高。
 - `pc_plus4 = inst_pc + 4`，供 jal/jalr 写 link。
 - `NPC_PLUS4` 的命名与 `pc_plus4` 保持一致，不用 `NPC_PLUS_4`。
+- 仿真断言：`jalr_target[1] == 0`；branch/jal 的目标 bit1 也必须为 0。
 
 ### 1.7 `regfile.sv`
 
@@ -314,8 +315,8 @@ NPC_JALR     -> next_pc = jalr_target & 32'hFFFF_FFFE
 
 ### 1.9 `instm.sv`
 
-- 本批保留 `instm` / `inst_addr` 命名，避免为了改名扩大迁移 diff；
-- 后续接流水线时再统一更名为 `instm` / `inst_addr`；
+- 当前 RTL 已使用 `instm` / `inst_addr`，本批不再改名；
+- 历史 MIPS 的 `instrm` / `instr_addr` 命名只保留在历史文档中；
 - `inst_addr` 是字节地址，内部取字索引 `inst_addr[IMEM_ADDR_W+1:2]`；
 - 没有压缩指令，取指固定 32 位；
 - PC 4 字节对齐只做断言。

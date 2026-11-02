@@ -1,6 +1,6 @@
-version: 0.2
+version: 0.3-rv32i
 
-date: 2026/10/24
+date: 2026/11/02
 
 ## 描述
 
@@ -18,11 +18,12 @@ output
 
 - `mem_addr = inst_addr[IMEM_ADDR_W+1:2]`；
 - `inst = mem[mem_addr]`；
-- 容量由 `IMEM_WORDS` 决定（默认 2048 字 / 8 KiB）。
+- 容量由 `IMEM_WORDS` 决定（默认 2048 字 / 8 KiB）；
+- 当前没有压缩指令，取指固定 32 位。
 
 ## 断言
 
-- 地址的低两位必须为零
+- `inst_addr[1:0]` 必须为 0（仿真断言）。
 
 ## 仿真期装载
 

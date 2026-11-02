@@ -4,8 +4,8 @@
 
 - 顶层模块：[`rtl/cpu_top.sv`](../../rtl/cpu_top.sv)
 - 共享类型/控制编码：[`rtl/cpu_pkg.sv`](../../rtl/cpu_pkg.sv)
-- 当前批次设计：[`docs/v0.3-rv32i/design.md`](../v0.3-rv32i/design.md)
-- 模块接口：[`docs/v0.3-rv32i/units.md`](../v0.3-rv32i/units.md)
+- 当前批次设计：[`docs/version/v0.3-rv32i/design.md`](../version/v0.3-rv32i/design.md)
+- 模块接口：[`docs/version/v0.3-rv32i/units.md`](../version/v0.3-rv32i/units.md)
 
 ---
 
@@ -18,6 +18,8 @@
   - `pc.curr_pc` 在时钟上升沿更新为 `next_pc`；
   - `regfile` / `datam` 的写入在时钟上升沿生效。
 - 因此一个时钟沿推进一条指令，`pc` 的更新速率即为指令吞吐。
+- `pc` 复位向量为 `0x0000_0000`；IMEM / DMEM 基地址为 0，内部按字索引。
+- 复位沿由 `cpu_top` 门控写使能，不会提交寄存器写或存储写。
 
 当前实现的是 **RV32I 最小子集 7 条指令**：
 
@@ -31,6 +33,7 @@ add, addi, beq, lw, sw, jal, jalr
 
 ## 2. 顶层结构
 
+完整数据通路图见 [`datapath.drawio`](datapath.drawio)（diagrams.net 可直接编辑）。
 
 > 图中省略了 `wb_data`、`alu_src2` 等 MUX 的细节，完整连线见 `rtl/cpu_top.sv`。
 
@@ -102,7 +105,7 @@ inst_pc / npc_op / branch_taken / pc_offset / jalr_target / inst_illegal
 | `src2_sel`  | `rs2` / `imm`       |
 | `inst_illegal` | 当前编码是否非法 |
 
-控制表见 [`docs/v0.3-rv32i/units.md`](../v0.3-rv32i/units.md#14-ctrlsv)。
+控制表见 [`docs/version/v0.3-rv32i/units.md`](../version/v0.3-rv32i/units.md#14-ctrlsv)。
 
 ---
 
@@ -151,7 +154,7 @@ uv run mycup clean
 2. 单周期关键路径较长；流水线寄存器已存在但未接入。
 3. `datam` 只支持整字访问，没有字节掩码/子字访存。
 4. 地址对齐用仿真断言检查（`datam` / `instm` / `npc`），本批不 trap。
-5. 文档中的 MIPS 单元/指令说明保留为 `v0.3-mips` 历史参考。
+5. MIPS 历史文档已随 `v0.3-mips` 归档；当前文档与 v0.3-rv32i 同步。
 
 ---
 

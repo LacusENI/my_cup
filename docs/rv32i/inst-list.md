@@ -24,7 +24,7 @@ ebreak, ecall
 
 lb, lh, lw, lbu, lhu
 
-## Save
+## Store
 
 sb, sh, sw
 
