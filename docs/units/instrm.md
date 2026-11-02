@@ -20,6 +20,10 @@ output
 - `instr = mem[mem_addr]`；
 - 容量由 `IMEM_WORDS` 决定（默认 2048 字 / 8 KiB）。
 
+## 断言
+
+- 地址的低两位必须为零
+
 ## 仿真期装载
 
 `instrm` 内含 `initial` + `$readmemh`，可通过 vvp 的 plusarg 装载程序：

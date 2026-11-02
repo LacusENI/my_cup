@@ -31,32 +31,6 @@ add, addi, beq, lw, sw, jal, jalr
 
 ## 2. 顶层结构
 
-```text
-                    +--------------------------------------+
-                    |                 ctrl                 |
-                    | opcode/funct3/funct7/valid_encoding  |
-                    | -> npc_op, reg_write, alu_op,         |
-                    |    mem_read/write, wb_sel, src2_sel   |
-                    +---+-----+-----+-----+-----+----------+
-                        |     |     |     |     |
-                        v     v     v     v     v
-  +------+  curr_pc  +--------+  instr  +---------+
-  |  pc  |---------->| instrm |-------->| decoder |---- rs1/rs2/rd ---> regfile
-  +--+---+           +--------+         |         |---- imm ------------> ALU
-     ^                                  +---------+---- valid_encoding --> ctrl
-     | next_pc
-  +--+---+  branch_taken/pc_offset/jalr_target/inst_illegal
-  | npc  |<----------------------------------------------- ALU / ctrl
-  +--+---+
-     ^
-     |  next_pc / pc_plus4
-     |
-  +--+---+     +----------+     +----------+
-  | regfile |<--| wb mux   |<----| datam    |
-  +---------+   +----------+     +----------+
-                     ^
-                     | alu_out / r_data / pc_plus4
-```
 
 > 图中省略了 `wb_data`、`alu_src2` 等 MUX 的细节，完整连线见 `rtl/cpu_top.sv`。
 
@@ -64,17 +38,17 @@ add, addi, beq, lw, sw, jal, jalr
 
 ## 3. 模块清单
 
-| 模块 | 文件 | 职责 |
-| :-- | :-- | :-- |
-| `cpu_top` | `rtl/cpu_top.sv` | 顶层：实例化、连线、写回 MUX，输出 `inst_illegal` |
-| `pc` | `control/pc.sv` | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
-| `npc` | `control/npc.sv` | `PLUS4 / BRANCH / JAL / JALR`，非法时保持 PC |
-| `instrm` | `memory/instrm.sv` | 指令存储器（IMEM），组合读 |
-| `decoder` | `control/decoder.sv` | RV32I 字段切分、内部 `imm_gen` 函数、`valid_encoding` |
-| `ctrl` | `control/ctrl.sv` | 7 条指令控制表、`inst_illegal`、非法时安全控制 |
-| `regfile` | `datapath/regfile.sv` | 32×32 寄存器堆；`x0` 恒 0；上升沿写 |
-| `alu` | `datapath/alu.sv` | `ADD` / `EQ` / `NOP`，输出 `alu_out` 和 `cmp_result` |
-| `datam` | `memory/datam.sv` | 数据存储器（DMEM），整字访问，组合读/上升沿写 |
+| 模块      | 文件         | 职责 |
+| :-------- | :----------- | :------------ |
+| `cpu_top` | `cpu_top.sv` | 顶层：实例化、连线、写回 MUX，输出 `inst_illegal` |
+| `pc`      | `pc.sv`      | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
+| `npc`     | `npc.sv`     | 计算 `next_pc`，处理分支跳转 |
+| `instrm`  | `instrm.sv`  | 指令存储器（IMEM），组合读 |
+| `decoder` | `decoder.sv` | RV32I 字段切分、内部 `imm_gen` 函数、`valid_encoding` |
+| `ctrl`    | `ctrl.sv`    | 7 条指令控制表、`inst_illegal`、非法时安全控制 |
+| `regfile` | `regfile.sv` | 32×32 寄存器堆；`x0` 恒 0；上升沿写 |
+| `alu`     | `alu.sv`     | `ADD` / `EQ` / `NOP`，输出 `alu_out` 和 `cmp_result` |
+| `datam`   | `datam.sv`   | 数据存储器（DMEM），整字访问，组合读/上升沿写 |
 
 > `ext` 和 `cond` 已删除：立即数生成并入 `decoder`，分支比较并入 `alu`。
 > 流水线寄存器仍在 `rtl/pipe/`，但当前 `cpu_top` 还没有接入。
@@ -83,13 +57,13 @@ add, addi, beq, lw, sw, jal, jalr
 
 ## 4. 一条指令的数据流
 
-| 阶段 | 动作 |
-| :-- | :-- |
-| **IF** | `instr_addr = curr_pc`；`instrm` 输出 32 位指令 |
-| **ID** | `decoder` 拆字段并生成 `imm` / `valid_encoding`；`ctrl` 产生控制信号；`regfile` 读 `rs1_data/rs2_data` |
-| **EX** | `alu_src1 = rs1_data`；`alu_src2 = src2_sel ? imm : rs2_data`；ALU 计算地址/结果/比较 |
-| **MEM** | `addr = alu_out`，`w_data = rs2_data`；`datam` 读或写 |
-| **WB** | `wb_data` 选择 ALU 结果 / 内存读出 / PC+4，写回 `rd` |
+| 阶段    | 动作 |
+| :------ | :----------------------------- |
+| **IF**  | `instrm` 输出指令              |
+| **ID**  | `decoder` 译码；`ctrl` 产生控制信号；`regfile` 读 |
+| **EX**  | ALU 计算地址/结果/比较         |
+| **MEM** | `datam` 读或写                 |
+| **WB**  | `wb_data` 选择，写回 `regfile` |
 
 ### 关键连线
 
@@ -119,13 +93,13 @@ inst_pc / npc_op / branch_taken / pc_offset / jalr_target / inst_illegal
 
 | 字段 | 含义 |
 | :-- | :-- |
-| `npc_op` | `PLUS4` / `BRANCH` / `JAL` / `JALR` |
-| `reg_write` | 是否写寄存器 |
-| `alu_op` | `ADD` / `EQ` / `NOP` |
-| `mem_read` | 是否读数据存储器 |
-| `mem_write` | 是否写数据存储器 |
-| `wb_sel` | ALU / 内存 / PC+4 |
-| `src2_sel` | `rs2` / `imm` |
+| `npc_op`    | `PLUS4` / `BRANCH` / `JAL` / `JALR` |
+| `reg_write` | 是否写寄存器        |
+| `alu_op`    | `ADD` / `EQ` / `NOP` |
+| `mem_read`  | 是否读数据存储器    |
+| `mem_write` | 是否写数据存储器    |
+| `wb_sel`    | ALU / 内存 / PC+4   |
+| `src2_sel`  | `rs2` / `imm`       |
 | `inst_illegal` | 当前编码是否非法 |
 
 控制表见 [`docs/v0.3-rv32i/units.md`](../v0.3-rv32i/units.md#14-ctrlsv)。
