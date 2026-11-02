@@ -97,6 +97,7 @@ uv sync                              # 首次：创建 .venv
 
 uv run mycup test                    # 运行全部测试用例
 uv run mycup lint                    # Verilator 静态检查
+uv run mycup cov                     # Verilator 覆盖率（需要 5.054+）
 uv run mycup prog programs/demo.hex  # 装载 RV32I hex 程序
 uv run mycup clean                   # 清理 build/ waves/ logs/ .verilator/ 等
 
@@ -124,6 +125,33 @@ uv run mycup lint
 
 本项目的 lint 使用 Verilator，文件清单 `.verilator/verilator.f`，
 由 `mycup init` / `mycup lint` 自动生成。
+
+---
+
+## 覆盖率
+
+```bash
+uv run mycup cov            # line coverage（默认）
+uv run mycup cov --toggle   # 额外收集 toggle coverage
+```
+
+`mycup cov` 会用 Verilator 跑全部 cocotb 测试，输出：
+
+```text
+logs/coverage/data/          # 每个测试的 coverage.dat
+logs/coverage/annotated/     # 带命中次数/未覆盖标记的源码
+logs/coverage/coverage.info  # lcov .info
+```
+
+未覆盖行在 annotated 源码中以 `%000000` 开头，可以直接：
+
+```bash
+grep -rn '^%000000' logs/coverage/annotated
+```
+
+> 需要 Verilator >= 5.054。Ubuntu 24.04 自带的 5.020 不能配合 cocotb 2.1 的
+> Verilator runner；本机可用 `PATH=$HOME/.local/verilator/5.054/bin:$PATH`。
+> 安装 `lcov` 后还会额外生成 `logs/coverage/html/index.html`。
 
 ---
 

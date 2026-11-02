@@ -3,7 +3,7 @@ UV ?= uv
 MYCUP := $(UV) run mycup
 CYCLES ?= 8
 
-.PHONY: help init lint test check fmt prog doctor clean
+.PHONY: help init lint test check fmt cov prog doctor clean
 
 help:
 	@echo "make init                生成 .verilator/verilator.f 和 .slang/slang.f"
@@ -11,6 +11,7 @@ help:
 	@echo "make test                运行 cocotb + pytest"
 	@echo "make check               lint + test"
 	@echo "make fmt                 用 verible 格式化 RTL（原地修改）"
+	@echo "make cov                 用 Verilator 跑测试并生成覆盖率"
 	@echo "make prog FILE=<hex>     运行程序；可选 DATA=<hex> CYCLES=8"
 	@echo "make doctor              检查 toolchain.toml 和外部工具"
 	@echo "make clean               清理生成物"
@@ -28,6 +29,9 @@ check: lint test
 
 fmt:
 	$(MYCUP) fmt
+
+cov:
+	$(MYCUP) cov
 
 prog:
 	@test -n "$(FILE)" || { echo "usage: make prog FILE=programs/demo.hex [DATA=...] [CYCLES=8]" >&2; exit 1; }

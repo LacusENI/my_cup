@@ -10,6 +10,7 @@
     test     运行 cocotb + pytest
     prog     用指定 hex 程序运行指令级测试
     fmt      用 verible-verilog-format 格式化 RTL
+    cov      用 Verilator 跑测试并生成代码覆盖率
     doctor   检查配置和必需工具
     clean    清理生成物
 
@@ -20,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -216,6 +218,81 @@ def cmd_fmt(_: argparse.Namespace) -> None:
     raise SystemExit(subprocess.run(cmd, cwd=ROOT).returncode)
 
 
+def cmd_cov(args: argparse.Namespace) -> None:
+    """用 Verilator 跑全部测试，生成覆盖率数据和注释源码。"""
+    cov_dir = CFG.cov.dir
+    data_dir = cov_dir / "data"
+    annotated_dir = cov_dir / "annotated"
+    info_file = cov_dir / "coverage.info"
+
+    shutil.rmtree(cov_dir, ignore_errors=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    verilator = shutil.which("verilator")
+    if verilator is None:
+        fail("verilator not found (install Verilator >= 5.054)")
+    version_text = subprocess.run(
+        [verilator, "--version"], capture_output=True, text=True, check=True
+    ).stdout
+    match = re.search(r"Verilator\s+(\d+)\.(\d+)", version_text)
+    if match is None or (int(match.group(1)), int(match.group(2))) < (5, 54):
+        fail("mycup cov requires Verilator >= 5.054 (cocotb 2.1 runner)")
+
+    tool = shutil.which("verilator_coverage")
+    if tool is None:
+        fail("verilator_coverage not found (install Verilator >= 5.054)")
+
+    env = {
+        **os.environ,
+        "MYCUP_SIM": "verilator",
+        "MYCUP_COVERAGE": "1",
+        "MYCUP_COV_DATA": str(data_dir),
+    }
+    if args.toggle:
+        env["MYCUP_COVERAGE_TOGGLE"] = "1"
+
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", *CFG.test.args],
+        cwd=ROOT,
+        env=env,
+    )
+    if proc.returncode != 0:
+        raise SystemExit(proc.returncode)
+
+    data_files = sorted(data_dir.glob("*.dat"))
+    if not data_files:
+        fail(f"no coverage data generated under {rel(data_dir)}")
+
+    data_args = [str(path) for path in data_files]
+    subprocess.run(
+        [tool, "-annotate", str(annotated_dir), "-annotate-all", *data_args],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run(
+        [tool, "-write-info", str(info_file), *data_args],
+        cwd=ROOT,
+        check=True,
+    )
+
+    print(f"Coverage data:   {rel(data_dir)}")
+    print(f"Annotated source: {rel(annotated_dir)}")
+    print(f"Uncovered lines:  grep -rn '^%000000' {rel(annotated_dir)}")
+    print(f"lcov info:        {rel(info_file)}")
+
+    genhtml = shutil.which("genhtml")
+    if genhtml:
+        html_dir = cov_dir / "html"
+        subprocess.run(
+            [genhtml, str(info_file), "-o", str(html_dir)],
+            cwd=ROOT,
+            check=True,
+        )
+        print(f"HTML report:      {rel(html_dir / 'index.html')}")
+    else:
+        print("genhtml not found; install lcov or open the annotated source directly.")
+
+
 def cmd_doctor(_: argparse.Namespace) -> None:
     """检查 toolchain.toml 和外部工具是否可用。"""
     print(f"config: {rel(ROOT / 'toolchain.toml')}")
@@ -291,6 +368,15 @@ def make_parser() -> argparse.ArgumentParser:
     sub.add_parser("fmt", help="用 verible-verilog-format 格式化 RTL").set_defaults(
         func=cmd_fmt
     )
+    p_cov = sub.add_parser(
+        "cov", help="用 Verilator 跑测试并生成代码覆盖率"
+    )
+    p_cov.add_argument(
+        "--toggle",
+        action="store_true",
+        help="同时打开 toggle coverage（默认只做 line coverage）",
+    )
+    p_cov.set_defaults(func=cmd_cov)
     sub.add_parser("doctor", help="检查 toolchain.toml 和外部工具").set_defaults(
         func=cmd_doctor
     )

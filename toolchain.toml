@@ -38,6 +38,9 @@ filelist = ".slang/slang.f"
 [test]
 args = ["-v"]
 
+[cov]
+dir = "logs/coverage"
+
 [prog]
 target = "tests/cpu/test_prog.py::test_prog_demo"
 
@@ -55,4 +58,6 @@ required = [
 ]
 optional = [
   "slang-server",
+  "verilator_coverage",
+  "genhtml",
 ]
