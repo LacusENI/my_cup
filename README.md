@@ -77,7 +77,7 @@ my_cup/
 ├── isa/                  # 机器可读 ISA 描述（rv32i.yaml）
 ├── .opencode/agents/     # OpenCode subagent 定义
 ├── .verilator/verilator.f # Verilator lint 文件清单（生成，不提交）
-├── .tools/verilator/     # 本地 Verilator 安装（gitignore）
+├── .tools/verilator-conda/ # 本地 Verilator 安装（gitignore）
 ├── .slang/slang.f        # slang-server 文件清单（mycup init 生成）
 ├── .slang/server.json    # slang-server 工程配置
 ├── .vscode/settings.json # slang-server + verible 编辑器配置
@@ -132,7 +132,7 @@ uv run mycup lint
 ## 覆盖率
 
 ```bash
-make install-verilator      # 一次性：安装项目本地 Verilator 5.054
+make install-verilator      # 一次性：用 conda-forge 安装本地 Verilator 5.054
 make cov                    # line coverage（默认）
 uv run mycup cov --toggle   # 额外收集 toggle coverage
 ```
@@ -152,8 +152,8 @@ grep -rn '^%000000' logs/coverage/annotated
 ```
 
 > 覆盖率需要 Verilator >= 5.054。Ubuntu 24.04 自带的 5.020 不能配合
-> cocotb 2.1 的 Verilator runner。`make install-verilator` 会从源码构建到
-> `.tools/verilator/5.054/`，不覆盖系统 Verilator；`mycup cov` 会自动优先使用它。
+> cocotb 2.1 的 Verilator runner。`make install-verilator` 会用 conda-forge
+> 安装到 `.tools/verilator-conda/`，不覆盖系统 Verilator；`mycup cov` 会自动优先使用它。
 > 安装 `lcov` 后还会额外生成 `logs/coverage/html/index.html`。
 >
 > 不建议为了覆盖率降级 cocotb：当前测试用的是 cocotb 2.1 的

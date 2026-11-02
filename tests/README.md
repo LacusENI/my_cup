@@ -26,7 +26,7 @@ uv run mycup cov --toggle
 `logs/coverage/annotated/`，以 `%000000` 开头。
 
 > 覆盖率需要 Verilator >= 5.054；默认的 Icarus 测试流程不受影响。
-> `mycup cov` 会优先使用 `.tools/verilator/5.054/` 下的本地工具。
+> `mycup cov` 会优先使用 `.tools/verilator-conda/` 下的本地工具。
 
 ## 目录结构
 

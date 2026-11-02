@@ -59,7 +59,7 @@ mycup            实际执行：生成文件清单、调用工具
 | :-- | :-- |
 | `dir` | 覆盖率输出目录，默认 `logs/coverage` |
 | `min_version` | 最低 Verilator 版本，默认 `5.054` |
-| `verilator` | 项目本地 Verilator 路径 |
+| `verilator` | 项目本地 Verilator 路径（默认 conda 环境） |
 | `verilator_coverage` | 项目本地 verilator_coverage 路径 |
 
 `mycup cov` 会设置 `MYCUP_SIM=verilator` 和 `MYCUP_COVERAGE=1` 跑全部测试，
@@ -74,7 +74,7 @@ Ubuntu 24.04 自带的 Verilator 5.020 不能配合 cocotb 2.1 的 Verilator run
 make install-verilator
 ```
 
-脚本默认构建 `5.054` 到 `.tools/verilator/5.054/`，不会覆盖系统 Verilator。
+脚本默认用 conda-forge 安装 `5.054` 到 `.tools/verilator-conda/`，不会覆盖系统 Verilator。
 
 ### `[prog]`
 
