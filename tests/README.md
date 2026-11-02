@@ -84,10 +84,10 @@ tests/
 | `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
 | `pipe/test_pipe_regs.py` | 四个流水线寄存器的行为 + 契约 | 8 |
 | `utils/test_asm.py` | RV32I 编码器、范围和伪指令检查 | 25 |
-| `cpu/test_inst.py` | 7 条单指令 ISA + 非法停止 + 契约 | 18 |
+| `cpu/test_inst.py` | 7 条单指令 ISA + 复位写抑制 + 非法停止 + 契约 | 19 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **94 个用例**。
+合计 **95 个用例**。
 
 > 流水线寄存器用 `struct packed`（`if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`）承载数据；
 > 由于 Icarus VPI 不暴露 struct 字段，测试里把 struct 当成一个整数来读写。

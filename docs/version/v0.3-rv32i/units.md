@@ -328,6 +328,8 @@ NPC_JALR     -> next_pc = jalr_target & 32'hFFFF_FFFE
 - 实例化 `decoder`，拿 `decoded / imm / valid_encoding`；
 - 实例化 `ctrl`，拿 `ctrl_t`；
 - `inst_illegal` 直接由 `ctrl.inst_illegal` 输出到顶层；
+- `reg_write_en = ctrl.reg_write && !rst`、`mem_write_en = ctrl.mem_write && !rst`，
+  复位沿不提交写回/存储；`regfile` / `datam` 接口不变；
 - 写回目标直接使用 `decoded.rd`；
 - `branch_taken = alu.cmp_result & (ctrl.npc_op == NPC_BRANCH)`；
 - `jalr_target = alu.alu_out`；

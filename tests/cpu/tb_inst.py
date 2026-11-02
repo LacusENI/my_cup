@@ -23,7 +23,14 @@ from utils.cocotb_utils import (
     read_pc,
     read_reg,
     read_reg_raw,
+    reset_and_wait,
     run_one_instuction,
+    settle,
+    start_clock,
+    wait_cycles,
+    write_inst,
+    write_mem,
+    write_reg,
 )
 from utils.riscv_asm import add, addi, beq, jal, jalr, lw, sw
 
@@ -253,6 +260,63 @@ async def sw_negative_offset_test(dut: CpuTop):
 
     assert read_mem(dut, 1) == 0x5566_7788
     assert read_pc(dut) == 4
+
+
+# --------------------------------------------------------------------------- #
+# 复位
+# --------------------------------------------------------------------------- #
+@cocotb.test()
+async def reset_write_suppression_test(dut: CpuTop):
+    """复位沿不能提交寄存器写或存储写。
+
+    程序：
+      0: addi x1, x1, 1
+      4: sw   x1, 0(x0)
+      8: jal  x0, -8        # 回到 0
+
+    先在 PC=0 拉复位，检查 x1 不变；再在 PC=4 拉复位，检查内存不变。
+    """
+    await start_clock(dut)
+    write_reg(dut, 1, 0)
+    write_mem(dut, 0, 0)
+    write_inst(dut, 0, addi(rd=1, rs1=1, imm=1))
+    write_inst(dut, 1, sw(rs2=1, offset=0, rs1=0))
+    write_inst(dut, 2, jal(rd=0, offset=-8))
+
+    await reset_and_wait(dut)
+
+    # 跑完一圈，回到 PC=0；此时 x1=1，mem[0]=1
+    await wait_cycles(dut, 3)
+    await settle()
+    assert read_pc(dut) == 0
+    assert read_reg(dut, 1) == 1
+    assert read_mem(dut, 0) == 1
+
+    # PC=0 时复位：不应再执行 addi
+    dut.rst.value = 1
+    await wait_cycles(dut, 1)
+    await settle()
+    assert read_pc(dut) == 0
+    assert read_reg(dut, 1) == 1
+    assert read_mem(dut, 0) == 1
+
+    # 释放复位，执行 addi 到 PC=4；此时 x1=2，mem[0] 仍为 1
+    dut.rst.value = 0
+    await wait_cycles(dut, 1)
+    await settle()
+    assert read_pc(dut) == 4
+    assert read_reg(dut, 1) == 2
+    assert read_mem(dut, 0) == 1
+
+    # PC=4 时复位：不应执行 sw
+    dut.rst.value = 1
+    await wait_cycles(dut, 1)
+    await settle()
+    assert read_pc(dut) == 0
+    assert read_reg(dut, 1) == 2
+    assert read_mem(dut, 0) == 1
+
+    dut.rst.value = 0
 
 
 # --------------------------------------------------------------------------- #

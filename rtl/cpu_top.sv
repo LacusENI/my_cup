@@ -25,6 +25,9 @@ module cpu_top (
     logic cmp_result;
     logic branch_taken;
 
+    // 复位沿不提交写操作；regfile / datam 的接口保持不动。
+    logic reg_write_en, mem_write_en;
+
     word_t addr, r_data, w_data;
 
     instm u_instm (
@@ -67,7 +70,7 @@ module cpu_top (
         .rs2(rs2),
         .rd(rd),
         .wb_data(wb_data),
-        .reg_write(ctrl.reg_write),
+        .reg_write(reg_write_en),
         .rs1_data(rs1_data),
         .rs2_data(rs2_data)
     );
@@ -83,7 +86,7 @@ module cpu_top (
     datam u_datam (
         .clk(clk),
         .mem_read(ctrl.mem_read),
-        .mem_write(ctrl.mem_write),
+        .mem_write(mem_write_en),
         .addr(addr),
         .w_data(w_data),
         .r_data(r_data)
@@ -96,6 +99,9 @@ module cpu_top (
         .valid_encoding(valid_encoding),
         .ctrl(ctrl)
     );
+
+    assign reg_write_en = ctrl.reg_write && !rst;
+    assign mem_write_en = ctrl.mem_write && !rst;
 
     assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
     assign inst_illegal = ctrl.inst_illegal;

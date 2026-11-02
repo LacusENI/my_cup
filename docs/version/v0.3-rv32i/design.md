@@ -62,6 +62,8 @@ trap / CSR / 异常
 - **地址对齐只做仿真断言**：不做 trap，不作为 `inst_illegal`；行为后续再议。
 - **x0 恒 0**：读写路径都保护；写 x0 丢弃。
 - **32 位运算回绕**：add/addi 不产生溢出异常。
+- **复位抑制写操作**：`cpu_top` 用 `!rst` 门控 `reg_write` / `mem_write`；
+  `regfile` / `datam` 接口保持不变。
 - **编码数据源**：`isa/rv32i.yaml` 是机器可读编码表；`implemented` 只列本批 7 条。
 
 ---
@@ -185,6 +187,7 @@ mem_write = 0
 - `addi` 负立即数、`lw/sw` 负偏移、`beq/jal` 前后跳、`jalr` 目标正确；
 - `jalr rd==rs1` 用旧值计算 target；
 - `jal/jalr` 的 `rd=x0` 不写寄存器；
+- 复位时若 PC 指向合法指令，寄存器/内存不变；
 - 非法 opcode / 非法 funct3/funct7 进入 stop，PC 不动、寄存器/内存不变；
 - `mycup test` 全绿；
 - `mycup lint` 0 warning；

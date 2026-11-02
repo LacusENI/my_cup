@@ -86,6 +86,11 @@ def test_sw_negative_offset(cpu_sim, run_cocotb_case):
     run_cocotb_case(cpu_sim, "tb_inst", "sw_negative_offset_test")
 
 
+def test_reset_write_suppression(cpu_sim, run_cocotb_case):
+    """复位沿不提交寄存器/内存写入。"""
+    run_cocotb_case(cpu_sim, "tb_inst", "reset_write_suppression_test")
+
+
 def test_illegal_stop(cpu_sim, run_cocotb_case):
     """非法指令停止。"""
     run_cocotb_case(cpu_sim, "tb_inst", "illegal_stop_test")
