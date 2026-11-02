@@ -13,21 +13,6 @@ uv run pytest -v   # 同上（直接调 pytest）
 
 依赖只追踪 Python 侧；`iverilog` / `verilator` 仍是系统依赖。
 
-## 覆盖率
-
-```bash
-make install-verilator  # 一次性：项目本地 Verilator 5.054
-make cov                # Verilator line coverage
-uv run mycup cov --toggle
-```
-
-`mycup cov` 会设置 `MYCUP_SIM=verilator` / `MYCUP_COVERAGE=1`，跑完所有 cocotb 用例后
-把每个测试的 `coverage.dat` 汇总到 `logs/coverage/`。未覆盖行位于
-`logs/coverage/annotated/`，以 `%000000` 开头。
-
-> 覆盖率需要 Verilator >= 5.054；默认的 Icarus 测试流程不受影响。
-> `mycup cov` 会优先使用 `.tools/verilator/5.054/` 下的本地工具。
-
 ## 目录结构
 
 ```

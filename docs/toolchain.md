@@ -4,7 +4,7 @@
 
 ```text
 toolchain.toml   数据和参数：路径、工具、lint flags、测试参数
-Makefile         常用命令：make lint / make test / make cov / make prog ...
+Makefile         常用命令：make lint / make test / make prog ...
 mycup            实际执行：生成文件清单、调用工具
 ```
 
@@ -53,29 +53,6 @@ mycup            实际执行：生成文件清单、调用工具
 
 `args` 会传给 `python -m pytest`。`mycup prog` 也复用这些参数。
 
-### `[cov]`
-
-| 字段 | 用途 |
-| :-- | :-- |
-| `dir` | 覆盖率输出目录，默认 `logs/coverage` |
-| `min_version` | 最低 Verilator 版本，默认 `5.054` |
-| `verilator` | 项目本地 Verilator 路径 |
-| `verilator_coverage` | 项目本地 verilator_coverage 路径 |
-
-`mycup cov` 会设置 `MYCUP_SIM=verilator` 和 `MYCUP_COVERAGE=1` 跑全部测试，
-然后把每个测试的 `coverage.dat` 汇总成注释源码和 lcov `.info`。
-它会优先使用 `[cov]` 指定的本地工具，并把对应目录加入子进程 `PATH`；
-本地工具不存在时才回退到系统 `PATH`。
-
-Ubuntu 24.04 自带的 Verilator 5.020 不能配合 cocotb 2.1 的 Verilator runner。
-一次性安装项目本地版本：
-
-```bash
-make install-verilator
-```
-
-脚本默认构建 `5.054` 到 `.tools/verilator/5.054/`，不会覆盖系统 Verilator。
-
 ### `[prog]`
 
 `target` 是 `mycup prog` 运行的 pytest 测试节点。
@@ -94,7 +71,7 @@ make install-verilator
 
 `required` 缺失时 `make doctor` 返回非零；`optional` 只警告。
 默认检查 `uv`、`iverilog`、`verilator`、`verible-verilog-format`，
-并提示可选的 `slang-server`、`verilator_coverage`、`genhtml`。
+并提示可选的 `slang-server`。
 
 ---
 
@@ -107,8 +84,6 @@ make install-verilator
 | `make test` | 运行全部 cocotb + pytest |
 | `make check` | `lint` + `test` |
 | `make fmt` | 格式化 RTL（原地修改） |
-| `make cov` | 用 Verilator 跑测试并生成覆盖率 |
-| `make install-verilator` | 构建项目本地 Verilator（覆盖率用） |
 | `make prog FILE=...` | 运行指定 hex 程序 |
 | `make doctor` | 检查配置和工具 |
 | `make clean` | 清理生成物 |

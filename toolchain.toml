@@ -38,14 +38,6 @@ filelist = ".slang/slang.f"
 [test]
 args = ["-v"]
 
-[cov]
-dir = "logs/coverage"
-# 覆盖率需要 Verilator >= 5.036（cocotb 2.1 的 VLT_MIN）；
-# 当前流程固定使用 5.054，避免系统 apt 版本过旧。
-min_version = "5.054"
-verilator = ".tools/verilator/5.054/bin/verilator"
-verilator_coverage = ".tools/verilator/5.054/bin/verilator_coverage"
-
 [prog]
 target = "tests/cpu/test_prog.py::test_prog_demo"
 
@@ -63,6 +55,4 @@ required = [
 ]
 optional = [
   "slang-server",
-  "verilator_coverage",
-  "genhtml",
 ]

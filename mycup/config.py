@@ -72,14 +72,6 @@ class Doctor:
 
 
 @dataclass(frozen=True)
-class Cov:
-    dir: Path
-    min_version: str
-    verilator: Path
-    verilator_coverage: Path
-
-
-@dataclass(frozen=True)
 class Toolchain:
     name: str
     paths: Paths
@@ -90,7 +82,6 @@ class Toolchain:
     prog: Prog
     format: Format
     doctor: Doctor
-    cov: Cov
 
 
 def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
@@ -187,16 +178,6 @@ def load(root: Path) -> Toolchain:
         optional=_str_list(doctor_table, "optional", "doctor"),
     )
 
-    cov_table = _section(data, "cov")
-    cov = Cov(
-        dir=_resolve(root, _str(cov_table, "dir", "cov")),
-        min_version=_str(cov_table, "min_version", "cov"),
-        verilator=_resolve(root, _str(cov_table, "verilator", "cov")),
-        verilator_coverage=_resolve(
-            root, _str(cov_table, "verilator_coverage", "cov")
-        ),
-    )
-
     return Toolchain(
         name=name,
         paths=paths,
@@ -207,5 +188,4 @@ def load(root: Path) -> Toolchain:
         prog=prog,
         format=format_cfg,
         doctor=doctor,
-        cov=cov,
     )

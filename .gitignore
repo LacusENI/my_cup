@@ -17,4 +17,6 @@ __pycache__/
 # slang-server / Verilator 的本地生成文件
 .slang/local/
 .verilator/
+
+# 本地工具安装（如实验性 Verilator/conda 环境）
 .tools/

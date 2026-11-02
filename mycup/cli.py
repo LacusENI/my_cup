@@ -10,7 +10,6 @@
     test     运行 cocotb + pytest
     prog     用指定 hex 程序运行指令级测试
     fmt      用 verible-verilog-format 格式化 RTL
-    cov      用 Verilator 跑测试并生成代码覆盖率
     doctor   检查配置和必需工具
     clean    清理生成物
 
@@ -21,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -88,21 +86,6 @@ def log_line(path: Path, message: str) -> None:
 def fail(message: str, code: int = 1) -> NoReturn:
     print(message, file=sys.stderr)
     raise SystemExit(code)
-
-
-def find_tool(preferred: Path, name: str) -> str | None:
-    """优先使用 toolchain.toml 指定的本地工具，否则回退到 PATH。"""
-    if preferred.is_file() and os.access(preferred, os.X_OK):
-        return str(preferred)
-    return shutil.which(name)
-
-
-def version_tuple(version: str) -> tuple[int, ...]:
-    """把 ``5.054`` / ``5.054-...`` 解析成可比较的数字元组。"""
-    match = re.search(r"(\d+(?:\.\d+)+)", version)
-    if match is None:
-        return ()
-    return tuple(int(part) for part in match.group(1).split("."))
 
 
 def rtl_files() -> list[Path]:
@@ -233,93 +216,6 @@ def cmd_fmt(_: argparse.Namespace) -> None:
     raise SystemExit(subprocess.run(cmd, cwd=ROOT).returncode)
 
 
-def cmd_cov(args: argparse.Namespace) -> None:
-    """用 Verilator 跑全部测试，生成覆盖率数据和注释源码。"""
-    cov_dir = CFG.cov.dir
-    data_dir = cov_dir / "data"
-    annotated_dir = cov_dir / "annotated"
-    info_file = cov_dir / "coverage.info"
-
-    shutil.rmtree(cov_dir, ignore_errors=True)
-    data_dir.mkdir(parents=True, exist_ok=True)
-
-    verilator = find_tool(CFG.cov.verilator, "verilator")
-    if verilator is None:
-        fail(
-            "verilator not found; run `make install-verilator` "
-            f"(requires >= {CFG.cov.min_version})"
-        )
-    version_text = subprocess.run(
-        [verilator, "--version"], capture_output=True, text=True, check=True
-    ).stdout
-    if version_tuple(version_text) < version_tuple(CFG.cov.min_version):
-        fail(
-            f"mycup cov requires Verilator >= {CFG.cov.min_version}; "
-            f"found {version_text.strip()}. Run `make install-verilator`."
-        )
-
-    tool = find_tool(CFG.cov.verilator_coverage, "verilator_coverage")
-    if tool is None:
-        fail(
-            "verilator_coverage not found; run `make install-verilator` "
-            f"(requires >= {CFG.cov.min_version})"
-        )
-
-    # 让 cocotb 的 Verilator runner 也使用同一套本地安装。
-    env = {
-        **os.environ,
-        "PATH": os.pathsep.join(
-            [str(Path(verilator).parent), os.environ.get("PATH", "")]
-        ),
-        "MYCUP_SIM": "verilator",
-        "MYCUP_COVERAGE": "1",
-        "MYCUP_COV_DATA": str(data_dir),
-    }
-    if args.toggle:
-        env["MYCUP_COVERAGE_TOGGLE"] = "1"
-
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", *CFG.test.args],
-        cwd=ROOT,
-        env=env,
-    )
-    if proc.returncode != 0:
-        raise SystemExit(proc.returncode)
-
-    data_files = sorted(data_dir.glob("*.dat"))
-    if not data_files:
-        fail(f"no coverage data generated under {rel(data_dir)}")
-
-    data_args = [str(path) for path in data_files]
-    subprocess.run(
-        [tool, "-annotate", str(annotated_dir), "-annotate-all", *data_args],
-        cwd=ROOT,
-        check=True,
-    )
-    subprocess.run(
-        [tool, "-write-info", str(info_file), *data_args],
-        cwd=ROOT,
-        check=True,
-    )
-
-    print(f"Coverage data:   {rel(data_dir)}")
-    print(f"Annotated source: {rel(annotated_dir)}")
-    print(f"Uncovered lines:  grep -rn '^%000000' {rel(annotated_dir)}")
-    print(f"lcov info:        {rel(info_file)}")
-
-    genhtml = shutil.which("genhtml")
-    if genhtml:
-        html_dir = cov_dir / "html"
-        subprocess.run(
-            [genhtml, str(info_file), "-o", str(html_dir)],
-            cwd=ROOT,
-            check=True,
-        )
-        print(f"HTML report:      {rel(html_dir / 'index.html')}")
-    else:
-        print("genhtml not found; install lcov or open the annotated source directly.")
-
-
 def cmd_doctor(_: argparse.Namespace) -> None:
     """检查 toolchain.toml 和外部工具是否可用。"""
     print(f"config: {rel(ROOT / 'toolchain.toml')}")
@@ -340,14 +236,6 @@ def cmd_doctor(_: argparse.Namespace) -> None:
             print(f"[ok]      {tool}: {location}")
         else:
             print(f"[warn]    {tool}: not found (optional)")
-
-    if CFG.cov.verilator.is_file():
-        print(f"[ok]      cov verilator: {CFG.cov.verilator}")
-    else:
-        print(
-            "[warn]    cov verilator: not installed; "
-            "run `make install-verilator`"
-        )
 
     if missing:
         fail(f"missing required tools: {', '.join(missing)}")
@@ -403,15 +291,6 @@ def make_parser() -> argparse.ArgumentParser:
     sub.add_parser("fmt", help="用 verible-verilog-format 格式化 RTL").set_defaults(
         func=cmd_fmt
     )
-    p_cov = sub.add_parser(
-        "cov", help="用 Verilator 跑测试并生成代码覆盖率"
-    )
-    p_cov.add_argument(
-        "--toggle",
-        action="store_true",
-        help="同时打开 toggle coverage（默认只做 line coverage）",
-    )
-    p_cov.set_defaults(func=cmd_cov)
     sub.add_parser("doctor", help="检查 toolchain.toml 和外部工具").set_defaults(
         func=cmd_doctor
     )

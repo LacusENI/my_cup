@@ -77,7 +77,6 @@ my_cup/
 ├── isa/                  # 机器可读 ISA 描述（rv32i.yaml）
 ├── .opencode/agents/     # OpenCode subagent 定义
 ├── .verilator/verilator.f # Verilator lint 文件清单（生成，不提交）
-├── .tools/verilator/     # 本地 Verilator 安装（gitignore）
 ├── .slang/slang.f        # slang-server 文件清单（mycup init 生成）
 ├── .slang/server.json    # slang-server 工程配置
 ├── .vscode/settings.json # slang-server + verible 编辑器配置
@@ -98,7 +97,6 @@ uv sync                              # 首次：创建 .venv
 
 uv run mycup test                    # 运行全部测试用例
 uv run mycup lint                    # Verilator 静态检查
-uv run mycup cov                     # Verilator 覆盖率（需要 5.054+）
 uv run mycup prog programs/demo.hex  # 装载 RV32I hex 程序
 uv run mycup clean                   # 清理 build/ waves/ logs/ .verilator/ 等
 
@@ -126,39 +124,6 @@ uv run mycup lint
 
 本项目的 lint 使用 Verilator，文件清单 `.verilator/verilator.f`，
 由 `mycup init` / `mycup lint` 自动生成。
-
----
-
-## 覆盖率
-
-```bash
-make install-verilator      # 一次性：安装项目本地 Verilator 5.054
-make cov                    # line coverage（默认）
-uv run mycup cov --toggle   # 额外收集 toggle coverage
-```
-
-`mycup cov` 会用 Verilator 跑全部 cocotb 测试，输出：
-
-```text
-logs/coverage/data/          # 每个测试的 coverage.dat
-logs/coverage/annotated/     # 带命中次数/未覆盖标记的源码
-logs/coverage/coverage.info  # lcov .info
-```
-
-未覆盖行在 annotated 源码中以 `%000000` 开头，可以直接：
-
-```bash
-grep -rn '^%000000' logs/coverage/annotated
-```
-
-> 覆盖率需要 Verilator >= 5.054。Ubuntu 24.04 自带的 5.020 不能配合
-> cocotb 2.1 的 Verilator runner。`make install-verilator` 会从源码构建到
-> `.tools/verilator/5.054/`，不覆盖系统 Verilator；`mycup cov` 会自动优先使用它。
-> 安装 `lcov` 后还会额外生成 `logs/coverage/html/index.html`。
->
-> 不建议为了覆盖率降级 cocotb：当前测试用的是 cocotb 2.1 的
-> `cocotb_tools.runner`，降级会同时改变 runner API，且不能解决 Verilator VPI
-> 版本不匹配的问题。
 
 ---
 

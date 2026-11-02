@@ -29,12 +29,6 @@ if str(TESTS) not in sys.path:
 INCLUDES: list[Path] = []
 BUILD = ROOT / "build" / "cocotb"
 WAVES = os.environ.get("MYCUP_WAVES") == "1"
-SIM = os.environ.get("MYCUP_SIM", "icarus")
-COVERAGE = os.environ.get("MYCUP_COVERAGE") == "1"
-COVERAGE_TOGGLE = os.environ.get("MYCUP_COVERAGE_TOGGLE") == "1"
-COV_DATA = Path(
-    os.environ.get("MYCUP_COV_DATA", str(ROOT / "logs" / "coverage" / "data"))
-)
 
 
 def _rtl_sources() -> list[Path]:
@@ -53,24 +47,14 @@ def _build(toplevel: str, sources, build_name: str, module_prefix: str):
       build_name    : build 目录名（不同 DUT 分开，互不覆盖）
       module_prefix : 测试模块所在目录，例如 "control" -> "control.tb_ctrl"
     """
-    if COVERAGE and SIM != "verilator":
-        raise RuntimeError("MYCUP_COVERAGE=1 需要 MYCUP_SIM=verilator")
-
-    runner = get_runner(SIM)
-    # Icarus 要求 build 阶段就开启 waves，否则 test 阶段传 waves 无效。
-    build_dir = BUILD / (
-        build_name + ("_wave" if WAVES else "") + ("_cov" if COVERAGE else "")
-    )
-    build_args = ["-g2012"] if SIM == "icarus" else []
-    if COVERAGE:
-        build_args += ["--coverage-line"]
-    if COVERAGE_TOGGLE:
-        build_args += ["--coverage-toggle"]
+    runner = get_runner("icarus")
+    # Icarus 要求 build 阶段就开启 waves，否则 test 阶段传 waves 无效
+    build_dir = BUILD / (build_name + ("_wave" if WAVES else ""))
     runner.build(
         sources=sources,
         hdl_toplevel=toplevel,
         includes=INCLUDES,
-        build_args=build_args,
+        build_args=["-g2012"],
         timescale=("1ns", "1ps"),  # Icarus 不设这个，Timer(ns) 会报精度错误
         waves=WAVES,
         build_dir=build_dir,
@@ -218,11 +202,6 @@ def run_cocotb_case():
         # cocotb 默认会把 pytest 结果写成 tests/<testcase>.result.xml；
         # 这里显式指到 build/ 下，避免污染源码目录。
         results_xml = sim.build_dir / f"{testcase}.result.xml"
-        test_plusargs = list(plusargs or [])
-        if COVERAGE:
-            COV_DATA.mkdir(parents=True, exist_ok=True)
-            cov_file = COV_DATA / f"{sim.build_dir.name}_{testcase}.dat"
-            test_plusargs.append(f"+verilator+coverage+file+{cov_file}")
         sim.runner.test(
             hdl_toplevel=sim.toplevel,
             test_module=test_module,
@@ -231,7 +210,7 @@ def run_cocotb_case():
             build_dir=sim.build_dir,
             results_xml=str(results_xml),
             waves=WAVES,
-            plusargs=test_plusargs,
+            plusargs=plusargs or [],
         )
 
     return _run
