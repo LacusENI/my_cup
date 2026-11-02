@@ -74,6 +74,9 @@ class Doctor:
 @dataclass(frozen=True)
 class Cov:
     dir: Path
+    min_version: str
+    verilator: Path
+    verilator_coverage: Path
 
 
 @dataclass(frozen=True)
@@ -185,7 +188,14 @@ def load(root: Path) -> Toolchain:
     )
 
     cov_table = _section(data, "cov")
-    cov = Cov(dir=_resolve(root, _str(cov_table, "dir", "cov")))
+    cov = Cov(
+        dir=_resolve(root, _str(cov_table, "dir", "cov")),
+        min_version=_str(cov_table, "min_version", "cov"),
+        verilator=_resolve(root, _str(cov_table, "verilator", "cov")),
+        verilator_coverage=_resolve(
+            root, _str(cov_table, "verilator_coverage", "cov")
+        ),
+    )
 
     return Toolchain(
         name=name,

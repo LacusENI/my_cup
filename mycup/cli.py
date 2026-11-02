@@ -90,6 +90,21 @@ def fail(message: str, code: int = 1) -> NoReturn:
     raise SystemExit(code)
 
 
+def find_tool(preferred: Path, name: str) -> str | None:
+    """优先使用 toolchain.toml 指定的本地工具，否则回退到 PATH。"""
+    if preferred.is_file() and os.access(preferred, os.X_OK):
+        return str(preferred)
+    return shutil.which(name)
+
+
+def version_tuple(version: str) -> tuple[int, ...]:
+    """把 ``5.054`` / ``5.054-...`` 解析成可比较的数字元组。"""
+    match = re.search(r"(\d+(?:\.\d+)+)", version)
+    if match is None:
+        return ()
+    return tuple(int(part) for part in match.group(1).split("."))
+
+
 def rtl_files() -> list[Path]:
     """返回所有 RTL 源文件，并保证 package 文件排在最前面。
 
@@ -228,22 +243,34 @@ def cmd_cov(args: argparse.Namespace) -> None:
     shutil.rmtree(cov_dir, ignore_errors=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    verilator = shutil.which("verilator")
+    verilator = find_tool(CFG.cov.verilator, "verilator")
     if verilator is None:
-        fail("verilator not found (install Verilator >= 5.054)")
+        fail(
+            "verilator not found; run `make install-verilator` "
+            f"(requires >= {CFG.cov.min_version})"
+        )
     version_text = subprocess.run(
         [verilator, "--version"], capture_output=True, text=True, check=True
     ).stdout
-    match = re.search(r"Verilator\s+(\d+)\.(\d+)", version_text)
-    if match is None or (int(match.group(1)), int(match.group(2))) < (5, 54):
-        fail("mycup cov requires Verilator >= 5.054 (cocotb 2.1 runner)")
+    if version_tuple(version_text) < version_tuple(CFG.cov.min_version):
+        fail(
+            f"mycup cov requires Verilator >= {CFG.cov.min_version}; "
+            f"found {version_text.strip()}. Run `make install-verilator`."
+        )
 
-    tool = shutil.which("verilator_coverage")
+    tool = find_tool(CFG.cov.verilator_coverage, "verilator_coverage")
     if tool is None:
-        fail("verilator_coverage not found (install Verilator >= 5.054)")
+        fail(
+            "verilator_coverage not found; run `make install-verilator` "
+            f"(requires >= {CFG.cov.min_version})"
+        )
 
+    # 让 cocotb 的 Verilator runner 也使用同一套本地安装。
     env = {
         **os.environ,
+        "PATH": os.pathsep.join(
+            [str(Path(verilator).parent), os.environ.get("PATH", "")]
+        ),
         "MYCUP_SIM": "verilator",
         "MYCUP_COVERAGE": "1",
         "MYCUP_COV_DATA": str(data_dir),
@@ -313,6 +340,14 @@ def cmd_doctor(_: argparse.Namespace) -> None:
             print(f"[ok]      {tool}: {location}")
         else:
             print(f"[warn]    {tool}: not found (optional)")
+
+    if CFG.cov.verilator.is_file():
+        print(f"[ok]      cov verilator: {CFG.cov.verilator}")
+    else:
+        print(
+            "[warn]    cov verilator: not installed; "
+            "run `make install-verilator`"
+        )
 
     if missing:
         fail(f"missing required tools: {', '.join(missing)}")
