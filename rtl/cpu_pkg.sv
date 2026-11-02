@@ -47,8 +47,8 @@ package cpu_pkg;
 
     // ---- 写回数据选择 ----
     typedef enum logic [1:0] {
-        WB_SEL_ALU_OUT = 2'b00,
-        WB_SEL_R_DATA  = 2'b01,
+        WB_SEL_ALU_OUT  = 2'b00,
+        WB_SEL_R_DATA   = 2'b01,
         WB_SEL_PC_PLUS4 = 2'b10
     } wb_sel_t;
 
@@ -67,13 +67,13 @@ package cpu_pkg;
     localparam opcode_t OP_JALR   = 7'b1100111;
     localparam opcode_t OP_JAL    = 7'b1101111;
 
-    localparam funct3_t F3_ADD  = 3'b000;
-    localparam funct3_t F3_LW   = 3'b010;
-    localparam funct3_t F3_SW   = 3'b010;
-    localparam funct3_t F3_BEQ  = 3'b000;
-    localparam funct3_t F3_JALR = 3'b000;
+    localparam funct3_t F3_ADD    = 3'b000;
+    localparam funct3_t F3_LW     = 3'b010;
+    localparam funct3_t F3_SW     = 3'b010;
+    localparam funct3_t F3_BEQ    = 3'b000;
+    localparam funct3_t F3_JALR   = 3'b000;
 
-    localparam funct7_t F7_ADD = 7'b0000000;
+    localparam funct7_t F7_ADD    = 7'b0000000;
 
     // ---- 指令字段 ----
     // 位序与 RV32I 32 位指令一致：funct7 在最高位，opcode 在最低位。
@@ -88,14 +88,14 @@ package cpu_pkg;
 
     // ---- 控制信号打包 ----
     typedef struct packed {
-        npc_op_t    npc_op;
-        logic       reg_write;
-        alu_op_t    alu_op;
-        logic       mem_read;
-        logic       mem_write;
-        wb_sel_t    wb_sel;
-        src2_sel_t  src2_sel;
-        logic       inst_illegal;
+        npc_op_t   npc_op;
+        logic      reg_write;
+        alu_op_t   alu_op;
+        logic      mem_read;
+        logic      mem_write;
+        wb_sel_t   wb_sel;
+        src2_sel_t src2_sel;
+        logic      inst_illegal;
     } ctrl_t;
 
     // ---- 流水线级间数据（本批不上流水线，只保留结构定义）----
@@ -137,4 +137,4 @@ package cpu_pkg;
 
 endpackage
 
-`endif // CPU_PKG_SV
+`endif  // CPU_PKG_SV

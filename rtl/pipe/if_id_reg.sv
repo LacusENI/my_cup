@@ -17,10 +17,8 @@ module if_id_reg
     output if_id_t if_id_out
 );
     always_ff @(posedge clk) begin
-        if (rst || flush)
-            if_id_out <= '0;
-        else if (!stall)
-            if_id_out <= if_id_in;
+        if (rst || flush) if_id_out <= '0;
+        else if (!stall) if_id_out <= if_id_in;
     end
 endmodule
 

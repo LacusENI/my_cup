@@ -3,7 +3,7 @@
 module decoder
     import cpu_pkg::*;
 (
-    input  word_t inst,
+    input  word_t  inst,
     output instr_t decoded,
     output word_t  imm,
     output logic   valid_encoding
@@ -43,16 +43,11 @@ module decoder
 
     function automatic word_t imm_gen(input word_t i);
         case (i[6:0])
-            OP_IMM, OP_LOAD, OP_JALR:
-                return imm_i(i[31:20]);
-            OP_STORE:
-                return imm_s({i[31:25], i[11:7]});
-            OP_BRANCH:
-                return imm_b({i[31], i[7], i[30:25], i[11:8], 1'b0});
-            OP_JAL:
-                return imm_j({i[31], i[19:12], i[20], i[30:21], 1'b0});
-            default:
-                return '0;
+            OP_IMM, OP_LOAD, OP_JALR: return imm_i(i[31:20]);
+            OP_STORE: return imm_s({i[31:25], i[11:7]});
+            OP_BRANCH: return imm_b({i[31], i[7], i[30:25], i[11:8], 1'b0});
+            OP_JAL: return imm_j({i[31], i[19:12], i[20], i[30:21], 1'b0});
+            default: return '0;
         endcase
     endfunction
 
@@ -67,8 +62,7 @@ module decoder
     always_comb begin
         valid_encoding = 1'b1;
         unique case (decoded.opcode)
-            OP_R:      valid_encoding = (decoded.funct3 == F3_ADD) &&
-                                        (decoded.funct7 == F7_ADD);
+            OP_R:      valid_encoding = (decoded.funct3 == F3_ADD) && (decoded.funct7 == F7_ADD);
             OP_IMM:    valid_encoding = (decoded.funct3 == F3_ADD);
             OP_LOAD:   valid_encoding = (decoded.funct3 == F3_LW);
             OP_STORE:  valid_encoding = (decoded.funct3 == F3_SW);

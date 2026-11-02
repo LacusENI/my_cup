@@ -12,10 +12,8 @@ module id_ex_reg
     output id_ex_t id_ex_out
 );
     always_ff @(posedge clk) begin
-        if (rst || flush)
-            id_ex_out <= '0;
-        else if (!stall)
-            id_ex_out <= id_ex_in;
+        if (rst || flush) id_ex_out <= '0;
+        else if (!stall) id_ex_out <= id_ex_in;
     end
 endmodule
 

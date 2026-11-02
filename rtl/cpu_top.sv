@@ -14,16 +14,16 @@ module cpu_top (
     instr_t decoded;
     ctrl_t  ctrl;
 
-    word_t imm;
-    logic  valid_encoding;
+    word_t  imm;
+    logic   valid_encoding;
 
-    reg_t  rs1, rs2, rd;
+    reg_t rs1, rs2, rd;
     word_t rs1_data, rs2_data;
     word_t wb_data;
 
     word_t alu_src1, alu_src2, alu_out;
-    logic  cmp_result;
-    logic  branch_taken;
+    logic cmp_result;
+    logic branch_taken;
 
     word_t addr, r_data, w_data;
 
@@ -99,12 +99,12 @@ module cpu_top (
 
     assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
     assign inst_illegal = ctrl.inst_illegal;
-    assign instr_addr   = curr_pc;
+    assign instr_addr = curr_pc;
 
     assign alu_src1 = rs1_data;
     assign alu_src2 = (ctrl.src2_sel == SRC2_SEL_IMM) ? imm : rs2_data;
 
-    assign addr   = alu_out;
+    assign addr = alu_out;
     assign w_data = rs2_data;
 
     // 写回数据：ALU 结果 / 内存读出 / PC+4

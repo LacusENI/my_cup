@@ -3,14 +3,14 @@
 module datam
     import cpu_pkg::*;
 (
-    input  logic        clk,
-    input  logic        mem_read,
-    input  logic        mem_write,
+    input  logic  clk,
+    input  logic  mem_read,
+    input  logic  mem_write,
     input  word_t addr,
     input  word_t w_data,
     output word_t r_data
 );
-    word_t mem [0:DMEM_WORDS-1];
+    word_t mem[0:DMEM_WORDS-1];
 
     logic [DMEM_ADDR_W-1:0] mem_addr;
     assign mem_addr = addr[DMEM_ADDR_W+1:2];
@@ -24,8 +24,7 @@ module datam
     // 用法: vvp <target> +data=<path/to/data.hex>
     logic [1023:0] init_file;
     initial begin
-        if ($value$plusargs("data=%s", init_file))
-            $readmemh(init_file, mem);
+        if ($value$plusargs("data=%s", init_file)) $readmemh(init_file, mem);
     end
 
     // 仿真断言：本批只支持 4 字节对齐的整字访存。
@@ -37,16 +36,13 @@ module datam
 
     // 读操作：当前仅支持整字访问
     always_comb begin
-        if (mem_read)
-            r_data = mem[mem_addr];
-        else
-            r_data = '0;
+        if (mem_read) r_data = mem[mem_addr];
+        else r_data = '0;
     end
 
     // 写操作：当前仅支持整字访问
     always_ff @(posedge clk) begin
-        if (mem_write)
-            mem[mem_addr] <= w_data;
+        if (mem_write) mem[mem_addr] <= w_data;
     end
 endmodule
 
