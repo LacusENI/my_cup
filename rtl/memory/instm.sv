@@ -3,9 +3,7 @@
 module instm
     import cpu_pkg::*;
 (
-    /* verilator lint_off UNUSED */
     input  word_t inst_addr,
-    /* verilator lint_on UNUSED */
     output word_t inst
 );
     word_t mem[0:IMEM_WORDS-1];
@@ -18,7 +16,7 @@ module instm
     // PC 只按 4 递增，正常情况下不会触发；这里用于捕获未来 jalr 等路径的错误。
     always_comb begin
         if (inst_addr[1:0] != 2'b00)
-            $fatal(1, "instm: unaligned instuction address %0h", inst_addr);
+            $fatal(1, "instm: unaligned instruction address %0h", inst_addr);
     end
 
     // 仿真期程序装载 (仅仿真有效, 综合时忽略)
