@@ -101,9 +101,9 @@ def write_mem(dut: CpuAccess, word_index: int, value: int) -> None:
     dut.u_datam.mem[word_index].value = value
 
 
-def write_inst(dut: CpuAccess, word_index: int, instuction: int) -> None:
+def write_inst(dut: CpuAccess, word_index: int, instruction: int) -> None:
     """把机器码写进指令存储器。"""
-    dut.u_instm.mem[word_index].value = instuction
+    dut.u_instm.mem[word_index].value = instruction
 
 
 # --------------------------------------------------------------------------- #
@@ -179,7 +179,7 @@ async def wait_cycles(dut: HasClock, count: int):
 # --------------------------------------------------------------------------- #
 async def run_program(
     dut: CpuAccess,
-    instuctions,
+    instructions,
     registers=None,
     memory=None,
     extra_cycles=2,
@@ -187,7 +187,7 @@ async def run_program(
     """装载一个“小程序”，复位，然后跑若干周期。
 
     参数：
-      instuctions : 机器码列表，从 mem[0] 开始依次写入
+      instructions : 机器码列表，从 mem[0] 开始依次写入
       registers    : 预置寄存器，例如 {1: 8} 表示 R1 = 8
       memory       : 预置数据内存，例如 {2: 0} 表示 mem[2] = 0（按字索引）
       extra_cycles : 指令跑完后额外多等几拍，保证写回完成
@@ -205,19 +205,19 @@ async def run_program(
         write_mem(dut, word_index, value)
 
     # 装载指令
-    for index, instuction in enumerate(instuctions):
-        write_inst(dut, index, instuction)
+    for index, instruction in enumerate(instructions):
+        write_inst(dut, index, instruction)
 
-    # 复位，然后跑 len(instuctions) + extra_cycles 个周期
+    # 复位，然后跑 len(instructions) + extra_cycles 个周期
     await reset_and_wait(dut)
-    await wait_cycles(dut, len(instuctions) + extra_cycles)
+    await wait_cycles(dut, len(instructions) + extra_cycles)
 
     # 等到只读阶段再断言，确保所有信号都已经稳定
     await ReadOnly()
 
 
-async def run_one_instuction(
-    dut: CpuAccess, instuction, registers=None, memory=None
+async def run_one_instruction(
+    dut: CpuAccess, instruction, registers=None, memory=None
 ):
     """执行“一条”指令，然后停在只读阶段。
 
@@ -231,7 +231,7 @@ async def run_one_instuction(
     """
     await run_program(
         dut,
-        instuctions=[instuction],
+        instructions=[instruction],
         registers=registers,
         memory=memory,
         extra_cycles=0,

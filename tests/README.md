@@ -169,7 +169,7 @@ from utils.riscv_asm import add
 @cocotb.test()
 async def add_test(dut: CpuTop):
     """add x3, x1, x2：5 + 3 = 8。"""
-    await run_one_instuction(
+    await run_one_instruction(
         dut,
         add(rd=3, rs1=1, rs2=2),   # 编码器生成机器码
         registers={1: 5, 2: 3},
@@ -178,7 +178,7 @@ async def add_test(dut: CpuTop):
     assert read_pc(dut) == 4
 ```
 
-`run_one_instuction` 会：
+`run_one_instruction` 会：
 
 1. 启动时钟；
 2. 预置寄存器和数据内存；

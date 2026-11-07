@@ -16,7 +16,7 @@ sll, sra, srl, slli, srai, srli
 
 slt, sltu
 
-## Error
+## System
 
 ebreak, ecall
 
@@ -40,6 +40,6 @@ jalr, jal
 
 auipc, lui
 
-## Fence
+## Memory Order
 
 fence

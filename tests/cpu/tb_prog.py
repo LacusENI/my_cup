@@ -23,11 +23,11 @@ async def prog_demo_test(dut: CpuAccess):
     这个测试需要 pytest 包装层传入 +inst=<绝对路径>；
     程序本身在仿真开始前由 instm 的 $readmemh 装入。
     """
-    # instuctions 传空：不要覆盖 $readmemh 已经装好的程序。
+    # instructions 传空：不要覆盖 $readmemh 已经装好的程序。
     # x5 预置为 0，用来验证 beq 确实跳过了 addi x5,x0,99。
     await run_program(
         dut,
-        instuctions=[],
+        instructions=[],
         registers={5: 0},
         extra_cycles=PROGRAM_CYCLES,
     )
