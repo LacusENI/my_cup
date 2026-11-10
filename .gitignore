@@ -1,6 +1,7 @@
 build/
 waves/
 logs/
+notes/
 
 # Python (cocotb + pytest)
 .venv/
@@ -10,6 +11,7 @@ __pycache__/
 *.result.xml
 *.log
 
+# VS Code 配置
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json

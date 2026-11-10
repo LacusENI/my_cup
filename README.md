@@ -12,7 +12,8 @@
 
 | 项 | 状态 |
 | :-- | :-- |
-| 版本 | `v0.3-rv32i`（RV32I 最小子集，见 `docs/version/v0.3-rv32i/`） |
+| 当前基线 | `v0.3-rv32i`（RV32I 最小子集，过渡版） |
+| 下一目标 | `v0.4.0`（完整 RV32I 单周期，见 [`docs/version/v0.4.0/plan.md`](docs/version/v0.4.0/plan.md)） |
 | 微架构 | 单周期（组合数据通路 + 时序状态） |
 | 指令集 | RV32I 最小子集（7 条） |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
@@ -30,8 +31,8 @@
 | 分支/跳转 | `beq` `jal` `jalr` |
 
 > `lui/auipc`、`sub`、逻辑/移位/比较、子字访存 `lb/lh/sb/sh`、
-> 其他分支和 `fence/ecall/ebreak` 不在本批范围，详见
-> [`docs/version/v0.3-rv32i/future.md`](docs/version/v0.3-rv32i/future.md)。
+> 其他分支和 `fence/ecall/ebreak` 属于 `v0.4.0`，详见
+> [`docs/version/v0.4.0/plan.md`](docs/version/v0.4.0/plan.md)。
 
 > 伪指令由汇编器展开：`j -> jal x0`、`jr -> jalr x0`、`ret -> jalr x0, 0(ra)`、`nop -> addi x0, x0, 0`。
 
@@ -42,7 +43,8 @@
 ```
 my_cup/
 ├── mycup/                # Python 工具链
-│   └── cli.py                # mycup init / lint / test / prog / fmt / doctor / clean
+│   ├── cli.py                # mycup init / lint / test / prog / fmt / doctor / clean
+│   └── config.py             # 读取 toolchain.toml
 ├── rtl/                  # 可综合的 RTL 源码
 │   ├── cpu_top.sv            # 顶层：实例化各单元并连线
 │   ├── cpu_pkg.sv            # package：参数、类型、控制编码
@@ -74,6 +76,9 @@ my_cup/
 ├── pyproject.toml        # uv 管理的 Python 依赖
 ├── uv.lock               # uv 的依赖锁定
 ├── docs/                 # 设计与文档（见 docs/README.md）
+│   ├── roadmap.md            # 阶段路线
+│   ├── version/v0.4.0/       # 当前目标版本计划
+│   └── archive/              # 历史版本文档
 ├── isa/                  # 机器可读 ISA 描述（rv32i.yaml）
 ├── .opencode/agents/     # OpenCode subagent 定义
 ├── .verilator/verilator.f # Verilator lint 文件清单（生成，不提交）
@@ -114,7 +119,7 @@ MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_inst.py # 导出波形
 
 ---
 
-## Lint 
+## Lint
 
 若要进行项目 lint，运行：
 
@@ -230,10 +235,10 @@ uv sync
 
 - **[docs/README.md](docs/README.md)** —— 文档总索引与各文档的时效性标注
 - **[docs/arch/architecture.md](docs/arch/architecture.md)** —— 整体框架、数据通路、模块职责、已知限制
-- **[docs/roadmap.md](docs/roadmap.md)** —— 下一步演进方向（重点：单周期 → 流水线）
-- **[docs/version/v0.3-rv32i/units.md](docs/version/v0.3-rv32i/units.md)** —— 当前 RV32I 模块接口与控制表
-- **[docs/version/v0.3-rv32i/instruction-paths.md](docs/version/v0.3-rv32i/instruction-paths.md)** —— 7 条指令的数据流
-- `docs/units/` 是当前 RV32I 单元接口说明
+- **[docs/roadmap.md](docs/roadmap.md)** —— 阶段路线与当前目标
+- **[docs/version/v0.4.0/plan.md](docs/version/v0.4.0/plan.md)** —— `v0.4.0` 批次、任务与完成标准
+- `docs/units/` —— 当前 RV32I 单元接口说明
+- `docs/archive/` —— 历史版本文档
 
 ---
 
@@ -252,5 +257,9 @@ uv sync
 
 ## 下一步
 
-短期聚焦单周期内核的补全，中期主线是 **单周期 → 5 级流水线** 的重构。
-完整的分阶段计划、改造步骤与风险点见 **[docs/roadmap.md](docs/roadmap.md)**。
+短期目标是 **`v0.4.0` 完整 RV32I 单周期**；之后进入 **`v0.5.0` 简单流水线**，
+再逐步增加 forwarding 和分支预测。
+
+当前主线计划见 **[docs/roadmap.md](docs/roadmap.md)** 和
+**[docs/version/v0.4.0/plan.md](docs/version/v0.4.0/plan.md)**；
+`v0.5.0` 之后的流水线内容，完成 `v0.4.0` 后再议。

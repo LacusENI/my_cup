@@ -4,8 +4,7 @@
 
 - 顶层模块：[`rtl/cpu_top.sv`](../../rtl/cpu_top.sv)
 - 共享类型/控制编码：[`rtl/cpu_pkg.sv`](../../rtl/cpu_pkg.sv)
-- 当前批次设计：[`docs/version/v0.3-rv32i/design.md`](../version/v0.3-rv32i/design.md)
-- 模块接口：[`docs/version/v0.3-rv32i/units.md`](../version/v0.3-rv32i/units.md)
+- 当前单元接口：[`docs/units/`](../units/)
 
 ---
 
@@ -105,7 +104,7 @@ inst_pc / npc_op / branch_taken / pc_offset / jalr_target / inst_illegal
 | `src2_sel`  | `rs2` / `imm`       |
 | `inst_illegal` | 当前编码是否非法 |
 
-控制表见 [`docs/version/v0.3-rv32i/units.md`](../version/v0.3-rv32i/units.md#14-ctrlsv)。
+控制表见 [`docs/ctrl/ctrl.md`](../ctrl/ctrl.md)。
 
 ---
 

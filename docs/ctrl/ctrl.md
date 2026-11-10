@@ -25,4 +25,4 @@ npc_op       = NPC_PLUS4   // NPC 内部用 inst_illegal 覆盖为 hold
 ```
 
 > MIPS 版本的控制表已随 `v0.3-mips` 归档；当前实现契约见
-> [`docs/version/v0.3-rv32i/units.md`](../version/v0.3-rv32i/units.md)。
+> [`docs/units/`](../units/) 与本文。
