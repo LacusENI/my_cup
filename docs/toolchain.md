@@ -36,6 +36,25 @@ mycup            实际执行：生成文件清单、调用工具
 | `package` | SystemVerilog package 文件，必须排在编译文件列表最前面 |
 | `glob` | 格式化时匹配的 RTL 文件 |
 
+### `[[codegen]]`
+
+每一项描述一个代码生成器：
+
+| 字段 | 用途 |
+| :-- | :-- |
+| `name` | 生成器名称，用于日志 |
+| `source` | 生成来源文件 |
+| `script` | 生成脚本 |
+| `target` | 生成目标文件 |
+
+`mycup code-gen` 会执行：
+
+```bash
+python <script> --source <source> --output <target>
+```
+
+`mycup code-gen --check` 会额外传 `--check`，只检查目标是否最新。
+
 ### `[lint]`
 
 | 字段 | 用途 |
@@ -70,8 +89,8 @@ mycup            实际执行：生成文件清单、调用工具
 ### `[doctor]`
 
 `required` 缺失时 `make doctor` 返回非零；`optional` 只警告。
-默认检查 `uv`、`iverilog`、`verilator`、`verible-verilog-format`，
-并提示可选的 `slang-server`。
+默认检查 `uv`、`iverilog`、`verilator`、`verible-verilog-format`、`llvm-mc`，
+并提示可选的 `slang-server`。`llvm-mc` 用于把测试里的汇编文本编码成机器码。
 
 ---
 
@@ -80,6 +99,8 @@ mycup            实际执行：生成文件清单、调用工具
 | 命令 | 作用 |
 | :-- | :-- |
 | `make init` | 生成 `.verilator/verilator.f` 和 `.slang/slang.f` |
+| `make code-gen` | 按 `toolchain.toml` 运行代码生成器 |
+| `make code-gen-check` | 检查生成文件是否最新 |
 | `make lint` | 生成文件清单并运行 Verilator |
 | `make test` | 运行全部 cocotb + pytest |
 | `make check` | `lint` + `test` |

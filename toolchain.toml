@@ -1,12 +1,17 @@
-# my_cup 工具链配置
+# mycup 工具链配置
 #
-# 这个文件只放“数据和命令参数”，不放实现逻辑。
-# 想改工具链时先看这里，再看 Makefile / mycup。
+# 约定：
+#   - 所有路径都相对于项目根目录；
+#   - 这里只放“数据和命令参数”，不写实现逻辑；
+#   - 流程由 Makefile / mycup 执行，字段说明见 docs/toolchain.md。
+#   - 改完配置后，建议运行 `make doctor` 和 `make code-gen-check`。
 
 [project]
-name = "my_cup"
+# 项目名，仅用于显示和日志。
+name = "mycup"
 
 [paths]
+# 常用目录。mycup 会把相对路径解析到项目根目录下。
 rtl = "rtl"
 build = "build"
 waves = "waves"
@@ -17,10 +22,28 @@ programs = "programs"
 tests = "tests"
 
 [sources]
+# package 必须先于所有 RTL 源文件编译。
 package = "rtl/cpu_pkg.sv"
+# 参与 lint / 格式化的 RTL 文件范围。
 glob = "rtl/**/*.sv"
 
+# 代码生成器列表。
+# mycup code-gen 会执行：
+#   python <script> --source <source> --output <target>
+# mycup code-gen --check 会额外传 --check，只比较而不写文件。
+# CI 使用 make code-gen-check，防止生成文件与来源不一致。
+[[codegen]]
+# 生成器名称，仅用于日志和排查。
+name = "pkg-consts"
+# 生成来源。
+source = "rtl/cpu_pkg.sv"
+# 生成脚本；约定支持 --source / --output / --check。
+script = "scripts/gen_pkg_consts.py"
+# 生成目标；生成文件头会标明“不要手工修改”。
+target = "tests/utils/cpu_pkg.py"
+
 [lint]
+# Verilator lint 命令、参数、文件清单和日志路径。
 tool = "verilator"
 args = [
   "--lint-only",
@@ -33,25 +56,32 @@ filelist = ".verilator/verilator.f"
 log = "logs/lint.log"
 
 [slang]
+# slang-server 使用的纯文件清单（不带 flags）。
 filelist = ".slang/slang.f"
 
 [test]
+# 传给 pytest 的默认参数；mycup test 会追加命令行剩余参数。
 args = ["-v"]
 
 [prog]
+# mycup prog 运行的 pytest 节点。
 target = "tests/cpu/test_prog.py::test_prog_demo"
 
 [format]
+# RTL 格式化工具和参数；glob 决定格式化范围。
 tool = "verible-verilog-format"
 args = ["--indentation_spaces=4"]
 glob = "rtl/**/*.sv"
 
 [doctor]
+# required 缺失时 make doctor 返回非零；optional 只警告。
+# llvm-mc 由 tests/utils/assembler.py 调用。
 required = [
   "uv",
   "iverilog",
   "verilator",
   "verible-verilog-format",
+  "llvm-mc",
 ]
 optional = [
   "slang-server",

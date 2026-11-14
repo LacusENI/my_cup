@@ -6,6 +6,7 @@
 
 命令：
     init     生成 .verilator/verilator.f 和 .slang/slang.f
+    code-gen 按 toolchain.toml 运行代码生成器
     lint     Verilator 静态检查
     test     运行 cocotb + pytest
     prog     用指定 hex 程序运行指令级测试
@@ -134,6 +135,34 @@ def cmd_init(_: argparse.Namespace) -> None:
     write_filelists()
     print(f"Generated {rel(VERILATOR_F)}")
     print(f"Generated {rel(SLANG_F)}")
+
+
+def cmd_code_gen(args: argparse.Namespace) -> None:
+    """按 toolchain.toml 的 [[codegen]] 配置运行生成器。"""
+    for item in CFG.codegen:
+        if not item.source.is_file():
+            fail(f"codegen {item.name}: source not found: {item.source}")
+        if not item.script.is_file():
+            fail(f"codegen {item.name}: script not found: {item.script}")
+
+        cmd = [
+            sys.executable,
+            str(item.script),
+            "--source",
+            str(item.source),
+            "--output",
+            str(item.target),
+        ]
+        if args.check:
+            cmd.append("--check")
+
+        print(
+            f"[codegen] {item.name}: "
+            f"{rel(item.source)} -> {rel(item.target)}"
+        )
+        proc = subprocess.run(cmd, cwd=ROOT)
+        if proc.returncode != 0:
+            raise SystemExit(proc.returncode)
 
 
 def cmd_lint(_: argparse.Namespace) -> None:
@@ -274,6 +303,13 @@ def make_parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "init", help="生成 .verilator/verilator.f 和 .slang/slang.f"
     ).set_defaults(func=cmd_init)
+
+    p_codegen = sub.add_parser("code-gen", help="按 toolchain.toml 运行代码生成器")
+    p_codegen.add_argument(
+        "--check", action="store_true", help="只检查生成文件是否最新"
+    )
+    p_codegen.set_defaults(func=cmd_code_gen)
+
     sub.add_parser("lint", help="运行 Verilator lint").set_defaults(func=cmd_lint)
 
     p_test = sub.add_parser("test", help="运行 cocotb + pytest")

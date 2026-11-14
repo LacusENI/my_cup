@@ -3,10 +3,12 @@ UV ?= uv
 MYCUP := $(UV) run mycup
 CYCLES ?= 8
 
-.PHONY: help init lint test check fmt prog doctor clean
+.PHONY: help init code-gen code-gen-check lint test check fmt prog doctor clean
 
 help:
 	@echo "make init                生成 .verilator/verilator.f 和 .slang/slang.f"
+	@echo "make code-gen            按 toolchain.toml 运行代码生成器"
+	@echo "make code-gen-check      检查生成文件是否最新"
 	@echo "make lint                Verilator 静态检查"
 	@echo "make test                运行 cocotb + pytest"
 	@echo "make check               lint + test"
@@ -17,6 +19,12 @@ help:
 
 init:
 	$(MYCUP) init
+
+code-gen:
+	$(MYCUP) code-gen
+
+code-gen-check:
+	$(MYCUP) code-gen --check
 
 lint:
 	$(MYCUP) lint

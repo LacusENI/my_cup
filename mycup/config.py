@@ -36,6 +36,14 @@ class Sources:
 
 
 @dataclass(frozen=True)
+class Codegen:
+    name: str
+    source: Path
+    script: Path
+    target: Path
+
+
+@dataclass(frozen=True)
 class Lint:
     tool: str
     args: tuple[str, ...]
@@ -76,6 +84,7 @@ class Toolchain:
     name: str
     paths: Paths
     sources: Sources
+    codegen: tuple[Codegen, ...]
     lint: Lint
     slang: Slang
     test: Test
@@ -109,6 +118,27 @@ def _str_list(
 
 def _resolve(root: Path, value: str) -> Path:
     return root / value
+
+
+def _codegen(data: dict[str, Any], root: Path) -> tuple[Codegen, ...]:
+    raw = data.get("codegen")
+    if not isinstance(raw, list) or not raw:
+        raise ConfigError("toolchain.toml 缺少 [[codegen]] 配置")
+
+    result: list[Codegen] = []
+    for index, item in enumerate(raw):
+        section = f"codegen[{index}]"
+        if not isinstance(item, dict):
+            raise ConfigError(f"toolchain.toml: {section} 必须是表")
+        result.append(
+            Codegen(
+                name=_str(item, "name", section),
+                source=_resolve(root, _str(item, "source", section)),
+                script=_resolve(root, _str(item, "script", section)),
+                target=_resolve(root, _str(item, "target", section)),
+            )
+        )
+    return tuple(result)
 
 
 def load(root: Path) -> Toolchain:
@@ -182,6 +212,7 @@ def load(root: Path) -> Toolchain:
         name=name,
         paths=paths,
         sources=sources,
+        codegen=_codegen(data, root),
         lint=lint,
         slang=slang,
         test=test,
