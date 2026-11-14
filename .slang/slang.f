@@ -8,7 +8,3 @@ rtl/datapath/alu.sv
 rtl/datapath/regfile.sv
 rtl/memory/datam.sv
 rtl/memory/instm.sv
-rtl/pipe/ex_mem_reg.sv
-rtl/pipe/id_ex_reg.sv
-rtl/pipe/if_id_reg.sv
-rtl/pipe/mem_wb_reg.sv

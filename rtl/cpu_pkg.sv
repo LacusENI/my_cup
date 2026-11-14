@@ -4,13 +4,12 @@
 // -----------------------------------------------------------------------------
 // cpu_pkg: 全项目共享的类型、常量与纯函数
 //
-// v0.3-rv32i 只保留当前 7 条指令需要的类型：
-//   add, addi, beq, lw, sw, jal, jalr
+// 类型和常量随 RTL 演进；当前已实现指令以 decoder / ctrl 为准。
 //
 // 说明：
 //   - 控制信号用 typedef enum，而不是裸 localparam，获得类型检查；
 //   - 指令字段用 struct packed，decoder 直接输出结构体；
-//   - 控制信号打包成 ctrl_t，方便以后做流水线寄存器。
+//   - 控制信号打包成 ctrl_t，方便后续扩展。
 // -----------------------------------------------------------------------------
 package cpu_pkg;
 
@@ -97,43 +96,6 @@ package cpu_pkg;
         src2_sel_t src2_sel;
         logic      inst_illegal;
     } ctrl_t;
-
-    // ---- 流水线级间数据（本批不上流水线，只保留结构定义）----
-    typedef struct packed {
-        logic  valid;
-        word_t pc;
-        word_t pc_plus4;
-        word_t inst;
-    } if_id_t;
-
-    typedef struct packed {
-        logic  valid;
-        word_t pc;
-        word_t pc_plus4;
-        inst_t inst;
-        word_t rs1_data;
-        word_t rs2_data;
-        word_t imm32;
-        ctrl_t ctrl;
-    } id_ex_t;
-
-    typedef struct packed {
-        logic  valid;
-        word_t pc_plus4;
-        word_t alu_out;
-        word_t rs2_data;
-        inst_t inst;
-        ctrl_t ctrl;
-    } ex_mem_t;
-
-    typedef struct packed {
-        logic  valid;
-        word_t pc_plus4;
-        word_t alu_out;
-        word_t r_data;
-        inst_t inst;
-        ctrl_t ctrl;
-    } mem_wb_t;
 
 endpackage
 
