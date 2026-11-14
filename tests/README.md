@@ -1,6 +1,8 @@
 # Python 验证（cocotb + pytest）
 
-项目的验证链路：cocotb 写测试内容，pytest 负责收集和报告。
+项目的验证链路：**cocotb 负责在仿真器里执行测试，pytest 负责收集、筛选和报告。**
+两者通过 `tests/utils/cocotb_utils.py` 里的 `@cocotb_test` 装饰器连接。
+
 旧的 HDL TB 与 `sim/tb`、`lib/vtest.vh` 已经全部移除。
 
 ## 快速开始
@@ -11,41 +13,32 @@ uv run mycup test  # 跑全部用例
 uv run pytest -v   # 同上（直接调 pytest）
 ```
 
-依赖只追踪 Python 侧；`iverilog` / `verilator` 仍是系统依赖。
+依赖只追踪 Python 侧；`iverilog` / `verilator` / `llvm-mc` 仍是系统依赖。
 
 ## 目录结构
 
-```
+```text
 tests/
 ├── conftest.py        # fixture：编译 DUT + run_cocotb_case
 ├── utils/
-│   ├── cocotb_utils.py  # 时钟 / 复位 / 等待 + CPU 顶层共享访问器
-│   ├── riscv_asm.py     # RV32I 7 条指令编码器
-│   ├── mips_asm.py      # MIPS 历史编码器（保留参考）
-│   └── test_asm.py      # RV32I 编码器自检
+│   ├── cocotb_utils.py  # 时钟 / 复位 / 等待 + @cocotb_test + CPU 共享访问器
+│   ├── assembler.py     # llvm-mc 封装：汇编文本 -> 32 位机器码
+│   └── test_asm.py      # assembler.py 的 golden / 错误用例
 ├── hdl/
 │   ├── ctrl_probe.sv    # test-only：把 ctrl_t 摊平给 cocotb
 │   └── decoder_probe.sv # test-only：把 inst_t 摊平给 cocotb
 ├── control/
-│   ├── tb_decoder.py    # decoder 字段 / 立即数 / 合法编码
-│   ├── tb_ctrl.py       # ctrl 控制表 / 非法指令
-│   ├── tb_npc.py        # npc 分支 / 跳转 / illegal hold
-│   └── test_*.py
+│   ├── test_decoder.py  # decoder 字段 / 立即数 / 合法编码
+│   ├── test_ctrl.py     # ctrl 控制表 / 非法指令
+│   └── test_npc.py      # npc 分支 / 跳转 / illegal hold
 ├── datapath/
-│   ├── tb_alu.py        # ADD / EQ / NOP
-│   ├── tb_regfile.py    # 32x32 寄存器堆
-│   └── test_*.py
+│   ├── test_alu.py      # ADD / EQ / NOP
+│   └── test_regfile.py  # 32x32 寄存器堆
 ├── memory/
-│   ├── tb_datam.py      # 整字数据存储器
-│   └── test_datam.py
-├── pipe/
-│   ├── tb_pipe_regs.py  # 四个流水线寄存器（尚未接入 top）
-│   └── test_pipe_regs.py
+│   └── test_datam.py    # 整字数据存储器
 └── cpu/
-    ├── tb_inst.py      # RV32I 单指令 ISA + cpu_top 契约
-    ├── test_inst.py
-    ├── tb_prog.py       # program 级：$readmemh 程序装载
-    └── test_prog.py
+    ├── test_inst.py     # RV32I 单指令 ISA + cpu_top 契约
+    └── test_prog.py     # program 级：$readmemh 程序装载
 ```
 
 目录按 RTL 职责划分：
@@ -53,24 +46,57 @@ tests/
 - `control/`：`decoder`、`ctrl`、`npc`
 - `datapath/`：`alu`、`regfile`
 - `memory/`：`datam`
-- `pipe/`：流水线级间寄存器
 - `cpu/`：`cpu_top` 级测试（ISA / program）
 - `utils/`：测试工具，不是 DUT 测试
 
-每个**模块级** `tb_*.py`（`tb_alu` / `tb_ctrl` / ... / `tb_inst`）里都自带：
+## 一个文件里同时写 cocotb 和 pytest
+
+每个模块级测试文件都自带：
 
 - 本模块的 `Protocol`（例如 `AluDut`）；
 - `REQUIRED_FIELDS`（测试依赖的字段列表）；
-- 一个 `contract_test`，在仿真里确认这些字段还在。
+- 一个 `test_contract`，在仿真里确认这些字段还在。
+
+测试函数长这样：
+
+```python
+from utils.cocotb_utils import cocotb_test, settle
+
+SIM = "alu_sim"   # conftest.py 里的 fixture 名
+
+
+@cocotb_test(dut=SIM)
+async def test_alu_add(dut):
+    """ADD：5 + 3 = 8。"""
+    dut.alu_op.value = 1
+    dut.alu_src1.value = 5
+    dut.alu_src2.value = 3
+    await settle()
+
+    assert int(dut.alu_out.value) == 8
+```
+
+`@cocotb_test` 同时做两件事：
+
+1. 用 `cocotb.test()` 把 async 函数注册成 cocotb test；
+2. 返回一个普通同步 wrapper，让 pytest 把它当成普通 `test_*` 用例收集。
+
+pytest 执行 wrapper 时，会调用 `run_cocotb_case` 启动一次仿真；仿真器里的
+cocotb 再执行原来的 async 函数。详细注释见
+[`tests/utils/cocotb_utils.py`](utils/cocotb_utils.py) 的 `cocotb_test`。
+
+> **为什么不能只写 `@cocotb.test()`？**
+> 它返回的是 `TestGenerator` 对象，pytest 默认不会收集；而且断言发生在
+> 仿真器进程里，pytest 进程拿不到原始 `AssertionError`。
+> `@cocotb_test` 负责把这两层接起来。
 
 命名约定：
 
-- `tb_*.py`：**cocotb 测试内容**，由仿真器在 Python 进程里加载，pytest 不会直接收集；
-- `test_*.py`：**pytest 入口**，负责调用 `runner.test()`，只做“选择和报告”。
-
-> `tests/hdl/ctrl_probe.sv` 和 `decoder_probe.sv` 是 **test-only probe**：
-> 它们实例化 RTL，把 packed struct 字段摊平成普通端口，避免 Python 里手写位偏移。
-> 它们不参与综合，也不在 `.verilator/verilator.f` 的 lint 清单里。
+- 测试文件统一用 `test_*.py`；
+- 测试函数统一用 `test_` 前缀；
+- 单 DUT 文件在顶部写 `SIM = "<fixture 名>"`，每个测试用 `@cocotb_test(dut=SIM)`；
+- 一个文件里有多个 DUT 时，每个测试单独写 `@cocotb_test(dut="...")`；
+- 需要 plusargs 的测试给 `@cocotb_test(..., plusargs=...)`，传列表或返回列表的函数。
 
 ## 覆盖范围
 
@@ -82,15 +108,11 @@ tests/
 | `datapath/test_alu.py` | ADD / EQ / NOP、32 位回绕 | 6 |
 | `datapath/test_regfile.py` | 读写、x0、双读端口、写禁用 | 5 |
 | `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
-| `pipe/test_pipe_regs.py` | 四个流水线寄存器的行为 + 契约 | 8 |
-| `utils/test_asm.py` | RV32I 编码器、范围和伪指令检查 | 25 |
+| `utils/test_asm.py` | llvm-mc 封装、golden 和错误输入检查 | 20 |
 | `cpu/test_inst.py` | 7 条单指令 ISA + 复位写抑制 + 非法停止 + 契约 | 19 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **95 个用例**。
-
-> 流水线寄存器用 `struct packed`（`if_id_t` / `id_ex_t` / `ex_mem_t` / `mem_wb_t`）承载数据；
-> 由于 Icarus VPI 不暴露 struct 字段，测试里把 struct 当成一个整数来读写。
+合计 **82 个用例**。
 
 ## 怎么写一个新测试
 
@@ -110,15 +132,15 @@ def npc_sim():
 
 > 如果模块用到 `cpu_pkg.sv` 里的常量，记得把 `PKG` 放在源文件列表第一位。
 
-### 2. 写 `tests/control/tb_npc.py`（cocotb 用例）
+### 2. 直接在 `tests/control/test_npc.py` 写用例
 
 ```python
 from typing import Protocol
 
-import cocotb
-from utils.cocotb_utils import Signal, assert_fields, settle
+from utils.cocotb_utils import Signal, cocotb_test, settle
 
-NPC_PLUS4 = 0
+SIM = "npc_sim"
+
 
 class NpcDut(Protocol):
     inst_pc: Signal
@@ -130,11 +152,12 @@ class NpcDut(Protocol):
     pc_plus4: Signal
     next_pc: Signal
 
-@cocotb.test()
-async def plus4_test(dut: NpcDut):
+
+@cocotb_test(dut=SIM)
+async def test_npc_plus4(dut: NpcDut):
     """普通情况：PC + 4。"""
     dut.inst_pc.value = 0x10
-    dut.npc_op.value = NPC_PLUS4
+    dut.npc_op.value = 0
     dut.branch_taken.value = 0
     dut.pc_offset.value = 0
     dut.jalr_target.value = 0
@@ -143,35 +166,31 @@ async def plus4_test(dut: NpcDut):
     assert int(dut.next_pc.value) == 0x14
 ```
 
-### 3. 写 `tests/control/test_npc.py`（pytest 入口）
+不需要再建 `tb_npc.py`，也不需要在另一个文件里写 pytest wrapper。
 
-```python
-def test_npc_plus4(npc_sim, run_cocotb_case):
-    """顺序执行：PC + 4。"""
-    run_cocotb_case(npc_sim, "tb_npc", "plus4_test")
-```
+### 3. 运行
 
-`run_cocotb_case` 是 `conftest.py` 里的 fixture，负责启动一次仿真。
-它会根据 fixture 的 `module_prefix` 自动补全模块路径：
-
-```
-"tb_npc" + "control" -> "control.tb_npc"
+```bash
+uv run pytest -v tests/control/test_npc.py::test_npc_plus4
 ```
 
 ## 指令级测试怎么写
 
-`tb_inst.py` 是 **ISA 级单指令测试**：每个用例只执行一条指令，只断言架构状态（PC / 寄存器 / 内存）：
+`cpu/test_inst.py` 是 **ISA 级单指令测试**：每个用例只执行一条指令，只断言架构状态（PC / 寄存器 / 内存）：
 
 ```python
-from utils.cocotb_utils import read_pc, read_reg
-from utils.riscv_asm import add
+from utils.assembler import assemble
+from utils.cocotb_utils import cocotb_test, read_pc, read_reg, run_one_instruction
 
-@cocotb.test()
-async def add_test(dut: CpuTop):
+SIM = "cpu_sim"
+
+
+@cocotb_test(dut=SIM)
+async def test_add(dut):
     """add x3, x1, x2：5 + 3 = 8。"""
     await run_one_instruction(
         dut,
-        add(rd=3, rs1=1, rs2=2),   # 编码器生成机器码
+        assemble("add x3, x1, x2"),   # llvm-mc 汇编成机器码
         registers={1: 5, 2: 3},
     )
     assert read_reg(dut, 3) == 8
@@ -189,17 +208,18 @@ async def add_test(dut: CpuTop):
 > 单周期下“一条指令 = 一个上升沿”。接流水线后，这里应改为等待 `retire/commit` 信号，
 > 而不是依赖固定周期数。
 
-程序装载（`$readmemh`）是另一层，放在 `tests/cpu/tb_prog.py` / `tests/cpu/test_prog.py`。
+程序装载（`$readmemh`）是另一层，放在 `tests/cpu/test_prog.py`。
+它用 `@cocotb_test(dut="cpu_sim", plusargs=_plusargs)` 把 `+inst=` / `+data=`
+传给仿真器命令行。
 
 ## DUT 的类型注解与公开字段
 
 cocotb 的 `dut` 是**运行时动态对象**：字段要到仿真开始后才存在，
 所以不能像普通类那样加 `@dataclass` 或直接写属性类型。
 
-项目里的做法是**把接口声明放在各自的 `tb_*.py` 里**，不在一个公共
-文件里堆所有模块的字段。
+项目里的做法是**把接口声明放在各自的测试文件里**，不在一个公共文件里堆所有模块的字段。
 
-例如 `tb_alu.py` 顶部：
+例如 `test_alu.py` 顶部：
 
 ```python
 class AluDut(Protocol):
@@ -209,26 +229,28 @@ class AluDut(Protocol):
     alu_out: Signal
     cmp_result: Signal
 
+
 REQUIRED_FIELDS = ("alu_op", "alu_src1", "alu_src2", "alu_out", "cmp_result")
 
-@cocotb.test()
-async def contract_test(dut: AluDut):
+
+@cocotb_test(dut=SIM)
+async def test_contract(dut: AluDut):
     assert_fields(dut, REQUIRED_FIELDS, "alu")
 ```
 
 这样：
 
-- 读 `tb_alu.py` 就知道 alu 测试依赖哪些字段；
+- 读 `test_alu.py` 就知道 alu 测试依赖哪些字段；
 - 改 alu 的端口时，只改这个文件；
-- `contract_test` 会在仿真里确认字段真的存在；
-- 如果字段改名/删除，失败信息会提示同步更新当前 `tb_*.py`。
+- `test_contract` 会在仿真里确认字段真的存在；
+- 如果字段改名/删除，失败信息会提示同步更新当前测试文件。
 
-每个 `tb_*.py` 都遵循同样的结构：`Protocol` + `REQUIRED_FIELDS` + `contract_test`。
+每个模块级测试文件都遵循同样的结构：`Protocol` + `REQUIRED_FIELDS` + `test_contract`。
 
-> `tests/utils/cocotb_utils.py` 里只保留**多个测试共享**的 CPU 访问器
+> `tests/utils/cocotb_utils.py` 里保留**多个测试共享**的 CPU 访问器
 > （`CpuAccess` / `read_pc` / `read_reg` / `read_mem`），因为
-> `tb_inst`、`tb_prog` 和 `run_program` 都要用。
-> `cpu_top` 自己的 `CpuTop` 协议仍然在 `tests/cpu/tb_inst.py` 顶部声明。
+> `test_inst`、`test_prog` 和 `run_program` 都要用。
+> `cpu_top` 自己的 `CpuTop` 协议仍然在 `tests/cpu/test_inst.py` 顶部声明。
 
 常见架构状态不直接写 `dut.u_regfile.regs[3]`，而是走访问器：
 
@@ -240,19 +262,40 @@ assert read_mem(dut, 2) == 0x1122_3344
 
 这样 CPU 顶层的内部路径只出现在 `tests/utils/cocotb_utils.py` 一处，改名时不用满测试找。
 
-## 常量是对外契约
+## 常量与 ISA 编码
 
-测试里直接写死控制值，例如：
+控制枚举仍然来自 RTL：
+
+| 常量 | 来源 | 生成文件 |
+| :-- | :-- | :-- |
+| 控制枚举（`ALU_*` / `NPC_*` / `WB_SEL_*` / `SRC2_SEL_*`） | `rtl/cpu_pkg.sv` | `tests/utils/cpu_pkg.py` |
+
+测试里直接 import：
 
 ```python
-ALU_ADD = 1
-ALU_EQ = 2
-NPC_BRANCH = 1
+from utils.cpu_pkg import ALU_ADD, ALU_EQ, NPC_BRANCH
 ```
 
-`tests/utils/riscv_asm.py` 里也直接写死 RV32I opcode / funct3。
+不要手写 `ALU_ADD = 1` 这类数值。RTL 改了枚举顺序或值以后，运行：
 
-`tb_ctrl.py` 不手写 `ctrl_t` 的字段位偏移，而是通过
+```bash
+make code-gen
+```
+
+CI 会执行 `make code-gen-check`，如果生成文件不是最新就会失败。
+
+ISA 编码不再由 Python 生成。单指令测试统一写汇编文本：
+
+```python
+from utils.assembler import assemble
+
+word = assemble("add x3, x1, x2")
+```
+
+`tests/utils/assembler.py` 调用 `llvm-mc -triple=riscv32`，只接受一条
+32 位指令。因此 `llvm-mc` 是系统依赖，`make doctor` 会检查它。
+
+`test_ctrl.py` 不手写 `ctrl_t` 的字段位偏移，而是通过
 `tests/hdl/ctrl_probe.sv` 把字段摊平后直接读取：
 
 ```python
@@ -285,3 +328,10 @@ MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_inst.py # 导出波形
 6. `build()` 默认会复用已有构建；RTL 改动后如需强制重编，可传 `always=True`。
 7. **组合逻辑测试用 `await settle()`**（等 1ns）；时序逻辑测试用 `await RisingEdge(clk)` + `await ReadOnly()`。
 8. **未写过的寄存器是 `X`**：`read_reg` 对 x0 直接返回 0，但其他寄存器测试前应先预置。
+9. **`@cocotb_test` 的 wrapper 不要用 `functools.wraps`**：它会设置 `__wrapped__`，
+   pytest 会看到原函数的 `dut` 参数，而不是 wrapper 的 `request`。
+10. **pytest marker 建议写在 `@cocotb_test` 外层**：例如 `@pytest.mark.xfail`。
+    装饰器也会复制内层 `pytestmark`，两种顺序都能工作，但外层最直观。
+11. **cocotb 失败时 pytest 看到的是 XML 里的断言信息**：
+    `tests/conftest.py` 会读取 `results.xml`，把真正的 `AssertionError` 文本交给
+    `pytest.fail()`；如果 XML 不存在，才会退回 `SystemExit`。

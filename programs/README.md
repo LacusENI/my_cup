@@ -25,9 +25,9 @@ uv run mycup prog programs/demo.hex --cycles 12
 
 - 程序通过 vvp 的 **plusarg** 传入，**只在仿真期有效**，不参与综合；
 - 程序比存储器（2048 字）短时，`$readmemh` 会给出 "Not enough words" 警告，**属于正常现象**；
-- 当前 `prog_demo_test` 的断言是针对 `demo.hex` 的（`x1=8, x2=5, x3=13`）。
-  如果要跑别的程序，建议在 `tests/cpu/tb_prog.py` 里新增一个对应的 cocotb 用例，
-  或者先把它当作“装载是否成功”的冒烟测试。
+- 当前 `test_prog_demo` 的断言是针对 `demo.hex` 的（`x1=8, x2=5, x3=13`）。
+  如果要跑别的程序，建议在 `tests/cpu/test_prog.py` 里新增一个对应的
+  `@cocotb_test` 用例，或者先把它当作“装载是否成功”的冒烟测试。
 
 ## demo.hex
 

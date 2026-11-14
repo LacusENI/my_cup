@@ -10,6 +10,7 @@ pytest fixtures：每个 DUT 只编译一次（session 级），多个测试复�
 
 import os
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -45,7 +46,7 @@ def _build(toplevel: str, sources, build_name: str, module_prefix: str):
       toplevel      : HDL 顶层模块名（例如 "ctrl"）
       sources       : 参与编译的 .sv 文件列表
       build_name    : build 目录名（不同 DUT 分开，互不覆盖）
-      module_prefix : 测试模块所在目录，例如 "control" -> "control.tb_ctrl"
+      module_prefix : 测试模块所在目录，例如 "control" -> "control.test_ctrl"
     """
     runner = get_runner("icarus")
     # Icarus 要求 build 阶段就开启 waves，否则 test 阶段传 waves 无效
@@ -135,82 +136,88 @@ def regfile_sim():
     )
 
 
-@pytest.fixture(scope="session")
-def if_id_sim():
-    """流水线寄存器：IF/ID。"""
-    return _build(
-        "if_id_reg",
-        [PKG, RTL / "pipe" / "if_id_reg.sv"],
-        "if_id_reg",
-        "pipe",
-    )
-
-
-@pytest.fixture(scope="session")
-def id_ex_sim():
-    """流水线寄存器：ID/EX。"""
-    return _build(
-        "id_ex_reg",
-        [PKG, RTL / "pipe" / "id_ex_reg.sv"],
-        "id_ex_reg",
-        "pipe",
-    )
-
-
-@pytest.fixture(scope="session")
-def ex_mem_sim():
-    """流水线寄存器：EX/MEM。"""
-    return _build(
-        "ex_mem_reg",
-        [PKG, RTL / "pipe" / "ex_mem_reg.sv"],
-        "ex_mem_reg",
-        "pipe",
-    )
-
-
-@pytest.fixture(scope="session")
-def mem_wb_sim():
-    """流水线寄存器：MEM/WB。"""
-    return _build(
-        "mem_wb_reg",
-        [PKG, RTL / "pipe" / "mem_wb_reg.sv"],
-        "mem_wb_reg",
-        "pipe",
-    )
-
-
 # --------------------------------------------------------------------------- #
 # 把一次 pytest 用例变成一次 cocotb 仿真
 # --------------------------------------------------------------------------- #
+def _format_cocotb_failure(results_xml: Path) -> str | None:
+    """从 cocotb 的 xUnit XML 里提取失败信息。
+
+    为什么要读 XML：
+    - 断言发生在仿真器进程里，pytest 进程拿不到原始的 AssertionError；
+    - cocotb 会把每个 testcase 的结果写进 results_xml；
+    - runner.test() 在失败时只是 sys.exit(1)，pytest 默认只能看到
+      “SystemExit: 1”，看不到具体断言。
+    这里把 XML 里的 <failure>/<error> 拼成一段文本，再交给 pytest.fail()。
+    """
+    if not results_xml.is_file():
+        return None
+
+    try:
+        root = ET.parse(results_xml).getroot()
+    except ET.ParseError:
+        return None
+
+    parts: list[str] = []
+    for testcase in root.iter("testcase"):
+        for node in testcase:
+            if node.tag not in ("failure", "error"):
+                continue
+            name = testcase.get("name", "<unknown>")
+            message = (node.get("message") or "").strip()
+            detail = (node.text or "").strip()
+            text = f"{name}: {message}".strip()
+            if detail:
+                text += f"\n{detail}"
+            parts.append(text)
+
+    return "\n\n".join(parts) or None
+
+
 @pytest.fixture
 def run_cocotb_case():
     """返回一个函数：运行指定 cocotb 模块里的一个测试用例。
 
-    用法：
-        def test_addu_control(ctrl_sim, run_cocotb_case):
-            run_cocotb_case(ctrl_sim, "tb_ctrl", "addu_control_test")
+    这是 pytest 进程和仿真器进程之间的桥：
 
-    这样每个 pytest 用例只写一行，读起来就像“跑 tb_ctrl 里的 addu 测试”。
+    - pytest 用例调用本 fixture 返回的 ``_run``；
+    - ``_run`` 调用 ``runner.test()``，启动一次 ``vvp``；
+    - ``vvp`` 里的 cocotb 执行 ``@cocotb_test`` 注册的 async 函数；
+    - 结果写进 ``results_xml``，由这里翻译成 pytest 的 pass/fail。
+
+    目前主要由 ``tests/utils/cocotb_utils.py`` 的 ``cocotb_test`` 装饰器调用，
+    一般不需要在测试文件里手写 ``run_cocotb_case(...)``。
     """
 
     def _run(sim, test_module: str, testcase: str, plusargs=None):
-        # 调用方只写 "tb_alu" 就够了，这里自动补成 "datapath.tb_alu"。
-        # 如果已经带点（例如 "utils.test_asm"），就原样使用。
+        # 新写法传的是完整模块名（例如 "datapath.test_alu"）；
+        # 旧的 "tb_alu" 写法仍然兼容，会自动补上 sim.module_prefix。
         if "." not in test_module:
             test_module = f"{sim.module_prefix}.{test_module}"
 
         # cocotb 默认会把 pytest 结果写成 tests/<testcase>.result.xml；
         # 这里显式指到 build/ 下，避免污染源码目录。
         results_xml = sim.build_dir / f"{testcase}.result.xml"
-        sim.runner.test(
-            hdl_toplevel=sim.toplevel,
-            test_module=test_module,
-            testcase=testcase,
-            test_dir=TESTS,
-            build_dir=sim.build_dir,
-            results_xml=str(results_xml),
-            waves=WAVES,
-            plusargs=plusargs or [],
-        )
+        try:
+            sim.runner.test(
+                hdl_toplevel=sim.toplevel,
+                test_module=test_module,
+                testcase=testcase,
+                test_dir=TESTS,
+                build_dir=sim.build_dir,
+                results_xml=str(results_xml),
+                waves=WAVES,
+                plusargs=plusargs or [],
+            )
+        except SystemExit:
+            # runner.test() 在 cocotb 测试失败时会 sys.exit(1)。
+            # 直接把 SystemExit 交给 pytest 只会显示“SystemExit: 1”，
+            # 所以这里从 results.xml 里取出真正的断言信息，再让 pytest 报错。
+            failure = _format_cocotb_failure(results_xml)
+            if failure:
+                # from None：不要在 pytest 输出里再显示 “During handling of
+                # the above exception...”，因为 SystemExit 只是 runner 的
+                # 内部信号，真正的失败信息已经在 failure 里了。
+                raise pytest.fail.Exception(failure, pytrace=False) from None
+            raise
 
     return _run

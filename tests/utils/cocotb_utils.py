@@ -6,16 +6,23 @@ cocotb 常用小工具（带详细注释，方便第一次接触的同学阅读�
 
 这里只放**多个测试共用**的 CPU 顶层接口和通用工具。
 各单元 DUT（alu / ctrl / ...）的 Protocol 和契约字段，
-放在各自的 `tb_*.py` 里，方便就近阅读和修改。
+放在各自的 `test_*.py` 里，方便就近阅读和修改。
 """
 
 from __future__ import annotations
 
+import sys
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Protocol, Sequence
 
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ReadOnly, RisingEdge, Timer
+
+# tests/ 的绝对路径。cocotb 的 runner.test(test_dir=TESTS) 会把它放进
+# 仿真器进程的 sys.path，因此模块名要写成 "datapath.test_alu" 这种形式。
+TESTS_ROOT = Path(__file__).resolve().parents[1]
 
 
 # --------------------------------------------------------------------------- #
@@ -50,7 +57,7 @@ class Memory(Protocol):
 class CpuAccess(Protocol):
     """共享访问器需要的最小 CPU 顶层接口。
 
-    cpu_top 的完整公开字段在 tb_inst.py 里声明；
+    cpu_top 的完整公开字段在 tests/cpu/test_inst.py 的 CpuTop 协议里声明；
     这里只是让 run_program / read_reg 等工具函数有个类型可写。
     """
 
@@ -107,7 +114,7 @@ def write_inst(dut: CpuAccess, word_index: int, instruction: int) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 契约检查：每个 tb_*.py 自己提供字段列表
+# 契约检查：每个测试文件自己提供字段列表
 # --------------------------------------------------------------------------- #
 def assert_fields(dut: Any, fields: tuple[str, ...], owner: str) -> None:
     """检查 DUT 是否暴露 `fields` 里列出的字段路径。
@@ -130,8 +137,108 @@ def assert_fields(dut: Any, fields: tuple[str, ...], owner: str) -> None:
 
     assert not missing, (
         f"{owner} 缺少测试依赖的字段: {', '.join(missing)}。\n"
-        f"如果只是改名，请同步更新对应的 tb_*.py 契约测试。"
+        f"如果只是改名，请同步更新对应测试文件里的契约测试。"
     )
+
+
+# --------------------------------------------------------------------------- #
+# 把 cocotb test 同时变成 pytest 用例
+# --------------------------------------------------------------------------- #
+def _cocotb_module_name(fn) -> str:
+    """返回 cocotb runner 能 import 的模块名，例如 ``datapath.test_alu``。
+
+    为什么不直接用 ``fn.__module__``：
+    pytest 和仿真器是两个进程，它们不保证用同一个模块名导入测试文件
+    （可能是 ``test_alu``，也可能是 ``datapath.test_alu``）。
+    这里根据源文件路径计算，两个进程得到的结果一致。
+    """
+    path = Path(fn.__code__.co_filename).resolve()
+    try:
+        relative = path.relative_to(TESTS_ROOT)
+    except ValueError:
+        # 测试文件不在 tests/ 下时退回到 Python 自己的模块名。
+        return fn.__module__
+    return relative.with_suffix("").as_posix().replace("/", ".")
+
+
+def cocotb_test(
+    *,
+    dut: str,
+    plusargs: Sequence[str] | Callable[[], Sequence[str]] | None = None,
+    **cocotb_kwargs: Any,
+):
+    """把 ``async def test_xxx(dut)`` 同时注册成 cocotb test 和 pytest 用例。
+
+    背景（这层装饰器到底在解决什么）：
+
+    1. pytest 进程只负责“启动仿真器”。真正执行测试的是仿真器里内嵌的
+       Python 进程；两个进程之间没有共享对象。
+    2. ``@cocotb.test()`` 返回的是 ``TestGenerator`` 对象，pytest 默认
+       不会收集它（它只收集普通函数/类）。
+    3. 所以这里做两件事：
+       - 把原始 async 函数注册成 cocotb test；
+       - 返回一个普通同步函数 wrapper，让 pytest 把它当成普通 test_* 用例。
+    4. 仿真器里的 cocotb 通过扫描模块属性找 ``TestGenerator``。
+       原始 async 函数已经被 wrapper 替换掉了，因此这里额外把
+       ``TestGenerator`` 挂到模块的私有属性上，供 cocotb 发现。
+
+    参数：
+      dut:
+        conftest.py 里的 fixture 名，例如 ``"alu_sim"``。
+        wrapper 运行时通过 ``request.getfixturevalue(dut)`` 拿到它。
+      plusargs:
+        传给 ``runner.test()`` 的 plusargs；也可以传一个函数，运行时再求值。
+        例如 program 级测试需要 ``+inst=...``。
+      **cocotb_kwargs:
+        原样传给 ``cocotb.test()``，例如 ``timeout_time`` / ``skip`` / ``expect_fail``。
+
+    注意：
+      - **不要**在 wrapper 上用 ``functools.wraps``。它会设置 ``__wrapped__``，
+        pytest 通过 ``inspect.signature`` 会看到原函数的 ``dut`` 参数，
+        于是误以为需要注入 ``dut`` fixture，而不是这里的 ``request``。
+      - pytest 的 marker 建议写在 ``@cocotb_test(...)`` 外层，例如
+        ``@pytest.mark.xfail``；这里也会复制内层的 ``pytestmark``，两种顺序
+        都能工作，但外层最直观。
+      - 测试函数请用 ``test_`` 前缀，这样 pytest 和 cocotb 两边名字一致。
+    """
+
+    def decorate(fn):
+        # 第一步：注册成 cocotb test。cocotb_kwargs 原样透传，
+        # 所以以后要用 timeout / expect_fail 时不需要改这个装饰器。
+        test = cocotb.test(**cocotb_kwargs)(fn)
+
+        # 第二步：把 TestGenerator 藏到模块属性里。
+        # cocotb/regression.py 的 discover_tests() 会遍历 vars(module)，
+        # 找到所有 TestGenerator 并执行；属性名本身不重要，只要不覆盖
+        # wrapper 即可。这里用 __cocotb_ 前缀避免和普通名字冲突。
+        module = sys.modules.get(fn.__module__)
+        if module is not None:
+            attr_name = f"__cocotb_{fn.__qualname__.replace('.', '_')}"
+            setattr(module, attr_name, test)
+
+        # 第三步：pytest 真正收集和执行的是这个普通同步函数。
+        # 它通过 request 拿 DUT fixture 和 run_cocotb_case，再启动一次仿真。
+        def wrapper(request):
+            sim = request.getfixturevalue(dut)
+            run_case = request.getfixturevalue("run_cocotb_case")
+            actual_plusargs = plusargs() if callable(plusargs) else plusargs
+            run_case(sim, _cocotb_module_name(fn), test.name, actual_plusargs)
+
+        # 让 pytest / IDE 看到的名字和原测试一致。
+        # 注意这里只复制必要的属性，不使用 functools.wraps（原因见 docstring）。
+        wrapper.__name__ = fn.__name__
+        wrapper.__qualname__ = fn.__qualname__
+        wrapper.__module__ = fn.__module__
+        wrapper.__doc__ = fn.__doc__
+        # 如果 marker 写在 @cocotb_test 内层（先作用于原函数），
+        # 这里把 pytestmark 复制到 wrapper 上，xfail/skip 才会生效。
+        wrapper.pytestmark = list(getattr(fn, "pytestmark", []))
+        # 方便调试：可以从 wrapper 反查原始的 cocotb TestGenerator。
+        wrapper.__cocotb_test__ = test
+
+        return wrapper
+
+    return decorate
 
 
 # --------------------------------------------------------------------------- #
