@@ -78,6 +78,22 @@ module ctrl
                     ctrl.src2_sel  = SRC2_SEL_IMM;
                 end
 
+                OP_LUI: begin
+                    ctrl.npc_op    = NPC_PLUS4;
+                    ctrl.reg_write = 1'b1;
+                    ctrl.alu_op    = ALU_NOP;
+                    ctrl.src2_sel  = SRC2_SEL_IMM;
+                    ctrl.wb_sel    = WB_SEL_IMM;
+                end
+
+                OP_AUIPC: begin
+                    ctrl.npc_op    = NPC_PLUS4;
+                    ctrl.reg_write = 1'b1;
+                    ctrl.alu_op    = ALU_NOP;
+                    ctrl.src2_sel  = SRC2_SEL_IMM;
+                    ctrl.wb_sel    = WB_SEL_PC_PLUS_IMM;
+                end
+
                 default: ;
             endcase
         end

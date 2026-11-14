@@ -45,10 +45,12 @@ package cpu_pkg;
     } npc_op_t;
 
     // ---- 写回数据选择 ----
-    typedef enum logic [1:0] {
-        WB_SEL_ALU_OUT  = 2'b00,
-        WB_SEL_R_DATA   = 2'b01,
-        WB_SEL_PC_PLUS4 = 2'b10
+    typedef enum logic [2:0] {
+        WB_SEL_ALU_OUT     = 3'b000,
+        WB_SEL_R_DATA      = 3'b001,
+        WB_SEL_PC_PLUS4    = 3'b010,
+        WB_SEL_IMM         = 3'b011,
+        WB_SEL_PC_PLUS_IMM = 3'b100
     } wb_sel_t;
 
     // ---- ALU 第二操作数选择 ----
@@ -60,11 +62,13 @@ package cpu_pkg;
     // ---- RV32I opcode / funct3 / funct7 ----
     localparam opcode_t OP_LOAD   = 7'b0000011;
     localparam opcode_t OP_IMM    = 7'b0010011;
+    localparam opcode_t OP_AUIPC  = 7'b0010111;
     localparam opcode_t OP_STORE  = 7'b0100011;
     localparam opcode_t OP_R      = 7'b0110011;
     localparam opcode_t OP_BRANCH = 7'b1100011;
     localparam opcode_t OP_JALR   = 7'b1100111;
     localparam opcode_t OP_JAL    = 7'b1101111;
+    localparam opcode_t OP_LUI    = 7'b0110111;
 
     localparam funct3_t F3_ADD    = 3'b000;
     localparam funct3_t F3_LW     = 3'b010;

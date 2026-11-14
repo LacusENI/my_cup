@@ -102,17 +102,17 @@ cocotb 再执行原来的 async 函数。详细注释见
 
 | 测试文件 | 覆盖内容 | 用例数 |
 | :-- | :-- | :-- |
-| `control/test_decoder.py` | RV32I 字段切分、I/S/B/J 立即数、非法编码 | 10 |
-| `control/test_ctrl.py` | 7 条指令控制表、非法指令安全控制 | 9 |
+| `control/test_decoder.py` | RV32I 字段切分、I/S/B/J/U 立即数、非法编码 | 11 |
+| `control/test_ctrl.py` | 9 条指令控制表、非法指令安全控制 | 11 |
 | `control/test_npc.py` | PLUS4 / BRANCH / JAL / JALR / illegal hold | 8 |
 | `datapath/test_alu.py` | ADD / EQ / NOP、32 位回绕 | 6 |
 | `datapath/test_regfile.py` | 读写、x0、双读端口、写禁用 | 5 |
 | `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
 | `utils/test_asm.py` | llvm-mc 封装、golden 和错误输入检查 | 20 |
-| `cpu/test_inst.py` | 7 条单指令 ISA + 复位写抑制 + 非法停止 + 契约 | 19 |
+| `cpu/test_inst.py` | 9 条单指令 ISA + 复位写抑制 + 非法停止 + 契约 | 22 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **82 个用例**。
+合计 **88 个用例**。
 
 ## 怎么写一个新测试
 

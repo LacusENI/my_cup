@@ -10,12 +10,12 @@ module npc
     input  word_t   jalr_target,
     input  logic    inst_illegal,
     output word_t   pc_plus4,
+    output word_t   pc_plus_imm,
     output word_t   next_pc
 );
 
-    word_t pc_relative_target;
     assign pc_plus4 = inst_pc + 32'd4;
-    assign pc_relative_target = inst_pc + pc_offset;
+    assign pc_plus_imm = inst_pc + pc_offset;
 
     // 仿真断言：RV32I 没有 C 扩展，所有跳转目标必须 4 字节对齐。
     // jalr 的 bit0 由 NPC 清除，bit1 必须为 0；
@@ -26,8 +26,8 @@ module npc
                 $fatal(1, "npc: unaligned jalr target %0h", jalr_target);
             if (((npc_op == NPC_JAL) ||
                  ((npc_op == NPC_BRANCH) && branch_taken)) &&
-                pc_relative_target[1])
-                $fatal(1, "npc: unaligned branch/jal target %0h", pc_relative_target);
+                pc_plus_imm[1])
+                $fatal(1, "npc: unaligned branch/jal target %0h", pc_plus_imm);
         end
     end
 
@@ -38,8 +38,8 @@ module npc
         end else begin
             unique case (npc_op)
                 NPC_PLUS4: next_pc = pc_plus4;
-                NPC_BRANCH: next_pc = branch_taken ? pc_relative_target : pc_plus4;
-                NPC_JAL: next_pc = pc_relative_target;
+                NPC_BRANCH: next_pc = branch_taken ? pc_plus_imm : pc_plus4;
+                NPC_JAL: next_pc = pc_plus_imm;
                 NPC_JALR: next_pc = jalr_target & 32'hFFFF_FFFE;
                 default: next_pc = pc_plus4;
             endcase

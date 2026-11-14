@@ -27,6 +27,7 @@ from utils.cocotb_utils import (
     read_reg_raw,
     reset_and_wait,
     run_one_instruction,
+    run_program,
     settle,
     start_clock,
     wait_cycles,
@@ -265,6 +266,43 @@ async def test_sw_negative_offset(dut: CpuTop):
 
     assert read_mem(dut, 1) == 0x5566_7788
     assert read_pc(dut) == 4
+
+
+# --------------------------------------------------------------------------- #
+# 大立即数
+# --------------------------------------------------------------------------- #
+@cocotb_test(dut=SIM)
+async def test_lui(dut: CpuTop):
+    """lui x5, 0x12345：立即数进入 rd 高 20 位，低 12 位为 0。"""
+    await run_one_instruction(dut, assemble("lui x5, 0x12345"))
+
+    assert read_reg(dut, 5) == 0x12345_000
+    assert read_pc(dut) == 4
+
+
+@cocotb_test(dut=SIM)
+async def test_auipc(dut: CpuTop):
+    """auipc x5, 0x12345：PC=0 时写回 0x12345_000。"""
+    await run_one_instruction(dut, assemble("auipc x5, 0x12345"))
+
+    assert read_reg(dut, 5) == 0x12345_000
+    assert read_pc(dut) == 4
+
+
+@cocotb_test(dut=SIM)
+async def test_auipc_pc_relative(dut: CpuTop):
+    """auipc 使用当前指令 PC：跳到 PC=4 后写回 4 + 0x1000。"""
+    await run_program(
+        dut,
+        [
+            assemble("jal x0, 4"),
+            assemble("auipc x1, 0x1"),
+        ],
+        extra_cycles=0,
+    )
+
+    assert read_reg(dut, 1) == 0x0000_1004
+    assert read_pc(dut) == 8
 
 
 # --------------------------------------------------------------------------- #

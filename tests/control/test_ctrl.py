@@ -22,7 +22,9 @@ from utils.cpu_pkg import (
     SRC2_SEL_IMM,
     SRC2_SEL_RS2,
     WB_SEL_ALU_OUT,
+    WB_SEL_IMM,
     WB_SEL_PC_PLUS4,
+    WB_SEL_PC_PLUS_IMM,
     WB_SEL_R_DATA,
 )
 
@@ -183,6 +185,36 @@ async def test_jalr_control(dut: CtrlDut):
     assert int(dut.wb_sel.value) == WB_SEL_PC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
+
+
+@cocotb_test(dut=SIM)
+async def test_lui_control(dut: CtrlDut):
+    """lui：U 型立即数直接写回 rd，PC+4。"""
+    await drive_asm(dut, "lui x1, 0x12345")
+
+    assert int(dut.reg_write.value) == 1
+    assert int(dut.alu_op.value) == ALU_NOP
+    assert int(dut.src2_sel.value) == SRC2_SEL_IMM
+    assert int(dut.wb_sel.value) == WB_SEL_IMM
+    assert int(dut.npc_op.value) == NPC_PLUS4
+    assert int(dut.mem_read.value) == 0
+    assert int(dut.mem_write.value) == 0
+    assert int(dut.inst_illegal.value) == 0
+
+
+@cocotb_test(dut=SIM)
+async def test_auipc_control(dut: CtrlDut):
+    """auipc：PC + U 型立即数写回 rd，PC+4。"""
+    await drive_asm(dut, "auipc x1, 0x12345")
+
+    assert int(dut.reg_write.value) == 1
+    assert int(dut.alu_op.value) == ALU_NOP
+    assert int(dut.src2_sel.value) == SRC2_SEL_IMM
+    assert int(dut.wb_sel.value) == WB_SEL_PC_PLUS_IMM
+    assert int(dut.npc_op.value) == NPC_PLUS4
+    assert int(dut.mem_read.value) == 0
+    assert int(dut.mem_write.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)

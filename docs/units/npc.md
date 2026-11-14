@@ -20,11 +20,12 @@ input
 - `npc_op`
 - `branch_taken`：branch 分支是否跳转
 - `jalr_target(32)`：jalr 指令的寄存器目标（ALU 的 `rs1 + imm`）
-- `pc_offset(32)`：跳转偏移（branch 或 jal 使用，字节偏移）
+- `pc_offset(32)`：PC 相对偏移（branch / jal / auipc 使用，字节偏移）
 - `inst_illegal`：指令非法；为 1 时保持 PC
 
 output
 - `pc_plus4(32)`：`inst_pc + 4`
+- `pc_plus_imm(32)`：`inst_pc + pc_offset`，同时供 `auipc` 写回使用
 - `next_pc(32)`：下一条指令地址
 
 ## 说明

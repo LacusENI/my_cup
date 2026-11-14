@@ -22,8 +22,8 @@ module decoder
     // ----------------------------------------------------------------------- //
     // 立即数生成：纯组合函数
     //
-    // 只在本批 7 条指令范围内使用。B/J 型的立即数在指令中不是连续排列，
-    // 在这里统一拼成“字节偏移”，NPC 不再左移。
+    // B/J 型的立即数在指令中不是连续排列，在这里统一拼成“字节偏移”，
+    // NPC 不再左移。U 型立即数直接取指令高 20 位。
     // ----------------------------------------------------------------------- //
     function automatic word_t imm_i(input logic [11:0] i);
         return {{20{i[11]}}, i};
@@ -47,6 +47,7 @@ module decoder
             OP_STORE: return imm_s({i[31:25], i[11:7]});
             OP_BRANCH: return imm_b({i[31], i[7], i[30:25], i[11:8], 1'b0});
             OP_JAL: return imm_j({i[31], i[19:12], i[20], i[30:21], 1'b0});
+            OP_LUI, OP_AUIPC: return {i[31:12], {12{1'b0}}};
             default: return '0;
         endcase
     endfunction
@@ -56,8 +57,8 @@ module decoder
     // ----------------------------------------------------------------------- //
     // 合法编码判断
     //
-    // 当前只接受 7 条指令。任何未实现/非法 opcode、funct3、funct7 都输出 0，
-    // 后续由 ctrl 统一转成 inst_illegal 并停止执行。
+    // 只接受当前已实现的指令。任何未实现/非法 opcode、funct3、funct7
+    // 都输出 0，后续由 ctrl 统一转成 inst_illegal 并停止执行。
     // ----------------------------------------------------------------------- //
     always_comb begin
         valid_encoding = 1'b1;
@@ -69,6 +70,7 @@ module decoder
             OP_BRANCH: valid_encoding = (decoded.funct3 == F3_BEQ);
             OP_JALR:   valid_encoding = (decoded.funct3 == F3_JALR);
             OP_JAL:    valid_encoding = 1'b1;
+            OP_LUI, OP_AUIPC: valid_encoding = 1'b1;
             default:   valid_encoding = 1'b0;
         endcase
     end

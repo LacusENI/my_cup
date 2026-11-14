@@ -9,7 +9,7 @@ module cpu_top (
 
     word_t inst_addr;
     word_t inst;
-    word_t curr_pc, next_pc, pc_plus4;
+    word_t curr_pc, next_pc, pc_plus4, pc_plus_imm;
 
     inst_t decoded;
     ctrl_t ctrl;
@@ -50,6 +50,7 @@ module cpu_top (
         .jalr_target(alu_out),
         .inst_illegal(ctrl.inst_illegal),
         .pc_plus4(pc_plus4),
+        .pc_plus_imm(pc_plus_imm),
         .next_pc(next_pc)
     );
 
@@ -113,13 +114,15 @@ module cpu_top (
     assign addr = alu_out;
     assign w_data = rs2_data;
 
-    // 写回数据：ALU 结果 / 内存读出 / PC+4
+    // 写回数据：ALU 结果 / 内存读出 / PC+4 / U 型立即数 / PC+imm
     always_comb begin
         unique case (ctrl.wb_sel)
-            WB_SEL_ALU_OUT:  wb_data = alu_out;
-            WB_SEL_R_DATA:   wb_data = r_data;
-            WB_SEL_PC_PLUS4: wb_data = pc_plus4;
-            default:         wb_data = '0;
+            WB_SEL_ALU_OUT:     wb_data = alu_out;
+            WB_SEL_R_DATA:      wb_data = r_data;
+            WB_SEL_PC_PLUS4:    wb_data = pc_plus4;
+            WB_SEL_IMM:         wb_data = imm;
+            WB_SEL_PC_PLUS_IMM: wb_data = pc_plus_imm;
+            default:            wb_data = '0;
         endcase
     end
 

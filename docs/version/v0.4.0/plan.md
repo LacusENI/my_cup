@@ -22,12 +22,12 @@ fence / ecall / ebreak
 
 ### M1 · U 型指令
 
-- [ ] `lui`：增加 `WB_SEL_IMM`，立即数直接进入写回通路
-- [ ] `auipc`：`pc + imm` 走 npc 模块
-- [ ] npc 模块增加输出端口 `pc_plus_imm`
-- [ ] decoder：增加 U 型立即数
-- [ ] ctrl：增加 `lui` / `auipc` 控制项
-- [ ] 更新汇编器、单指令测试、`docs/units/`
+- [x] `lui`：增加 `WB_SEL_IMM`，立即数直接进入写回通路
+- [x] `auipc`：`pc + imm` 走 npc 模块
+- [x] npc 模块增加输出端口 `pc_plus_imm`
+- [x] decoder：增加 U 型立即数
+- [x] ctrl：增加 `lui` / `auipc` 控制项
+- [x] 更新汇编器、单指令测试、`docs/units/`
 
 ### M2 · SYSTEM / 停机语义
 

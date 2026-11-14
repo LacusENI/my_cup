@@ -32,6 +32,7 @@ class NpcDut(Protocol):
     jalr_target: Signal
     inst_illegal: Signal
     pc_plus4: Signal
+    pc_plus_imm: Signal
     next_pc: Signal
 
 
@@ -43,6 +44,7 @@ REQUIRED_FIELDS = (
     "jalr_target",
     "inst_illegal",
     "pc_plus4",
+    "pc_plus_imm",
     "next_pc",
 )
 
@@ -129,6 +131,7 @@ async def test_npc_jal(dut: NpcDut):
     await drive(dut, inst_pc=0x0000_0100, npc_op=NPC_JAL, pc_offset=0x20)
 
     assert int(dut.pc_plus4.value) == 0x0000_0104
+    assert int(dut.pc_plus_imm.value) == 0x0000_0120
     assert int(dut.next_pc.value) == 0x0000_0120
 
 

@@ -133,6 +133,23 @@ async def test_imm_j(dut: DecoderDut):
         assert int(dut.imm.value) == expected, f"J 型立即数错误: {instruction:#010x}"
 
 
+@cocotb_test(dut=SIM)
+async def test_imm_u(dut: DecoderDut):
+    """U 型立即数：指令高 20 位左移 12 位，低 12 位补零。"""
+    cases = [
+        (assemble("lui x1, 0x00000"), 0x0000_0000),
+        (assemble("lui x1, 0x12345"), 0x1234_5000),
+        (assemble("lui x1, 0xFFFFF"), 0xFFFF_F000),
+        (assemble("auipc x1, 0x12345"), 0x1234_5000),
+        (assemble("auipc x1, 0xFFFFF"), 0xFFFF_F000),
+    ]
+    for instruction, expected in cases:
+        dut.inst.value = instruction
+        await settle()
+        assert int(dut.imm.value) == expected, f"U 型立即数错误: {instruction:#010x}"
+        assert int(dut.valid_encoding.value) == 1
+
+
 def _with_field(word: int, msb: int, lsb: int, value: int) -> int:
     """只修改测试激励中的字段，不参与正式编码。"""
     width = msb - lsb + 1

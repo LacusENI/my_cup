@@ -9,6 +9,7 @@
 [project]
 # 项目名，仅用于显示和日志。
 name = "mycup"
+version = "0.4.0a1"
 
 [paths]
 # 常用目录。mycup 会把相对路径解析到项目根目录下。
