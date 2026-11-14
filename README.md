@@ -18,8 +18,8 @@
 | 指令集 | RV32I 最小子集（7 条） |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
-| 测试 | 95 个 cocotb/pytest 用例 |
-| CI | GitHub Actions：`mycup lint` + `mycup test` |
+| 测试 | 82 个 cocotb/pytest 用例 |
+| CI | GitHub Actions：`code-gen-check` + `mycup lint` + `mycup test` |
 
 ### 已支持指令
 
@@ -43,8 +43,10 @@
 ```
 my_cup/
 ├── mycup/                # Python 工具链
-│   ├── cli.py                # mycup init / lint / test / prog / fmt / doctor / clean
+│   ├── cli.py                # mycup init / code-gen / lint / test / prog / fmt / doctor / clean
 │   └── config.py             # 读取 toolchain.toml
+├── scripts/              # 代码生成与维护脚本
+│   └── gen_pkg_consts.py     # 从 rtl/cpu_pkg.sv 生成测试常量
 ├── rtl/                  # 可综合的 RTL 源码
 │   ├── cpu_top.sv            # 顶层：实例化各单元并连线
 │   ├── cpu_pkg.sv            # package：参数、类型、控制编码
@@ -56,22 +58,16 @@ my_cup/
 │   ├── datapath/             # 数据通路
 │   │   ├── alu.sv
 │   │   └── regfile.sv
-│   ├── memory/               # 存储器
-│   │   ├── instm.sv
-│   │   └── datam.sv
-│   └── pipe/                 # 流水线级间寄存器（已就位，尚未接入）
-│       ├── if_id_reg.sv
-│       ├── id_ex_reg.sv
-│       ├── ex_mem_reg.sv
-│       └── mem_wb_reg.sv
+│   └── memory/               # 存储器
+│       ├── instm.sv
+│       └── datam.sv
 ├── tests/                # 全部验证（cocotb + pytest）
 │   ├── conftest.py            # session 级 build fixture
-│   ├── utils/                 # cocotb_utils / riscv_asm
+│   ├── utils/                 # cocotb_utils / assembler / cpu_pkg
 │   ├── hdl/                   # test-only probes
 │   ├── control/               # decoder / ctrl / npc
 │   ├── datapath/              # alu / regfile
 │   ├── memory/                # datam
-│   ├── pipe/                  # 流水线级间寄存器
 │   └── cpu/                   # ISA / program 级测试
 ├── pyproject.toml        # uv 管理的 Python 依赖
 ├── uv.lock               # uv 的依赖锁定
@@ -79,7 +75,6 @@ my_cup/
 │   ├── roadmap.md            # 阶段路线
 │   ├── version/v0.4.0/       # 当前目标版本计划
 │   └── archive/              # 历史版本文档
-├── isa/                  # 机器可读 ISA 描述（rv32i.yaml）
 ├── .opencode/agents/     # OpenCode subagent 定义
 ├── .verilator/verilator.f # Verilator lint 文件清单（生成，不提交）
 ├── .slang/slang.f        # slang-server 文件清单（mycup init 生成）
@@ -95,7 +90,7 @@ my_cup/
 
 ## 快速开始
 
-依赖：`iverilog` / `vvp` / `verilator` / `gtkwave`（可选，用于看波形）。
+依赖：`iverilog` / `vvp` / `verilator` / `llvm-mc` / `gtkwave`（可选，用于看波形）。
 
 ```bash
 uv sync                              # 首次：创建 .venv
@@ -105,16 +100,19 @@ uv run mycup lint                    # Verilator 静态检查
 uv run mycup prog programs/demo.hex  # 装载 RV32I hex 程序
 uv run mycup clean                   # 清理 build/ waves/ logs/ .verilator/ 等
 
+make code-gen                        # 按 toolchain.toml 运行代码生成器
+
 uv run pytest -v tests/cpu/test_inst.py               # 单个文件
 uv run pytest -v tests/cpu/test_inst.py::test_add    # 单个用例
 MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_inst.py # 导出波形
 ```
 
 > 验证说明：
-> - `tests/<category>/tb_*.py` 是 cocotb 测试内容，`tests/<category>/test_*.py` 是 pytest 入口；
-> - 目录按 RTL 职责划分：`control/`、`datapath/`、`memory/`、`pipe/`、`cpu/`；
+> - `tests/<category>/test_*.py` 同时包含 cocotb 测试和 pytest 入口；
+>   `@cocotb_test` 装饰器负责把两者连接起来；
+> - 目录按 RTL 职责划分：`control/`、`datapath/`、`memory/`、`cpu/`；
 > - 通用工具在 `tests/utils/`；
-> - 新增测试只要建这两个文件，不需要注册；
+> - 新增测试只要在对应 `test_*.py` 里写一个 async 函数，不需要注册；
 > - 详见 [`tests/README.md`](tests/README.md)。
 
 ---

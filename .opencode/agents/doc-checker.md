@@ -43,7 +43,6 @@ permissions:
 - `docs/README.md`
 - `docs/**/*.md`
 - `tests/README.md`
-- `isa/rv32i.yaml`
 
 重点：
 

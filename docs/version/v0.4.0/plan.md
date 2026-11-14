@@ -56,7 +56,7 @@ fence / ecall / ebreak
 - [ ] 增加 `alu_ctrl`，专门生成 `alu_op`
 - [ ] R 型：`sub`、`and`、`or`、`xor`、`sll`、`srl`、`sra`、`slt`、`sltu`
 - [ ] I 型：`andi`、`ori`、`xori`、`slti`、`sltiu`、`slli`、`srli`、`srai`
-- [ ] 更新 ALU、decoder、ctrl、汇编器、单指令测试
+- [ ] 更新 ALU、decoder、ctrl、单指令测试（汇编文本由 `llvm-mc` 编码）
 - [ ] 补充算术边界、移位量、符号/零扩展测试
 
 ### M4 · Branch / BRU
@@ -77,7 +77,7 @@ fence / ecall / ebreak
 
 - [ ] `jal` / `jalr` 的 link 保持 `pc_plus4 -> wb_data`
 - [ ] 检查 branch/jal/jalr 目标 4 字节对齐
-- [ ] 更新 `tb_bru`、`tb_npc`、`tb_inst`
+- [ ] 更新 `test_bru`、`test_npc`、`test_inst`
 
 ### M5 · Load / Store / LSU
 

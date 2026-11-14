@@ -53,7 +53,6 @@ add, addi, beq, lw, sw, jal, jalr
 | `datam`   | `datam.sv`   | 数据存储器（DMEM），整字访问，组合读/上升沿写 |
 
 > `ext` 和 `cond` 已删除：立即数生成并入 `decoder`，分支比较并入 `alu`。
-> 流水线寄存器仍在 `rtl/pipe/`，但当前 `cpu_top` 还没有接入。
 
 ---
 
@@ -128,8 +127,9 @@ inst_pc / npc_op / branch_taken / pc_offset / jalr_target / inst_illegal
 验证全部走 **cocotb + pytest**：
 
 ```text
-tests/<category>/tb_*.py   ──(cocotb runner)──► iverilog 编译 ──► vvp 仿真
-tests/<category>/test_*.py ──(pytest)─────────► 收集 / 报告 / 参数化
+tests/<category>/test_*.py
+  ├─ @cocotb_test async 函数 ──(cocotb runner)──► iverilog 编译 ──► vvp 仿真
+  └─ 装饰器生成的 wrapper   ──(pytest)─────────► 收集 / 报告 / 参数化
 ```
 
 常用命令：
@@ -150,7 +150,7 @@ uv run mycup clean
 ## 8. 当前限制
 
 1. 仅实现 RV32I 最小 7 条指令；未实现指令统一 `inst_illegal` + stop。
-2. 单周期关键路径较长；流水线寄存器已存在但未接入。
+2. 单周期关键路径较长；流水线尚未实现，计划在后续版本再议。
 3. `datam` 只支持整字访问，没有字节掩码/子字访存。
 4. 地址对齐用仿真断言检查（`datam` / `instm` / `npc`），本批不 trap。
 5. MIPS 历史文档已随 `v0.3-mips` 归档；当前文档与 v0.3-rv32i 同步。
@@ -161,4 +161,4 @@ uv run mycup clean
 
 > 一个组合数据通路 + 少量时序状态的 **RV32I 最小子集单周期 CPU**；
 > 指令/数据存储分离；控制集中在 `ctrl`，立即数和译码在 `decoder`，
-> 分支比较在 `alu`；下一步是在稳定的单周期基线上接流水线。
+> 分支比较在 `alu`；后续版本再在稳定的单周期基线上接流水线。

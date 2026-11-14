@@ -2,6 +2,9 @@
 
 > 状态：**RTL 已落地，测试已通过**（单周期 RV32I 最小子集）
 > 前置版本：`v0.3-mips`（单周期 MIPS 子集，已打 tag）
+>
+> 注：本文是 v0.3 历史设计快照。文中的 `riscv_asm.py` / `isa/rv32i.yaml`
+> 已在后续重构中由 `tests/utils/assembler.py`（封装 `llvm-mc`）取代。
 
 > 相关文档：
 > - 模块接口与实现细节：[units.md](units.md)

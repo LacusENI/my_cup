@@ -35,9 +35,8 @@
 
 | 文档 | 内容 |
 | :-- | :-- |
-| [rv32i/format.md](rv32i/format.md) | RV32I 指令格式与立即数拼接 |
-| [rv32i/inst-list.md](rv32i/inst-list.md) | RV32I 指令清单 |
-| [`isa/rv32i.yaml`](../isa/rv32i.yaml) | 机器可读编码表；`implemented` 为当前已实现子集 |
+| [isa/format.md](isa/format.md) | RV32I 指令格式与立即数拼接 |
+| [isa/inst-list.md](isa/inst-list.md) | RV32I 指令清单 |
 
 ---
 
