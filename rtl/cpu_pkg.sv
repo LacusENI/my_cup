@@ -27,6 +27,7 @@ package cpu_pkg;
     typedef logic [6:0] funct7_t;
     typedef logic [2:0] funct3_t;
     typedef logic [6:0] opcode_t;
+    typedef logic [11:0] funct12_t;
 
     // ---- ALU 操作码 ----
     // 本批只做加法、相等比较和空操作。
@@ -80,18 +81,26 @@ package cpu_pkg;
     localparam opcode_t OP_JALR   = 7'b1100111;
     localparam opcode_t OP_JAL    = 7'b1101111;
     localparam opcode_t OP_LUI    = 7'b0110111;
+    localparam opcode_t OP_MISC_MEM = 7'b0001111;
+    localparam opcode_t OP_SYSTEM = 7'b1110011;
 
     localparam funct3_t F3_ADD    = 3'b000;
     localparam funct3_t F3_LW     = 3'b010;
     localparam funct3_t F3_SW     = 3'b010;
     localparam funct3_t F3_BEQ    = 3'b000;
     localparam funct3_t F3_JALR   = 3'b000;
+    localparam funct3_t F3_FENCE  = 3'b000;
+    localparam funct3_t F3_PRIV   = 3'b000;
 
     localparam funct7_t F7_ADD    = 7'b0000000;
+
+    localparam funct12_t F12_ECALL  = 12'h000;
+    localparam funct12_t F12_EBREAK = 12'h001;
 
     // ---- 指令字段 ----
     // 位序与 RV32I 32 位指令一致：funct7 在最高位，opcode 在最低位。
     typedef struct packed {
+        funct12_t funct12;
         funct7_t funct7;
         reg_t    rs2;
         reg_t    rs1;

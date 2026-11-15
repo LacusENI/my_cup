@@ -17,7 +17,7 @@ module cpu_top
     ctrl_t ctrl;
 
     word_t imm;
-    logic  valid_encoding;
+    logic  opcode_err;
 
     reg_t rs1, rs2, rd;
     word_t rs1_data, rs2_data;
@@ -61,7 +61,7 @@ module cpu_top
         .inst(inst),
         .decoded(decoded),
         .imm(imm),
-        .valid_encoding(valid_encoding)
+        .opcode_err(opcode_err)
     );
 
     assign rs1 = decoded.rs1;
@@ -100,7 +100,10 @@ module cpu_top
         .opcode(decoded.opcode),
         .funct3(decoded.funct3),
         .funct7(decoded.funct7),
-        .valid_encoding(valid_encoding),
+        .rd(decoded.rd),
+        .rs1(decoded.rs1),
+        .funct12(decoded.funct12),
+        .opcode_err(opcode_err),
         .ctrl(ctrl)
     );
 

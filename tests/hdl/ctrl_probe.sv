@@ -13,7 +13,10 @@ module ctrl_probe
     input  opcode_t opcode,
     input  funct3_t funct3,
     input  funct7_t funct7,
-    input  logic    valid_encoding,
+    input  reg_t    rd,
+    input  reg_t    rs1,
+    input  funct12_t funct12,
+    input  logic    opcode_err,
 
     output npc_op_t    npc_op,
     output logic       reg_write,
@@ -32,7 +35,10 @@ module ctrl_probe
         .opcode(opcode),
         .funct3(funct3),
         .funct7(funct7),
-        .valid_encoding(valid_encoding),
+        .rd(rd),
+        .rs1(rs1),
+        .funct12(funct12),
+        .opcode_err(opcode_err),
         .ctrl(c)
     );
 

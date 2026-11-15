@@ -31,8 +31,8 @@ fence / ecall / ebreak
 
 ### M2 · SYSTEM / 停机语义 (版本号 `0.4.0a2`)
 
-- [ ] `fence`：当前内存模型下等效 `nop`
-- [ ] `ecall` / `ebreak`：当前无特权架构下仅停机
+- [x] `fence`：当前内存模型下等效 `nop`
+- [x] `ecall` / `ebreak`：当前无特权架构下仅停机
 - [x] `cpu_top` 将 `inst_illegal` 替换为 `halt` + `halt_cause`
 - [x] `halt == 0` 表示未停机，`halt_cause` 只在 `halt == 1` 时有效
 - [x] 不使用 `HALT_NONE`

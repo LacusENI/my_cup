@@ -35,7 +35,7 @@ from utils.cocotb_utils import (
     write_mem,
     write_reg,
 )
-from utils.cpu_pkg import HALT_ILLEGAL_INST
+from utils.cpu_pkg import HALT_EBREAK, HALT_ECALL, HALT_ILLEGAL_INST
 
 
 # conftest.py 里的 session fixture 名。
@@ -306,6 +306,69 @@ async def test_auipc_pc_relative(dut: CpuTop):
 
     assert read_reg(dut, 1) == 0x0000_1004
     assert read_pc(dut) == 8
+
+
+# --------------------------------------------------------------------------- #
+# SYSTEM / 停机
+# --------------------------------------------------------------------------- #
+@cocotb_test(dut=SIM)
+async def test_fence(dut: CpuTop):
+    """fence：当前内存模型下按 NOP 处理，PC 前进到 4。"""
+    await run_one_instruction(dut, assemble("fence iorw, iorw"))
+
+    assert read_pc(dut) == 4
+
+
+@cocotb_test(dut=SIM)
+async def test_pause(dut: CpuTop):
+    """PAUSE 是 FENCE hint，按 NOP 处理。"""
+    await run_one_instruction(dut, assemble("fence w, 0"))
+
+    assert read_pc(dut) == 4
+
+
+@cocotb_test(dut=SIM)
+async def test_fence_i_halt(dut: CpuTop):
+    """fence.i 属于 Zifencei，当前按非法指令停机。"""
+    await run_one_instruction(dut, assemble("fence.i"))
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
+    assert read_pc(dut) == 0
+
+
+@cocotb_test(dut=SIM)
+async def test_ecall_halt(dut: CpuTop):
+    """ecall：halt=1、cause=11，寄存器/内存不变。"""
+    await run_one_instruction(
+        dut,
+        assemble("ecall"),
+        registers={1: 0x1234_5678},
+        memory={0: 0xDEAD_BEEF},
+    )
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_ECALL
+    assert read_pc(dut) == 0
+    assert read_reg(dut, 1) == 0x1234_5678
+    assert read_mem(dut, 0) == 0xDEAD_BEEF
+
+
+@cocotb_test(dut=SIM)
+async def test_ebreak_halt(dut: CpuTop):
+    """ebreak：halt=1、cause=3，寄存器/内存不变。"""
+    await run_one_instruction(
+        dut,
+        assemble("ebreak"),
+        registers={1: 0x1234_5678},
+        memory={0: 0xDEAD_BEEF},
+    )
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_EBREAK
+    assert read_pc(dut) == 0
+    assert read_reg(dut, 1) == 0x1234_5678
+    assert read_mem(dut, 0) == 0xDEAD_BEEF
 
 
 # --------------------------------------------------------------------------- #

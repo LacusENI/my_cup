@@ -6,8 +6,11 @@ async 函数。详细机制见 ``tests/utils/cocotb_utils.py`` 的 ``cocotb_test
 
 decoder 是纯组合逻辑。测试通过 test-only probe 观察：
   - RV32I 字段：opcode / rd / rs1 / rs2 / funct3 / funct7
-  - imm：I/S/B/J 四种立即数
-  - valid_encoding：是否属于当前实现子集
+  - imm：I/S/B/J/U 五种立即数
+  - opcode_err：opcode 是否认识，仅用于判断 imm 是否可信
+
+完整编码合法性（funct3/funct7/rd/rs1/funct12）由 ctrl 负责，
+对应测试在 ``test_ctrl.py``。
 
 立即数生成虽然写在 decoder 内部，但这里单独覆盖每种格式，
 避免只靠指令级测试才能发现 B/J 型拼位错误。
@@ -31,8 +34,9 @@ class DecoderDut(Protocol):
     rs1: Signal
     rs2: Signal
     funct7: Signal
+    funct12: Signal
     imm: Signal
-    valid_encoding: Signal
+    opcode_err: Signal
 
 
 REQUIRED_FIELDS = (
@@ -43,14 +47,15 @@ REQUIRED_FIELDS = (
     "rs1",
     "rs2",
     "funct7",
+    "funct12",
     "imm",
-    "valid_encoding",
+    "opcode_err",
 )
 
 
 @cocotb_test(dut=SIM)
 async def test_contract(dut: DecoderDut):
-    """契约：decoder_probe 暴露字段、立即数和合法编码。"""
+    """契约：decoder_probe 暴露字段、立即数和 opcode_err。"""
     assert_fields(dut, REQUIRED_FIELDS, "decoder_probe")
 
 
@@ -67,8 +72,9 @@ async def test_fields(dut: DecoderDut):
     assert int(dut.rs2.value) == 2
     assert int(dut.funct3.value) == 0
     assert int(dut.funct7.value) == 0
+    assert int(dut.funct12.value) == 2
     assert int(dut.imm.value) == 0
-    assert int(dut.valid_encoding.value) == 1
+    assert int(dut.opcode_err.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -147,53 +153,13 @@ async def test_imm_u(dut: DecoderDut):
         dut.inst.value = instruction
         await settle()
         assert int(dut.imm.value) == expected, f"U 型立即数错误: {instruction:#010x}"
-        assert int(dut.valid_encoding.value) == 1
-
-
-def _with_field(word: int, msb: int, lsb: int, value: int) -> int:
-    """只修改测试激励中的字段，不参与正式编码。"""
-    width = msb - lsb + 1
-    mask = (1 << width) - 1
-    return (word & ~(mask << lsb)) | ((value & mask) << lsb)
+        assert int(dut.opcode_err.value) == 0
 
 
 @cocotb_test(dut=SIM)
-async def test_invalid_r_type(dut: DecoderDut):
-    """未实现的 R 型 funct7/funct3 不应被接受。"""
-    # sub 的 funct7=0x20；当前只实现 add。
-    dut.inst.value = _with_field(assemble("add x1, x1, x2"), 31, 25, 0x20)
-    await settle()
-    assert int(dut.valid_encoding.value) == 0
-
-
-@cocotb_test(dut=SIM)
-async def test_invalid_opcode(dut: DecoderDut):
-    """未知 opcode 应该输出 illegal，imm 保持 0。"""
+async def test_unknown_opcode(dut: DecoderDut):
+    """未知 opcode：opcode_err=1，imm 保持 0。"""
     dut.inst.value = 0xFFFF_FFFF
     await settle()
-    assert int(dut.valid_encoding.value) == 0
+    assert int(dut.opcode_err.value) == 1
     assert int(dut.imm.value) == 0
-
-
-@cocotb_test(dut=SIM)
-async def test_invalid_funct3(dut: DecoderDut):
-    """addi 只接受 funct3=000。"""
-    dut.inst.value = _with_field(assemble("addi x1, x0, 8"), 14, 12, 1)
-    await settle()
-    assert int(dut.valid_encoding.value) == 0
-
-
-@cocotb_test(dut=SIM)
-async def test_invalid_funct3_matrix(dut: DecoderDut):
-    """LOAD/STORE/BRANCH/JALR 的非法 funct3 都必须拒绝。"""
-    cases = [
-        _with_field(assemble("lw x1, 0(x0)"), 14, 12, 1),  # lh
-        _with_field(assemble("sw x1, 0(x0)"), 14, 12, 1),  # sh
-        _with_field(assemble("beq x0, x1, 0"), 14, 12, 1),  # bne
-        _with_field(assemble("jalr x1, 0(x0)"), 14, 12, 1),  # 非法 jalr
-        _with_field(assemble("add x1, x0, x1"), 14, 12, 1),
-    ]
-    for instruction in cases:
-        dut.inst.value = instruction
-        await settle()
-        assert int(dut.valid_encoding.value) == 0, f"不应接受 {instruction:#010x}"

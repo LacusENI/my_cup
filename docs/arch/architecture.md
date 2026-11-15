@@ -20,10 +20,11 @@
 - `pc` 复位向量为 `0x0000_0000`；IMEM / DMEM 基地址为 0，内部按字索引。
 - 复位沿由 `cpu_top` 门控写使能，不会提交寄存器写或存储写。
 
-当前实现的是 **RV32I 子集 9 条指令**：
+当前实现的是 **RV32I 子集 12 条指令**：
 
 ```text
-add, addi, lui, auipc, beq, lw, sw, jal, jalr
+add, addi, lui, auipc, beq, lw, sw, jal, jalr,
+fence, ecall, ebreak
 ```
 
 尚未实现逻辑/移位/比较、子字访存、其他分支、trap/CSR 和流水线。
@@ -46,8 +47,8 @@ add, addi, lui, auipc, beq, lw, sw, jal, jalr
 | `pc`      | `pc.sv`      | 程序计数器；`rst` 清零，`stall` 保持，否则每沿写入 `next_pc` |
 | `npc`     | `npc.sv`     | 计算 `next_pc`，处理分支跳转 |
 | `instm`  | `instm.sv`  | 指令存储器（IMEM），组合读 |
-| `decoder` | `decoder.sv` | RV32I 字段切分、内部 `imm_gen` 函数、`valid_encoding` |
-| `ctrl`    | `ctrl.sv`    | 当前指令控制表、译码级 `halt` / `halt_cause` |
+| `decoder` | `decoder.sv` | RV32I 字段切分、内部 `imm_gen`、`opcode_err` |
+| `ctrl`    | `ctrl.sv`    | 编码合法性检查（`opcode_err` 快速非法）、控制表、译码级 `halt` / `halt_cause` |
 | `regfile` | `regfile.sv` | 32×32 寄存器堆；`x0` 恒 0；上升沿写 |
 | `alu`     | `alu.sv`     | `ADD` / `EQ` / `NOP`，输出 `alu_out` 和 `cmp_result` |
 | `datam`   | `datam.sv`   | 数据存储器（DMEM），整字访问，组合读/上升沿写 |
@@ -154,7 +155,7 @@ uv run mycup clean
 
 ## 8. 当前限制
 
-1. 当前实现 RV32I 9 条指令；未实现指令使 `halt=1`、`halt_cause=HALT_ILLEGAL_INST` 并保持 PC。
+1. 当前实现 RV32I 12 条指令；未实现指令使 `halt=1`、`halt_cause=HALT_ILLEGAL_INST` 并保持 PC。
 2. 单周期关键路径较长；流水线尚未实现，计划在后续版本再议。
 3. `datam` 只支持整字访问，没有字节掩码/子字访存。
 4. 地址对齐用仿真断言检查（`datam` / `instm` / `npc`），本批不 trap。

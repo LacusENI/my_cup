@@ -1,6 +1,8 @@
 # 控制信号真值表（当前实现）
 
-当前控制表由 `rtl/control/ctrl.sv` 产生；`valid_encoding` 来自 decoder。
+当前控制表由 `rtl/control/ctrl.sv` 产生。decoder 只负责字段切分和立即数格式，
+并输出 `opcode_err`；ctrl 在 `opcode_err=1` 时直接进入非法停机，不再检查其他字段。
+对于已知 opcode，完整编码合法性（funct3/funct7/rd/rs1/funct12）由 ctrl 检查。
 
 | inst | opcode | funct3 | funct7 | npc_op | src2_sel | reg_write | wb_sel | alu_op | mem_read | mem_write |
 | :---: | :----: | :----: | :----: | :----: | :------: | :-------: | :----: | :----: | :------: | :-------: |
@@ -14,6 +16,18 @@
 | lui   | 0110111 |  x  | x | plus4  | imm | 1 | imm      | nop | 0 | 0 |
 | auipc | 0010111 |  x  | x | plus4  | imm | 1 | pc_plus_imm | nop | 0 | 0 |
 | illegal | 其他 | 其他 | 其他 | plus4 | rs2 | 0 | alu_out | nop | 0 | 0 |
+
+## FENCE / SYSTEM
+
+| inst | opcode | funct3 | funct12 | halt | halt_cause | 行为 |
+| :---: | :----: | :----: | :----: | :--: | :--: | :-- |
+| fence | 0001111 | 000 | x | 0 | - | NOP，PC+4 |
+| ecall | 1110011 | 000 | 000 | 1 | 11 (`HALT_ECALL`) | 停机，PC 保持 |
+| ebreak | 1110011 | 000 | 001 | 1 | 3 (`HALT_EBREAK`) | 停机，PC 保持 |
+| 非法 SYSTEM | 1110011 | 000 | 其他 | 1 | 2 (`HALT_ILLEGAL_INST`) | 停机 |
+
+`fence` 要求 `rd=0`、`rs1=0`；`fence.i`（funct3=001）当前不实现。
+`PAUSE` 是 `fence w, 0` 的 FENCE hint，按 NOP 处理。
 
 非法指令：
 

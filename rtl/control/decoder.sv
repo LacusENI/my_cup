@@ -6,18 +6,19 @@ module decoder
     input  word_t inst,
     output inst_t decoded,
     output word_t imm,
-    output logic  valid_encoding
+    output logic  opcode_err
 );
 
     // ----------------------------------------------------------------------- //
     // 字段切分
     // ----------------------------------------------------------------------- //
-    assign decoded.funct7 = inst[31:25];
-    assign decoded.rs2    = inst[24:20];
-    assign decoded.rs1    = inst[19:15];
-    assign decoded.funct3 = inst[14:12];
-    assign decoded.rd     = inst[11:7];
-    assign decoded.opcode = inst[6:0];
+    assign decoded.funct12 = inst[31:20];
+    assign decoded.funct7  = inst[31:25];
+    assign decoded.rs2     = inst[24:20];
+    assign decoded.rs1     = inst[19:15];
+    assign decoded.funct3  = inst[14:12];
+    assign decoded.rd      = inst[11:7];
+    assign decoded.opcode  = inst[6:0];
 
     // ----------------------------------------------------------------------- //
     // 立即数生成：纯组合函数
@@ -48,6 +49,7 @@ module decoder
             OP_BRANCH: return imm_b({i[31], i[7], i[30:25], i[11:8], 1'b0});
             OP_JAL: return imm_j({i[31], i[19:12], i[20], i[30:21], 1'b0});
             OP_LUI, OP_AUIPC: return {i[31:12], {12{1'b0}}};
+            OP_SYSTEM: return imm_i(i[31:20]);
             default: return '0;
         endcase
     endfunction
@@ -55,23 +57,18 @@ module decoder
     assign imm = imm_gen(inst);
 
     // ----------------------------------------------------------------------- //
-    // 合法编码判断
+    // opcode 合法性
     //
-    // 只接受当前已实现的指令。任何未实现/非法 opcode、funct3、funct7
-    // 都输出 0，后续由 ctrl 统一转成 halt 并停止执行。
+    // decoder 只判断“是否认识这个 opcode”，用于说明 imm 是否可信。
+    // funct3/funct7/rd/rs1/funct12 的完整合法性由 ctrl 统一检查。
     // ----------------------------------------------------------------------- //
     always_comb begin
-        valid_encoding = 1'b1;
         unique case (decoded.opcode)
-            OP_R:      valid_encoding = (decoded.funct3 == F3_ADD) && (decoded.funct7 == F7_ADD);
-            OP_IMM:    valid_encoding = (decoded.funct3 == F3_ADD);
-            OP_LOAD:   valid_encoding = (decoded.funct3 == F3_LW);
-            OP_STORE:  valid_encoding = (decoded.funct3 == F3_SW);
-            OP_BRANCH: valid_encoding = (decoded.funct3 == F3_BEQ);
-            OP_JALR:   valid_encoding = (decoded.funct3 == F3_JALR);
-            OP_JAL:    valid_encoding = 1'b1;
-            OP_LUI, OP_AUIPC: valid_encoding = 1'b1;
-            default:   valid_encoding = 1'b0;
+            OP_R, OP_IMM, OP_LOAD, OP_STORE, OP_BRANCH,
+            OP_JALR, OP_JAL, OP_LUI, OP_AUIPC,
+            OP_MISC_MEM, OP_SYSTEM:
+            opcode_err = 1'b0;
+            default: opcode_err = 1'b1;
         endcase
     end
 

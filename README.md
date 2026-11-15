@@ -15,10 +15,10 @@
 | 当前基线 | `v0.3-rv32i`（RV32I 最小子集，过渡版） |
 | 下一目标 | `v0.4.0`（完整 RV32I 单周期，见 [`docs/version/v0.4.0/plan.md`](docs/version/v0.4.0/plan.md)） |
 | 微架构 | 单周期（组合数据通路 + 时序状态） |
-| 指令集 | RV32I 子集（9 条） |
+| 指令集 | RV32I 子集（12 条） |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
-| 测试 | 90 个 cocotb/pytest 用例 |
+| 测试 | 99 个 cocotb/pytest 用例 |
 | CI | GitHub Actions：`code-gen-check` + `mycup lint` + `mycup test` |
 
 ### 已支持指令
@@ -30,9 +30,10 @@
 | U 型 | `lui` `auipc` |
 | 访存 | `lw` `sw` |
 | 分支/跳转 | `beq` `jal` `jalr` |
+| SYSTEM | `fence` `ecall` `ebreak` |
 
-> `sub`、逻辑/移位/比较、子字访存 `lb/lh/sb/sh`、其他分支和
-> `fence/ecall/ebreak` 属于 `v0.4.0`，详见
+> `sub`、逻辑/移位/比较、子字访存 `lb/lh/sb/sh` 和其他分支
+> 属于 `v0.4.0`，详见
 > [`docs/version/v0.4.0/plan.md`](docs/version/v0.4.0/plan.md)。
 
 > 伪指令由汇编器展开：`j -> jal x0`、`jr -> jalr x0`、`ret -> jalr x0, 0(ra)`、`nop -> addi x0, x0, 0`。
@@ -54,7 +55,7 @@ my_cup/
 │   ├── control/              # 控制 / 取指 / 分支
 │   │   ├── pc.sv
 │   │   ├── npc.sv
-│   │   ├── decoder.sv        # 字段 + imm_gen 函数 + valid_encoding
+│   │   ├── decoder.sv        # 字段 + imm_gen 函数 + opcode_err
 │   │   └── ctrl.sv
 │   ├── datapath/             # 数据通路
 │   │   ├── alu.sv

@@ -61,7 +61,7 @@
         <mxCell id="e_dec_imm" value="inst" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="decoder" target="imm">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_dec_ctrl" value="opcode / funct3 / funct7&#10;valid_encoding" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="decoder" target="ctrl">
+        <mxCell id="e_dec_ctrl" value="opcode / funct3 / funct7&#10;rd / rs1 / funct12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="decoder" target="ctrl">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e_rf_alu" value="rs1_data / rs2_data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="rf" target="alu">

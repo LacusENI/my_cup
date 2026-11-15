@@ -28,8 +28,8 @@ tests/
 │   ├── ctrl_probe.sv    # test-only：把 ctrl_t 摊平给 cocotb
 │   └── decoder_probe.sv # test-only：把 inst_t 摊平给 cocotb
 ├── control/
-│   ├── test_decoder.py  # decoder 字段 / 立即数 / 合法编码
-│   ├── test_ctrl.py     # ctrl 控制表 / 非法指令
+│   ├── test_decoder.py  # decoder 字段 / 立即数 / opcode_err
+│   ├── test_ctrl.py     # ctrl 合法编码 / 控制表 / halt
 │   ├── test_npc.py      # npc 分支 / 跳转
 │   └── test_pc.py       # pc 更新 / 复位 / stall
 ├── datapath/
@@ -103,18 +103,18 @@ cocotb 再执行原来的 async 函数。详细注释见
 
 | 测试文件 | 覆盖内容 | 用例数 |
 | :-- | :-- | :-- |
-| `control/test_decoder.py` | RV32I 字段切分、I/S/B/J/U 立即数、非法编码 | 11 |
-| `control/test_ctrl.py` | 9 条指令控制表、非法指令安全控制 | 11 |
+| `control/test_decoder.py` | RV32I 字段切分、I/S/B/J/U 立即数、opcode_err | 8 |
+| `control/test_ctrl.py` | 12 条指令控制表、合法编码、fence/ecall/ebreak | 18 |
 | `control/test_npc.py` | PLUS4 / BRANCH / JAL / JALR | 7 |
 | `control/test_pc.py` | PC 更新、复位、stall 保持 | 3 |
 | `datapath/test_alu.py` | ADD / EQ / NOP、32 位回绕 | 6 |
 | `datapath/test_regfile.py` | 读写、x0、双读端口、写禁用 | 5 |
 | `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
 | `utils/test_asm.py` | llvm-mc 封装、golden 和错误输入检查 | 20 |
-| `cpu/test_inst.py` | 9 条单指令 ISA + 复位写抑制 + 非法停止 + 契约 | 22 |
+| `cpu/test_inst.py` | 12 条单指令 ISA + SYSTEM/停机 + 契约 | 27 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **90 个用例**。
+合计 **99 个用例**。
 
 ## 怎么写一个新测试
 

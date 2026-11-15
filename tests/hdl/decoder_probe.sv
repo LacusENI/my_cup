@@ -17,8 +17,9 @@ module decoder_probe
     output reg_t    rs1,
     output reg_t    rs2,
     output funct7_t funct7,
+    output funct12_t funct12,
     output word_t   imm,
-    output logic    valid_encoding
+    output logic    opcode_err
 );
 
     inst_t decoded;
@@ -27,15 +28,16 @@ module decoder_probe
         .inst(inst),
         .decoded(decoded),
         .imm(imm),
-        .valid_encoding(valid_encoding)
+        .opcode_err(opcode_err)
     );
 
-    assign opcode = decoded.opcode;
-    assign rd     = decoded.rd;
-    assign funct3 = decoded.funct3;
-    assign rs1    = decoded.rs1;
-    assign rs2    = decoded.rs2;
-    assign funct7 = decoded.funct7;
+    assign opcode  = decoded.opcode;
+    assign rd      = decoded.rd;
+    assign funct3  = decoded.funct3;
+    assign rs1     = decoded.rs1;
+    assign rs2     = decoded.rs2;
+    assign funct7  = decoded.funct7;
+    assign funct12 = decoded.funct12;
 
 endmodule
 
