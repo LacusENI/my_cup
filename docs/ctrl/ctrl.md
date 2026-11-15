@@ -18,13 +18,17 @@
 非法指令：
 
 ```text
-inst_illegal = 1
-reg_write    = 0
-mem_read     = 0
-mem_write    = 0
-alu_op       = ALU_NOP
-npc_op       = NPC_PLUS4   // NPC 内部用 inst_illegal 覆盖为 hold
+halt       = 1
+halt_cause = HALT_ILLEGAL_INST (2)
+reg_write  = 0
+mem_read   = 0
+mem_write  = 0
+alu_op     = ALU_NOP
+npc_op     = NPC_PLUS4   // 停机时由 pc.stall 保持 PC
 ```
+
+`halt` 是译码级有效位；`halt_cause` 只在 `halt=1` 时解释。
+后续地址错误等非译码来源会在 `cpu_top` 中汇总并覆盖最终 `halt_cause`。
 
 > MIPS 版本的控制表已随 `v0.3-mips` 归档；当前实现契约见
 > [`docs/units/`](../units/) 与本文。

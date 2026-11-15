@@ -15,6 +15,7 @@ from utils.cpu_pkg import (
     ALU_ADD,
     ALU_EQ,
     ALU_NOP,
+    HALT_ILLEGAL_INST,
     NPC_BRANCH,
     NPC_JAL,
     NPC_JALR,
@@ -45,7 +46,8 @@ class CtrlDut(Protocol):
     mem_write: Signal
     wb_sel: Signal
     src2_sel: Signal
-    inst_illegal: Signal
+    halt: Signal
+    halt_cause: Signal
 
 
 REQUIRED_FIELDS = (
@@ -60,7 +62,8 @@ REQUIRED_FIELDS = (
     "mem_write",
     "wb_sel",
     "src2_sel",
-    "inst_illegal",
+    "halt",
+    "halt_cause",
 )
 
 
@@ -103,7 +106,7 @@ async def test_add_control(dut: CtrlDut):
     assert int(dut.npc_op.value) == NPC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.inst_illegal.value) == 0
+    assert int(dut.halt.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -116,7 +119,7 @@ async def test_addi_control(dut: CtrlDut):
     assert int(dut.src2_sel.value) == SRC2_SEL_IMM
     assert int(dut.wb_sel.value) == WB_SEL_ALU_OUT
     assert int(dut.npc_op.value) == NPC_PLUS4
-    assert int(dut.inst_illegal.value) == 0
+    assert int(dut.halt.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -130,7 +133,7 @@ async def test_beq_control(dut: CtrlDut):
     assert int(dut.reg_write.value) == 0
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.inst_illegal.value) == 0
+    assert int(dut.halt.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -199,7 +202,7 @@ async def test_lui_control(dut: CtrlDut):
     assert int(dut.npc_op.value) == NPC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.inst_illegal.value) == 0
+    assert int(dut.halt.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -214,15 +217,16 @@ async def test_auipc_control(dut: CtrlDut):
     assert int(dut.npc_op.value) == NPC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.inst_illegal.value) == 0
+    assert int(dut.halt.value) == 0
 
 
 @cocotb_test(dut=SIM)
 async def test_illegal_control(dut: CtrlDut):
-    """非法编码：inst_illegal=1，不写寄存器/内存，ALU/NPC 安全默认。"""
+    """非法编码：halt=1、cause=2，不写寄存器/内存，ALU/NPC 安全默认。"""
     await drive(dut, opcode=0, funct3=0, valid=0)
 
-    assert int(dut.inst_illegal.value) == 1
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
     assert int(dut.reg_write.value) == 0
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0

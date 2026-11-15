@@ -7,7 +7,7 @@ cocotb 用例和 pytest 入口在同一个文件里，由 ``@cocotb_test`` 连�
   - PC（下一条指令地址）
   - 通用寄存器
   - 数据内存
-  - inst_illegal
+  - halt / halt_cause
 
 不读内部数据通路信号，也不依赖实现细节。
 分支/跳转只断言 PC，不执行目标指令。
@@ -35,6 +35,7 @@ from utils.cocotb_utils import (
     write_mem,
     write_reg,
 )
+from utils.cpu_pkg import HALT_ILLEGAL_INST
 
 
 # conftest.py 里的 session fixture 名。
@@ -44,13 +45,15 @@ SIM = "cpu_sim"
 class CpuTop(CpuAccess, Protocol):
     """cpu_top 供 ISA 测试使用的字段。"""
 
-    inst_illegal: Signal
+    halt: Signal
+    halt_cause: Signal
 
 
 CPU_TOP_FIELDS = (
     "clk",
     "rst",
-    "inst_illegal",
+    "halt",
+    "halt_cause",
     "u_pc.curr_pc",
     "u_pc.next_pc",
     "u_regfile.regs",
@@ -61,7 +64,7 @@ CPU_TOP_FIELDS = (
 
 @cocotb_test(dut=SIM)
 async def test_contract(dut: CpuTop):
-    """契约：cpu_top 暴露测试依赖的架构状态和 inst_illegal。"""
+    """契约：cpu_top 暴露测试依赖的架构状态和 halt。"""
     assert_fields(dut, CPU_TOP_FIELDS, "cpu_top")
 
 
@@ -366,8 +369,8 @@ async def test_reset_write_suppression(dut: CpuTop):
 # 非法指令
 # --------------------------------------------------------------------------- #
 @cocotb_test(dut=SIM)
-async def test_illegal_stop(dut: CpuTop):
-    """非法编码：PC 保持，寄存器/内存都不改变。"""
+async def test_illegal_halt(dut: CpuTop):
+    """非法编码：halt=1、cause=2，PC 保持，寄存器/内存都不改变。"""
     # sub x3, x1, x2 的 funct7=0x20；当前只实现 add。
     illegal = 0x4020_81B3
     await run_one_instruction(
@@ -377,7 +380,8 @@ async def test_illegal_stop(dut: CpuTop):
         memory={0: 0xDEAD_BEEF},
     )
 
-    assert int(dut.inst_illegal.value) == 1
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
     assert read_pc(dut) == 0
     assert read_reg(dut, 3) == 0x1234_5678
     assert read_mem(dut, 0) == 0xDEAD_BEEF

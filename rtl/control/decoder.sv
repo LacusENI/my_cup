@@ -58,7 +58,7 @@ module decoder
     // 合法编码判断
     //
     // 只接受当前已实现的指令。任何未实现/非法 opcode、funct3、funct7
-    // 都输出 0，后续由 ctrl 统一转成 inst_illegal 并停止执行。
+    // 都输出 0，后续由 ctrl 统一转成 halt 并停止执行。
     // ----------------------------------------------------------------------- //
     always_comb begin
         valid_encoding = 1'b1;

@@ -1,11 +1,13 @@
 `default_nettype none
 
-module cpu_top (
-    input  logic clk,
-    input  logic rst,
-    output logic inst_illegal
-);
+module cpu_top
     import cpu_pkg::*;
+(
+    input  logic        clk,
+    input  logic        rst,
+    output logic        halt,
+    output halt_cause_t halt_cause
+);
 
     word_t inst_addr;
     word_t inst;
@@ -25,7 +27,7 @@ module cpu_top (
     logic cmp_result;
     logic branch_taken;
 
-    // 复位沿不提交写操作；halt 之前先由 ctrl.inst_illegal 临时驱动 PC stall。
+    // 复位沿不提交写操作；halt 时停止 PC 和所有写操作。
     logic reg_write_en, mem_write_en, mem_read_en;
     logic pc_stall;
 
@@ -102,13 +104,14 @@ module cpu_top (
         .ctrl(ctrl)
     );
 
-    assign reg_write_en = ctrl.reg_write && !rst;
-    assign mem_write_en = ctrl.mem_write && !rst;
-    assign mem_read_en  = ctrl.mem_read;
-    assign pc_stall     = ctrl.inst_illegal;
+    assign halt         = ctrl.halt;
+    assign halt_cause   = ctrl.halt_cause;
+    assign pc_stall     = halt;
+    assign reg_write_en = ctrl.reg_write && !rst && !halt;
+    assign mem_write_en = ctrl.mem_write && !rst && !halt;
+    assign mem_read_en  = ctrl.mem_read && !halt;
 
     assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
-    assign inst_illegal = ctrl.inst_illegal;
     assign inst_addr = curr_pc;
 
     assign alu_src1 = rs1_data;

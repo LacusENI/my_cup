@@ -25,7 +25,7 @@
           <mxGeometry x="370" y="120" width="150" height="70" as="geometry" />
         </mxCell>
 
-        <mxCell id="ctrl" value="ctrl&#10;+ inst_illegal" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+        <mxCell id="ctrl" value="ctrl&#10;+ halt / halt_cause" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
           <mxGeometry x="370" y="470" width="150" height="110" as="geometry" />
         </mxCell>
 
@@ -73,13 +73,13 @@
         <mxCell id="e_ctrl_alu" value="alu_op" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="alu">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_ctrl_rf" value="reg_write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="rf">
+        <mxCell id="e_ctrl_rf" value="reg_write_en" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="rf">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_ctrl_dmem" value="mem_read / mem_write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="dmem">
+        <mxCell id="e_ctrl_dmem" value="mem_read_en / mem_write_en" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="dmem">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_ctrl_npc" value="npc_op / inst_illegal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="npc">
+        <mxCell id="e_ctrl_npc" value="npc_op" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="npc">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e_ctrl_wb" value="wb_sel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ctrl" target="wb">

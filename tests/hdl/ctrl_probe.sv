@@ -20,9 +20,10 @@ module ctrl_probe
     output alu_op_t    alu_op,
     output logic       mem_read,
     output logic       mem_write,
-    output wb_sel_t    wb_sel,
-    output src2_sel_t  src2_sel,
-    output logic       inst_illegal
+    output wb_sel_t     wb_sel,
+    output src2_sel_t   src2_sel,
+    output logic        halt,
+    output halt_cause_t halt_cause
 );
 
     ctrl_t c;
@@ -43,7 +44,8 @@ module ctrl_probe
     assign mem_write    = c.mem_write;
     assign wb_sel       = c.wb_sel;
     assign src2_sel     = c.src2_sel;
-    assign inst_illegal = c.inst_illegal;
+    assign halt         = c.halt;
+    assign halt_cause   = c.halt_cause;
 
 endmodule
 

@@ -59,6 +59,17 @@ package cpu_pkg;
         SRC2_SEL_IMM = 1'b1
     } src2_sel_t;
 
+    // ---- 停机原因 ----
+    // halt=0 时 halt_cause 无意义；不为“未停机”定义额外哨兵值。
+    typedef enum logic [3:0] {
+        HALT_INST_ADDR_ERR  = 4'd0,
+        HALT_ILLEGAL_INST   = 4'd2,
+        HALT_EBREAK         = 4'd3,
+        HALT_LOAD_ADDR_ERR  = 4'd4,
+        HALT_STORE_ADDR_ERR = 4'd6,
+        HALT_ECALL          = 4'd11
+    } halt_cause_t;
+
     // ---- RV32I opcode / funct3 / funct7 ----
     localparam opcode_t OP_LOAD   = 7'b0000011;
     localparam opcode_t OP_IMM    = 7'b0010011;
@@ -91,14 +102,15 @@ package cpu_pkg;
 
     // ---- 控制信号打包 ----
     typedef struct packed {
-        npc_op_t   npc_op;
-        logic      reg_write;
-        alu_op_t   alu_op;
-        logic      mem_read;
-        logic      mem_write;
-        wb_sel_t   wb_sel;
-        src2_sel_t src2_sel;
-        logic      inst_illegal;
+        npc_op_t     npc_op;
+        logic        reg_write;
+        alu_op_t     alu_op;
+        logic        mem_read;
+        logic        mem_write;
+        wb_sel_t     wb_sel;
+        src2_sel_t   src2_sel;
+        logic        halt;
+        halt_cause_t halt_cause;
     } ctrl_t;
 
 endpackage

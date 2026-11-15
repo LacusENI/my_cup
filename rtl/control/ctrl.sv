@@ -16,7 +16,7 @@ module ctrl
     assign unused_funct = &{1'b0, funct3, funct7};
 
     // 先给所有控制信号一个安全默认值，再按 opcode 覆盖。
-    // 非法指令保持这些默认值，同时把 inst_illegal 置 1。
+    // 非法指令保持这些默认值，同时进入 halt 状态。
     always_comb begin
         ctrl.npc_op       = NPC_PLUS4;
         ctrl.reg_write    = 1'b0;
@@ -25,7 +25,8 @@ module ctrl
         ctrl.mem_write    = 1'b0;
         ctrl.wb_sel       = WB_SEL_ALU_OUT;
         ctrl.src2_sel     = SRC2_SEL_RS2;
-        ctrl.inst_illegal = !valid_encoding;
+        ctrl.halt         = !valid_encoding;
+        ctrl.halt_cause   = HALT_ILLEGAL_INST;
 
         if (valid_encoding) begin
             unique case (opcode)

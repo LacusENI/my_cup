@@ -20,7 +20,7 @@ fence / ecall / ebreak
 
 ## 2. 批次
 
-### M1 · U 型指令
+### M1 · U 型指令 (版本号 `0.4.0a1`)
 
 - [x] `lui`：增加 `WB_SEL_IMM`，立即数直接进入写回通路
 - [x] `auipc`：`pc + imm` 走 npc 模块
@@ -29,14 +29,14 @@ fence / ecall / ebreak
 - [x] ctrl：增加 `lui` / `auipc` 控制项
 - [x] 更新汇编器、单指令测试、`docs/units/`
 
-### M2 · SYSTEM / 停机语义
+### M2 · SYSTEM / 停机语义 (版本号 `0.4.0a2`)
 
 - [ ] `fence`：当前内存模型下等效 `nop`
 - [ ] `ecall` / `ebreak`：当前无特权架构下仅停机
-- [ ] `cpu_top` 将 `inst_illegal` 替换为 `halt` + `halt_cause`
-- [ ] `halt == 0` 表示未停机，`halt_cause` 只在 `halt == 1` 时有效
-- [ ] 不使用 `HALT_NONE`
-- [ ] `halt_cause` 异常码对齐 `mcause`：
+- [x] `cpu_top` 将 `inst_illegal` 替换为 `halt` + `halt_cause`
+- [x] `halt == 0` 表示未停机，`halt_cause` 只在 `halt == 1` 时有效
+- [x] 不使用 `HALT_NONE`
+- [x] `halt_cause` 异常码对齐 `mcause`：
 
   ```text
   HALT_INST_ADDR_ERR  = 4'd0
@@ -118,7 +118,7 @@ fence / ecall / ebreak
 
 | 风险 | 应对 |
 | :-- | :-- |
-| `halt` 替换 `inst_illegal` 波及大量测试 | M2 单独提交，先迁移接口 |
+| `halt` 替换旧非法信号波及大量测试 | M2 单独提交，先迁移接口 |
 | `wstrb` / 端序 / 符号扩展出错 | M5 单独分支，先做 datam 单测 |
 | BRU 与 NPC 重构混淆 target/link | 先单指令验证，再接后续结构 |
 | 分支集合扩大 | BRU 统一 target，ALU 负责比较 |

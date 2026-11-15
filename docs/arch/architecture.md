@@ -42,12 +42,12 @@ add, addi, lui, auipc, beq, lw, sw, jal, jalr
 
 | 模块      | 文件         | 职责 |
 | :-------- | :----------- | :------------ |
-| `cpu_top` | `cpu_top.sv` | 顶层：实例化、连线、写回 MUX，输出 `inst_illegal` |
-| `pc`      | `pc.sv`      | 程序计数器；`rst` 清零，否则每沿写入 `next_pc` |
+| `cpu_top` | `cpu_top.sv` | 顶层：实例化、连线、写回 MUX，输出 `halt` / `halt_cause` |
+| `pc`      | `pc.sv`      | 程序计数器；`rst` 清零，`stall` 保持，否则每沿写入 `next_pc` |
 | `npc`     | `npc.sv`     | 计算 `next_pc`，处理分支跳转 |
 | `instm`  | `instm.sv`  | 指令存储器（IMEM），组合读 |
 | `decoder` | `decoder.sv` | RV32I 字段切分、内部 `imm_gen` 函数、`valid_encoding` |
-| `ctrl`    | `ctrl.sv`    | 当前指令控制表、`inst_illegal`、非法时安全控制 |
+| `ctrl`    | `ctrl.sv`    | 当前指令控制表、译码级 `halt` / `halt_cause` |
 | `regfile` | `regfile.sv` | 32×32 寄存器堆；`x0` 恒 0；上升沿写 |
 | `alu`     | `alu.sv`     | `ADD` / `EQ` / `NOP`，输出 `alu_out` 和 `cmp_result` |
 | `datam`   | `datam.sv`   | 数据存储器（DMEM），整字访问，组合读/上升沿写 |
@@ -70,7 +70,9 @@ add, addi, lui, auipc, beq, lw, sw, jal, jalr
 
 ```verilog
 assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
-assign inst_illegal = ctrl.inst_illegal;
+assign halt         = ctrl.halt;
+assign halt_cause   = ctrl.halt_cause;
+assign pc_stall     = halt;
 assign inst_addr   = curr_pc;
 assign alu_src1     = rs1_data;
 assign alu_src2     = (ctrl.src2_sel == SRC2_SEL_IMM) ? imm : rs2_data;
@@ -81,8 +83,10 @@ assign w_data       = rs2_data;
 `npc` 使用：
 
 ```text
-inst_pc / npc_op / branch_taken / pc_offset / jalr_target / inst_illegal
+inst_pc / npc_op / branch_taken / pc_offset / jalr_target
 ```
+
+停机由 `pc.stall` 处理，NPC 不参与 halt 判断。
 
 `pc_offset` 已经是字节偏移；`jalr_target` 由 ALU 计算，NPC 只清 bit0。
 
@@ -99,9 +103,10 @@ inst_pc / npc_op / branch_taken / pc_offset / jalr_target / inst_illegal
 | `alu_op`    | `ADD` / `EQ` / `NOP` |
 | `mem_read`  | 是否读数据存储器    |
 | `mem_write` | 是否写数据存储器    |
-| `wb_sel`    | ALU / 内存 / PC+4   |
+| `wb_sel`    | ALU / 内存 / PC+4 / U 型立即数 / PC+imm |
 | `src2_sel`  | `rs2` / `imm`       |
-| `inst_illegal` | 当前编码是否非法 |
+| `halt`      | 译码级停机有效位    |
+| `halt_cause`| 停机原因；仅 `halt=1` 时有效 |
 
 控制表见 [`docs/ctrl/ctrl.md`](../ctrl/ctrl.md)。
 
@@ -149,7 +154,7 @@ uv run mycup clean
 
 ## 8. 当前限制
 
-1. 当前实现 RV32I 9 条指令；未实现指令统一 `inst_illegal` + stop。
+1. 当前实现 RV32I 9 条指令；未实现指令使 `halt=1`、`halt_cause=HALT_ILLEGAL_INST` 并保持 PC。
 2. 单周期关键路径较长；流水线尚未实现，计划在后续版本再议。
 3. `datam` 只支持整字访问，没有字节掩码/子字访存。
 4. 地址对齐用仿真断言检查（`datam` / `instm` / `npc`），本批不 trap。
