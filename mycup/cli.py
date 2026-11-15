@@ -5,14 +5,16 @@
     uv run mycup <command> [options]
 
 命令：
-    init     生成 .verilator/verilator.f 和 .slang/slang.f
-    code-gen 按 toolchain.toml 运行代码生成器
-    lint     Verilator 静态检查
-    test     运行 cocotb + pytest
-    prog     用指定 hex 程序运行指令级测试
-    fmt      用 verible-verilog-format 格式化 RTL
-    doctor   检查配置和必需工具
-    clean    清理生成物
+    init            生成 .verilator/verilator.f 和 .slang/slang.f
+    code-gen        按 toolchain.toml 运行代码生成器
+    build-programs  汇编 programs/**/*.S
+    asm             汇编单个 .S 程序
+    lint            Verilator 静态检查
+    test            运行 cocotb + pytest
+    prog            用 .S 或 .hex 程序运行指令级测试
+    fmt             用 verible-verilog-format 格式化 RTL
+    doctor          检查配置和必需工具
+    clean           清理生成物
 
 路径、工具和参数在项目根目录的 toolchain.toml 中配置。
 """
@@ -29,6 +31,7 @@ from pathlib import Path
 from typing import NoReturn
 
 from mycup.config import ConfigError, load
+from mycup.programs import build_all_programs, build_program
 
 ROOT_FALLBACK = Path.cwd()
 
@@ -165,6 +168,27 @@ def cmd_code_gen(args: argparse.Namespace) -> None:
             raise SystemExit(proc.returncode)
 
 
+def cmd_build_programs(_: argparse.Namespace) -> None:
+    """汇编 programs 目录下的所有 .S。"""
+    build_all_programs(CFG, root=ROOT)
+
+
+def cmd_asm(args: argparse.Namespace) -> None:
+    """汇编单个 .S 程序。"""
+    output = Path(args.output).resolve() if args.output else None
+    built = build_program(CFG, args.source, root=ROOT, output_hex=output)
+
+    def display(path: Path) -> str:
+        try:
+            return rel(path)
+        except ValueError:
+            return str(path)
+
+    print(f"Generated {display(built.hex)}")
+    print(f"  obj: {display(built.obj)}")
+    print(f"  bin: {display(built.bin)}")
+
+
 def cmd_lint(_: argparse.Namespace) -> None:
     """刷新文件清单，然后跑 Verilator 静态检查。"""
     ensure_dirs()
@@ -187,7 +211,8 @@ def cmd_lint(_: argparse.Namespace) -> None:
 
 
 def cmd_test(args: argparse.Namespace) -> None:
-    """运行 cocotb + pytest。"""
+    """先汇编程序，再运行 cocotb + pytest。"""
+    build_all_programs(CFG, root=ROOT)
     extra = list(args.pytest_args)
     if extra and extra[0] == "--":
         extra = extra[1:]
@@ -203,7 +228,15 @@ def cmd_prog(args: argparse.Namespace) -> None:
       MYCUP_DATA         数据存储器 hex 的绝对路径（可选）
       MYCUP_PROG_CYCLES  指令跑完后等待的周期数
     """
-    program = Path(args.hex).resolve()
+    requested = Path(args.hex).resolve()
+    if requested.suffix.lower() == ".s":
+        built = build_program(CFG, requested, root=ROOT)
+        program = built.hex
+    elif requested.suffix.lower() == ".hex":
+        program = requested
+    else:
+        fail(f"只支持 .S 或 .hex 程序: {requested}")
+
     if not program.is_file():
         fail(f"program not found: {program}")
 
@@ -310,14 +343,23 @@ def make_parser() -> argparse.ArgumentParser:
     )
     p_codegen.set_defaults(func=cmd_code_gen)
 
+    sub.add_parser(
+        "build-programs", help="汇编 programs/**/*.S"
+    ).set_defaults(func=cmd_build_programs)
+
+    p_asm = sub.add_parser("asm", help="汇编单个 .S 程序")
+    p_asm.add_argument("source", help="汇编源文件，例如 programs/demo.S")
+    p_asm.add_argument("-o", "--output", help="输出 hex 路径")
+    p_asm.set_defaults(func=cmd_asm)
+
     sub.add_parser("lint", help="运行 Verilator lint").set_defaults(func=cmd_lint)
 
     p_test = sub.add_parser("test", help="运行 cocotb + pytest")
     p_test.add_argument("pytest_args", nargs=argparse.REMAINDER)
     p_test.set_defaults(func=cmd_test)
 
-    p_prog = sub.add_parser("prog", help="用 hex 程序运行指令级测试")
-    p_prog.add_argument("hex", help="指令存储器 hex 文件")
+    p_prog = sub.add_parser("prog", help="用 .S 或 .hex 程序运行指令级测试")
+    p_prog.add_argument("hex", help="程序源文件 .S 或 hex 文件")
     p_prog.add_argument("--data", help="数据存储器 hex 文件（可选）")
     p_prog.add_argument(
         "--cycles", type=int, default=8, help="程序跑完后等待的周期数（默认 8）"

@@ -12,7 +12,7 @@
 
 | 项 | 状态 |
 | :-- | :-- |
-| 当前基线 | `v0.3-rv32i`（RV32I 最小子集，过渡版） |
+| 当前基线 | `v0.4.0a2`（RV32I M2 SYSTEM / 停机语义） |
 | 下一目标 | `v0.4.0`（完整 RV32I 单周期，见 [`docs/version/v0.4.0/plan.md`](docs/version/v0.4.0/plan.md)） |
 | 微架构 | 单周期（组合数据通路 + 时序状态） |
 | 指令集 | RV32I 子集（12 条） |
@@ -45,8 +45,9 @@
 ```
 my_cup/
 ├── mycup/                # Python 工具链
-│   ├── cli.py                # mycup init / code-gen / lint / test / prog / fmt / doctor / clean
-│   └── config.py             # 读取 toolchain.toml
+│   ├── cli.py                # mycup init / code-gen / build-programs / asm / lint / test / prog / fmt / doctor / clean
+│   ├── config.py             # 读取 toolchain.toml
+│   └── programs.py           # .S -> .o/.bin/.hex 与程序表
 ├── scripts/              # 代码生成与维护脚本
 │   └── gen_pkg_consts.py     # 从 rtl/cpu_pkg.sv 生成测试常量
 ├── rtl/                  # 可综合的 RTL 源码
@@ -83,8 +84,8 @@ my_cup/
 ├── .slang/slang.f        # slang-server 文件清单（mycup init 生成）
 ├── .slang/server.json    # slang-server 工程配置
 ├── .vscode/settings.json # slang-server + verible 编辑器配置
-├── programs/             # 仿真用机器码程序 (*.hex) 与用法说明
-├── build/                # cocotb 构建产物
+├── programs/             # 汇编程序源文件 (*.S) 与用法说明
+├── build/                # cocotb 构建产物；build/programs/ 保存 .o/.bin/.hex
 ├── waves/                # 生成的波形
 └── logs/                 # lint 日志
 ```
@@ -93,22 +94,26 @@ my_cup/
 
 ## 快速开始
 
-依赖：`iverilog` / `vvp` / `verilator` / `llvm-mc` / `gtkwave`（可选，用于看波形）。
+依赖：`iverilog` / `vvp` / `verilator` / `llvm-mc` / `llvm-objcopy` / `gtkwave`（可选，用于看波形）。
 
 ```bash
 uv sync                              # 首次：创建 .venv
 
-uv run mycup test                    # 运行全部测试用例
+uv run mycup test                    # 先汇编程序，再运行全部测试
 uv run mycup lint                    # Verilator 静态检查
-uv run mycup prog programs/demo.hex  # 装载 RV32I hex 程序
+uv run mycup prog programs/demo.S    # 汇编并运行 RV32I 程序
 uv run mycup clean                   # 清理 build/ waves/ logs/ .verilator/ 等
 
+make programs                        # 汇编 programs/**/*.S
 make code-gen                        # 按 toolchain.toml 运行代码生成器
 
 uv run pytest -v tests/cpu/test_inst.py               # 单个文件
 uv run pytest -v tests/cpu/test_inst.py::test_add    # 单个用例
 MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_inst.py # 导出波形
 ```
+
+> 直接运行 `pytest` 时，请先执行 `make programs` 或 `mycup build-programs`；
+> `mycup test` 会自动完成这一步。
 
 > 验证说明：
 > - `tests/<category>/test_*.py` 同时包含 cocotb 测试和 pytest 入口；

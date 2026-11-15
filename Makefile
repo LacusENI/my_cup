@@ -3,12 +3,14 @@ UV ?= uv
 MYCUP := $(UV) run mycup
 CYCLES ?= 8
 
-.PHONY: help init code-gen code-gen-check lint test check fmt prog doctor clean
+.PHONY: help init code-gen code-gen-check programs asm lint test check fmt prog doctor clean
 
 help:
 	@echo "make init                生成 .verilator/verilator.f 和 .slang/slang.f"
 	@echo "make code-gen            按 toolchain.toml 运行代码生成器"
 	@echo "make code-gen-check      检查生成文件是否最新"
+	@echo "make programs            汇编 programs/**/*.S"
+	@echo "make asm FILE=<.S>       汇编单个程序"
 	@echo "make lint                Verilator 静态检查"
 	@echo "make test                运行 cocotb + pytest"
 	@echo "make check               lint + test"
@@ -26,6 +28,13 @@ code-gen:
 code-gen-check:
 	$(MYCUP) code-gen --check
 
+programs:
+	$(MYCUP) build-programs
+
+asm:
+	@test -n "$(FILE)" || { echo "usage: make asm FILE=programs/demo.S" >&2; exit 1; }
+	$(MYCUP) asm "$(FILE)"
+
 lint:
 	$(MYCUP) lint
 
@@ -38,7 +47,7 @@ fmt:
 	$(MYCUP) fmt
 
 prog:
-	@test -n "$(FILE)" || { echo "usage: make prog FILE=programs/demo.hex [DATA=...] [CYCLES=8]" >&2; exit 1; }
+	@test -n "$(FILE)" || { echo "usage: make prog FILE=programs/demo.S [DATA=...] [CYCLES=8]" >&2; exit 1; }
 	$(MYCUP) prog "$(FILE)" $(if $(DATA),--data "$(DATA)") --cycles "$(CYCLES)"
 
 doctor:

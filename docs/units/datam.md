@@ -36,5 +36,5 @@ output
 `datam` 内含 `initial` + `$readmemh`，可通过 vvp 的 plusarg 装载初始数据：
 
 ```bash
-uv run mycup prog programs/demo.hex --data programs/data.hex
+uv run mycup prog programs/demo.S --data programs/data.hex
 ```

@@ -9,11 +9,13 @@
 
 ```bash
 uv sync            # 首次：创建 .venv，安装 cocotb / pytest
-uv run mycup test  # 跑全部用例
-uv run pytest -v   # 同上（直接调 pytest）
+make programs      # 汇编 programs/**/*.S
+uv run mycup test  # 自动汇编程序并跑全部用例
+uv run pytest -v   # 直接调 pytest（需要先 make programs）
 ```
 
-依赖只追踪 Python 侧；`iverilog` / `verilator` / `llvm-mc` 仍是系统依赖。
+依赖只追踪 Python 侧；`iverilog` / `verilator` / `llvm-mc` / `llvm-objcopy`
+仍是系统依赖。
 
 ## 目录结构
 
@@ -316,7 +318,8 @@ uv run mycup test                                      # 全部
 uv run pytest -v tests/cpu/test_inst.py               # 单指令 ISA 测试
 uv run pytest -v tests/cpu/test_inst.py::test_add     # 单个用例
 uv run pytest -v tests/cpu/test_prog.py                # 程序装载测试
-uv run mycup prog programs/demo.hex                    # 跑 hex 程序
+make programs                                         # 汇编 programs/**/*.S
+uv run mycup prog programs/demo.S                     # 汇编并运行程序
 MYCUP_WAVES=1 uv run pytest -v tests/cpu/test_inst.py # 导出波形
 ```
 

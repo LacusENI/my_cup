@@ -44,6 +44,17 @@ class Codegen:
 
 
 @dataclass(frozen=True)
+class Assemble:
+    assembler: str
+    objcopy: str
+    triple: str
+    mattr: str
+    source_glob: str
+    output_dir: Path
+    table: Path
+
+
+@dataclass(frozen=True)
 class Lint:
     tool: str
     args: tuple[str, ...]
@@ -84,6 +95,7 @@ class Toolchain:
     name: str
     paths: Paths
     sources: Sources
+    assemble: Assemble
     codegen: tuple[Codegen, ...]
     lint: Lint
     slang: Slang
@@ -178,6 +190,19 @@ def load(root: Path) -> Toolchain:
         glob=_str(sources_table, "glob", "sources"),
     )
 
+    assemble_table = _section(data, "assemble")
+    assemble = Assemble(
+        assembler=_str(assemble_table, "assembler", "assemble"),
+        objcopy=_str(assemble_table, "objcopy", "assemble"),
+        triple=_str(assemble_table, "triple", "assemble"),
+        mattr=_str(assemble_table, "mattr", "assemble"),
+        source_glob=_str(assemble_table, "source_glob", "assemble"),
+        output_dir=_resolve(
+            root, _str(assemble_table, "output_dir", "assemble")
+        ),
+        table=_resolve(root, _str(assemble_table, "table", "assemble")),
+    )
+
     lint_table = _section(data, "lint")
     lint = Lint(
         tool=_str(lint_table, "tool", "lint"),
@@ -212,6 +237,7 @@ def load(root: Path) -> Toolchain:
         name=name,
         paths=paths,
         sources=sources,
+        assemble=assemble,
         codegen=_codegen(data, root),
         lint=lint,
         slang=slang,

@@ -9,7 +9,7 @@
 [project]
 # 项目名，仅用于显示和日志。
 name = "mycup"
-version = "0.4.0a2.dev1"
+version = "0.4.0a2"
 
 [paths]
 # 常用目录。mycup 会把相对路径解析到项目根目录下。
@@ -27,6 +27,17 @@ tests = "tests"
 package = "rtl/cpu_pkg.sv"
 # 参与 lint / 格式化的 RTL 文件范围。
 glob = "rtl/**/*.sv"
+
+[assemble]
+# 程序源文件是接口；.o/.bin/.hex 是 build/ 下的中间产物。
+assembler = "llvm-mc"
+objcopy = "llvm-objcopy"
+triple = "riscv32"
+# -c 关闭压缩指令，保持 RV32I。
+mattr = "-c"
+source_glob = "programs/**/*.S"
+output_dir = "build/programs"
+table = "build/programs/programs.json"
 
 # 代码生成器列表。
 # mycup code-gen 会执行：
@@ -83,6 +94,7 @@ required = [
   "verilator",
   "verible-verilog-format",
   "llvm-mc",
+  "llvm-objcopy",
 ]
 optional = [
   "slang-server",

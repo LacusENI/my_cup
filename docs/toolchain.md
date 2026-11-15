@@ -26,7 +26,7 @@ mycup            实际执行：生成文件清单、调用工具
 | `logs` | `logs` | 测试和 lint 日志 |
 | `verilator_dir` | `.verilator` | Verilator 文件清单（生成，不提交） |
 | `slang_dir` | `.slang` | slang-server 配置和文件清单 |
-| `programs` | `programs` | 测试程序 hex |
+| `programs` | `programs` | 汇编程序源文件目录 |
 | `tests` | `tests` | pytest / cocotb 测试 |
 
 ### `[sources]`
@@ -35,6 +35,32 @@ mycup            实际执行：生成文件清单、调用工具
 | :-- | :-- |
 | `package` | SystemVerilog package 文件，必须排在编译文件列表最前面 |
 | `glob` | 格式化时匹配的 RTL 文件 |
+
+### `[assemble]`
+
+程序汇编由 `llvm-mc + llvm-objcopy` 完成。
+
+| 字段 | 用途 |
+| :-- | :-- |
+| `assembler` | 汇编器，当前为 `llvm-mc` |
+| `objcopy` | 目标文件转换工具，当前为 `llvm-objcopy` |
+| `triple` | LLVM target triple，当前为 `riscv32` |
+| `mattr` | LLVM 机器属性，`-c` 关闭压缩指令 |
+| `source_glob` | 程序源文件匹配范围，当前为 `programs/**/*.S` |
+| `output_dir` | 中间产物目录，当前为 `build/programs` |
+| `table` | 程序表路径，当前为 `build/programs/programs.json` |
+
+构建流程：
+
+```text
+programs/demo.S
+  -> build/programs/demo.o
+  -> build/programs/demo.bin
+  -> build/programs/demo.hex
+```
+
+`build/programs/programs.json` 记录 `.S` 到 `.o/.bin/.hex` 的映射，
+测试通过 `resolve_program()` 查表，而不是自己拼 build 路径。
 
 ### `[[codegen]]`
 
@@ -89,8 +115,8 @@ python <script> --source <source> --output <target>
 ### `[doctor]`
 
 `required` 缺失时 `make doctor` 返回非零；`optional` 只警告。
-默认检查 `uv`、`iverilog`、`verilator`、`verible-verilog-format`、`llvm-mc`，
-并提示可选的 `slang-server`。`llvm-mc` 用于把测试里的汇编文本编码成机器码。
+默认检查 `uv`、`iverilog`、`verilator`、`verible-verilog-format`、`llvm-mc`、`llvm-objcopy`，
+并提示可选的 `slang-server`。`llvm-mc` / `llvm-objcopy` 用于程序汇编流程。
 
 ---
 
@@ -101,19 +127,22 @@ python <script> --source <source> --output <target>
 | `make init` | 生成 `.verilator/verilator.f` 和 `.slang/slang.f` |
 | `make code-gen` | 按 `toolchain.toml` 运行代码生成器 |
 | `make code-gen-check` | 检查生成文件是否最新 |
+| `make programs` | 汇编 `programs/**/*.S` |
+| `make asm FILE=...` | 汇编单个 `.S` |
 | `make lint` | 生成文件清单并运行 Verilator |
-| `make test` | 运行全部 cocotb + pytest |
+| `make test` | 汇编程序并运行全部 cocotb + pytest |
 | `make check` | `lint` + `test` |
 | `make fmt` | 格式化 RTL（原地修改） |
-| `make prog FILE=...` | 运行指定 hex 程序 |
+| `make prog FILE=...` | 运行指定 `.S` 或 `.hex` 程序 |
 | `make doctor` | 检查配置和工具 |
 | `make clean` | 清理生成物 |
 
 `prog` 示例：
 
 ```bash
-make prog FILE=programs/demo.hex
-make prog FILE=programs/demo.hex DATA=programs/data.hex CYCLES=8
+make prog FILE=programs/demo.S
+make prog FILE=build/programs/demo.hex
+make prog FILE=programs/demo.S DATA=programs/data.hex CYCLES=8
 ```
 
 ---

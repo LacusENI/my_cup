@@ -149,7 +149,7 @@ tests/<category>/test_*.py
 ```bash
 uv run mycup test       # 全部 cocotb + pytest
 uv run mycup lint       # Verilator 静态检查
-uv run mycup prog programs/demo.hex
+uv run mycup prog programs/demo.S
 uv run mycup clean
 ```
 

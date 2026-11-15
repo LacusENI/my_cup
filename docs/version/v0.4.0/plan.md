@@ -92,6 +92,7 @@ fence / ecall / ebreak
 
 ### M6 · 验证与基线
 
+- [x] 程序汇编流程：`.S -> .o/.bin/.hex` + `programs.json`
 - [ ] 指令 trace：PC / 指令 / 写回 / 访存
 - [ ] 汇编程序级测试
 - [ ] 软件参考模型（Python ISS）+ 差分测试

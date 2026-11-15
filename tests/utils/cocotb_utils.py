@@ -63,6 +63,8 @@ class CpuAccess(Protocol):
 
     clk: Signal
     rst: Signal
+    halt: Signal
+    halt_cause: Signal
     u_pc: Pc
     u_regfile: RegFile
     u_instm: Memory
@@ -290,14 +292,18 @@ async def run_program(
     registers=None,
     memory=None,
     extra_cycles=2,
+    wait_for_halt=True,
+    max_cycles=2048,
 ):
-    """装载一个“小程序”，复位，然后跑若干周期。
+    """装载一个“小程序”，复位，然后运行到 halt。
 
     参数：
       instructions : 机器码列表，从 mem[0] 开始依次写入
       registers    : 预置寄存器，例如 {1: 8} 表示 R1 = 8
       memory       : 预置数据内存，例如 {2: 0} 表示 mem[2] = 0（按字索引）
-      extra_cycles : 指令跑完后额外多等几拍，保证写回完成
+      extra_cycles : halt 后额外等待的周期数（默认 2）
+      wait_for_halt: 是否等待 dut.halt 置 1；单指令测试设为 False
+      max_cycles   : wait_for_halt=True 时的安全上限，防止程序不返回
 
     注意：
       - 指令存储器是“按字索引”的，mem[0] 对应地址 0；
@@ -315,9 +321,21 @@ async def run_program(
     for index, instruction in enumerate(instructions):
         write_inst(dut, index, instruction)
 
-    # 复位，然后跑 len(instructions) + extra_cycles 个周期
     await reset_and_wait(dut)
-    await wait_cycles(dut, len(instructions) + extra_cycles)
+
+    if wait_for_halt:
+        for _ in range(max_cycles):
+            await RisingEdge(dut.clk)
+            await settle()
+            if int(dut.halt.value) == 1:
+                break
+        else:
+            raise AssertionError(
+                f"程序在 {max_cycles} 个周期内没有进入 halt"
+            )
+        await wait_cycles(dut, extra_cycles)
+    else:
+        await wait_cycles(dut, len(instructions) + extra_cycles)
 
     # 等到只读阶段再断言，确保所有信号都已经稳定
     await ReadOnly()
@@ -342,4 +360,5 @@ async def run_one_instruction(
         registers=registers,
         memory=memory,
         extra_cycles=0,
+        wait_for_halt=False,
     )

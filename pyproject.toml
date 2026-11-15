@@ -1,6 +1,6 @@
 [project]
 name = "my-cup"
-version = "0.4.0a2.dev1"
+version = "0.4.0a2"
 description = "my_cup CPU verification (cocotb + pytest)"
 requires-python = ">=3.12"
 dependencies = [

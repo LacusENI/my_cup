@@ -1,43 +1,88 @@
 # programs
 
-存放用于仿真的机器码程序（十六进制文本，供 `$readmemh` 装载）。
+存放 RV32I 汇编程序。`.S` 是程序接口；`.o` / `.bin` / `.hex` 是
+`build/programs/` 下的中间产物，不提交到仓库。
 
-格式：每行一个 32 位十六进制字，第 n 行对应指令存储器下标 `n`，
-即地址 `n*4`。支持 `@地址` 语法指定起始位置，详见 Verilog `$readmemh`。
-
-## 用法
+## 构建
 
 ```bash
-# 只装载指令存储器 (+inst=)
-uv run mycup prog programs/demo.hex
+# 汇编 programs/**/*.S，并生成 build/programs/programs.json
+uv run mycup build-programs
 
-# 同时装载数据存储器 (+data=)
-uv run mycup prog programs/demo.hex --data programs/data.hex
-
-# 指定程序跑完后等待的周期数（默认 8）
-uv run mycup prog programs/demo.hex --cycles 12
+# 汇编单个文件
+uv run mycup asm programs/demo.S
 ```
 
-`mycup prog` 会运行 `tests/cpu/test_prog.py::test_prog_demo`：
-程序路径通过 `+inst=` / `+data=` 传给 vvp，`instm` / `datam` 中的 `initial` 据此调用 `$readmemh`。
+单个程序的产物：
 
-说明：
-
-- 程序通过 vvp 的 **plusarg** 传入，**只在仿真期有效**，不参与综合；
-- 程序比存储器（2048 字）短时，`$readmemh` 会给出 "Not enough words" 警告，**属于正常现象**；
-- 当前 `test_prog_demo` 的断言是针对 `demo.hex` 的（`x1=8, x2=5, x3=13`）。
-  如果要跑别的程序，建议在 `tests/cpu/test_prog.py` 里新增一个对应的
-  `@cocotb_test` 用例，或者先把它当作“装载是否成功”的冒烟测试。
-
-## demo.hex
-
+```text
+programs/demo.S
+  -> build/programs/demo.o
+  -> build/programs/demo.bin
+  -> build/programs/demo.hex
 ```
-addi x1, x0, 8
-addi x2, x0, 5
-add  x3, x1, x2     # x3 = 13
-sw   x3, 0(x0)      # data[0] = 13
-lw   x4, 0(x0)      # x4 = 13
-beq  x4, x3, 8      # 跳过下一条
-addi x5, x0, 99     # 应被跳过
-jal  x0, 0          # 自循环
+
+也可以使用：
+
+```bash
+make programs
+make asm FILE=programs/demo.S
 ```
+
+## 运行
+
+```bash
+# 直接给 .S，mycup 会先汇编
+uv run mycup prog programs/demo.S
+
+# 也可以直接给已经生成的 hex
+uv run mycup prog build/programs/demo.hex
+
+# 同时装载数据存储器
+uv run mycup prog programs/demo.S --data programs/data.hex
+```
+
+`mycup prog` 会把最终 hex 路径写入 `MYCUP_PROG`，然后运行
+`tests/cpu/test_prog.py::test_prog_demo`。
+
+## 外部 hex
+
+已有外部程序时，可以绕过表直接注入：
+
+```bash
+MYCUP_PROG=/tmp/foo.hex uv run pytest tests/cpu/test_prog.py
+```
+
+`test_prog.py` 默认声明 `programs/demo.S`，构建后通过
+`build/programs/programs.json` 查表得到对应 hex。
+
+## demo.S
+
+```asm
+_start:
+    addi x1, x0, 8
+    addi x2, x0, 5
+    add  x3, x1, x2
+    sw   x3, 0(x0)
+    lw   x4, 0(x0)
+
+    beq  x4, x3, after_skip
+    addi x5, x0, 99
+after_skip:
+    lui  x6, 0x12345
+    auipc x7, 0
+    fence iorw, iorw
+    ecall
+```
+
+程序必须以 `ecall` 或 `ebreak` 结束；`run_program` 会等待 `halt=1`。
+
+## 当前限制
+
+当前构建流程只处理单个 `.text` 段，不依赖 linker：
+
+```text
+llvm-mc -> .o -> llvm-objcopy -> .bin -> .hex
+```
+
+如果以后需要 `.data`、多文件链接或外部符号，再引入 `lld` 和 linker script。

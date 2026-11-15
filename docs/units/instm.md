@@ -32,5 +32,5 @@ output
 `instm` 内含 `initial` + `$readmemh`，可通过 vvp 的 plusarg 装载程序：
 
 ```bash
-uv run mycup prog programs/demo.hex
+uv run mycup prog programs/demo.S
 ```

@@ -309,6 +309,7 @@ async def test_auipc_pc_relative(dut: CpuTop):
             assemble("auipc x1, 0x1"),
         ],
         extra_cycles=0,
+        wait_for_halt=False,
     )
 
     assert read_reg(dut, 1) == 0x0000_1004
