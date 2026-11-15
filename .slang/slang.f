@@ -1,6 +1,7 @@
 rtl/cpu_pkg.sv
 rtl/control/ctrl.sv
 rtl/control/decoder.sv
+rtl/control/halt_unit.sv
 rtl/control/npc.sv
 rtl/control/pc.sv
 rtl/cpu_top.sv

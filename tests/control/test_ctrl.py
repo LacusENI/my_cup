@@ -17,15 +17,15 @@ from utils.cpu_pkg import (
     ALU_ADD,
     ALU_EQ,
     ALU_NOP,
-    HALT_EBREAK,
-    HALT_ECALL,
-    HALT_ILLEGAL_INST,
     NPC_BRANCH,
     NPC_JAL,
     NPC_JALR,
     NPC_PLUS4,
     SRC2_SEL_IMM,
     SRC2_SEL_RS2,
+    SYS_EBREAK,
+    SYS_ECALL,
+    SYS_NONE,
     WB_SEL_ALU_OUT,
     WB_SEL_IMM,
     WB_SEL_PC_PLUS4,
@@ -53,8 +53,8 @@ class CtrlDut(Protocol):
     mem_write: Signal
     wb_sel: Signal
     src2_sel: Signal
-    halt: Signal
-    halt_cause: Signal
+    inst_illegal: Signal
+    sys_op: Signal
 
 
 REQUIRED_FIELDS = (
@@ -72,8 +72,8 @@ REQUIRED_FIELDS = (
     "mem_write",
     "wb_sel",
     "src2_sel",
-    "halt",
-    "halt_cause",
+    "inst_illegal",
+    "sys_op",
 )
 
 
@@ -141,7 +141,7 @@ async def test_add_control(dut: CtrlDut):
     assert int(dut.npc_op.value) == NPC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -154,7 +154,7 @@ async def test_addi_control(dut: CtrlDut):
     assert int(dut.src2_sel.value) == SRC2_SEL_IMM
     assert int(dut.wb_sel.value) == WB_SEL_ALU_OUT
     assert int(dut.npc_op.value) == NPC_PLUS4
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -168,7 +168,7 @@ async def test_beq_control(dut: CtrlDut):
     assert int(dut.reg_write.value) == 0
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -183,7 +183,7 @@ async def test_lw_control(dut: CtrlDut):
     assert int(dut.mem_write.value) == 0
     assert int(dut.wb_sel.value) == WB_SEL_R_DATA
     assert int(dut.npc_op.value) == NPC_PLUS4
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -197,7 +197,7 @@ async def test_sw_control(dut: CtrlDut):
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 1
     assert int(dut.npc_op.value) == NPC_PLUS4
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -211,7 +211,7 @@ async def test_jal_control(dut: CtrlDut):
     assert int(dut.wb_sel.value) == WB_SEL_PC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -226,7 +226,7 @@ async def test_jalr_control(dut: CtrlDut):
     assert int(dut.wb_sel.value) == WB_SEL_PC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -241,7 +241,7 @@ async def test_lui_control(dut: CtrlDut):
     assert int(dut.npc_op.value) == NPC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -256,7 +256,7 @@ async def test_auipc_control(dut: CtrlDut):
     assert int(dut.npc_op.value) == NPC_PLUS4
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
@@ -268,16 +268,16 @@ async def test_fence_control(dut: CtrlDut):
     assert int(dut.reg_write.value) == 0
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
-    assert int(dut.halt.value) == 0
+    assert int(dut.inst_illegal.value) == 0
 
 
 @cocotb_test(dut=SIM)
 async def test_ecall_control(dut: CtrlDut):
-    """ecall：停机，cause=HALT_ECALL。"""
+    """ecall：合法指令，sys_op=SYS_ECALL。"""
     await drive_asm(dut, "ecall")
 
-    assert int(dut.halt.value) == 1
-    assert int(dut.halt_cause.value) == HALT_ECALL
+    assert int(dut.inst_illegal.value) == 0
+    assert int(dut.sys_op.value) == SYS_ECALL
     assert int(dut.reg_write.value) == 0
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
@@ -286,11 +286,11 @@ async def test_ecall_control(dut: CtrlDut):
 
 @cocotb_test(dut=SIM)
 async def test_ebreak_control(dut: CtrlDut):
-    """ebreak：停机，cause=HALT_EBREAK。"""
+    """ebreak：合法指令，sys_op=SYS_EBREAK。"""
     await drive_asm(dut, "ebreak")
 
-    assert int(dut.halt.value) == 1
-    assert int(dut.halt_cause.value) == HALT_EBREAK
+    assert int(dut.inst_illegal.value) == 0
+    assert int(dut.sys_op.value) == SYS_EBREAK
     assert int(dut.reg_write.value) == 0
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
@@ -299,11 +299,11 @@ async def test_ebreak_control(dut: CtrlDut):
 
 @cocotb_test(dut=SIM)
 async def test_illegal_control(dut: CtrlDut):
-    """未知 opcode：halt=1、cause=2，不写寄存器/内存。"""
+    """未知 opcode：inst_illegal=1、sys_op=NONE，不写寄存器/内存。"""
     await drive(dut, opcode=0, funct3=0, opcode_err=1)
 
-    assert int(dut.halt.value) == 1
-    assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
+    assert int(dut.inst_illegal.value) == 1
+    assert int(dut.sys_op.value) == SYS_NONE
     assert int(dut.reg_write.value) == 0
     assert int(dut.mem_read.value) == 0
     assert int(dut.mem_write.value) == 0
@@ -313,7 +313,7 @@ async def test_illegal_control(dut: CtrlDut):
 
 @cocotb_test(dut=SIM)
 async def test_opcode_err_forces_illegal(dut: CtrlDut):
-    """decoder 标记 opcode_err 时，即使字段看似合法也必须停机。"""
+    """decoder 标记 opcode_err 时，即使字段看似合法也必须判为非法。"""
     await drive(
         dut,
         opcode=assemble("add x1, x2, x3") & 0x7F,
@@ -324,8 +324,8 @@ async def test_opcode_err_forces_illegal(dut: CtrlDut):
         opcode_err=1,
     )
 
-    assert int(dut.halt.value) == 1
-    assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
+    assert int(dut.inst_illegal.value) == 1
+    assert int(dut.sys_op.value) == SYS_NONE
     assert int(dut.reg_write.value) == 0
 
 
@@ -335,8 +335,8 @@ async def test_invalid_r_type(dut: CtrlDut):
     word = _with_field(assemble("add x1, x1, x2"), 31, 25, 0x20)
     await drive_word(dut, word)
 
-    assert int(dut.halt.value) == 1
-    assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
+    assert int(dut.inst_illegal.value) == 1
+    assert int(dut.sys_op.value) == SYS_NONE
     assert int(dut.reg_write.value) == 0
 
 
@@ -352,8 +352,8 @@ async def test_invalid_funct3_matrix(dut: CtrlDut):
     ]
     for instruction in cases:
         await drive_word(dut, instruction)
-        assert int(dut.halt.value) == 1, f"不应接受 {instruction:#010x}"
-        assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
+        assert int(dut.inst_illegal.value) == 1, f"不应接受 {instruction:#010x}"
+        assert int(dut.sys_op.value) == SYS_NONE
 
 
 @cocotb_test(dut=SIM)
@@ -367,5 +367,5 @@ async def test_invalid_system(dut: CtrlDut):
     ]
     for instruction in cases:
         await drive_word(dut, instruction)
-        assert int(dut.halt.value) == 1
-        assert int(dut.halt_cause.value) == HALT_ILLEGAL_INST
+        assert int(dut.inst_illegal.value) == 1
+        assert int(dut.sys_op.value) == SYS_NONE

@@ -35,7 +35,14 @@ from utils.cocotb_utils import (
     write_mem,
     write_reg,
 )
-from utils.cpu_pkg import HALT_EBREAK, HALT_ECALL, HALT_ILLEGAL_INST
+from utils.cpu_pkg import (
+    HALT_EBREAK,
+    HALT_ECALL,
+    HALT_ILLEGAL_INST,
+    HALT_INST_ADDR_ERR,
+    HALT_LOAD_ADDR_ERR,
+    HALT_STORE_ADDR_ERR,
+)
 
 
 # conftest.py 里的 session fixture 名。
@@ -369,6 +376,75 @@ async def test_ebreak_halt(dut: CpuTop):
     assert read_pc(dut) == 0
     assert read_reg(dut, 1) == 0x1234_5678
     assert read_mem(dut, 0) == 0xDEAD_BEEF
+
+
+# --------------------------------------------------------------------------- #
+# 地址错误 / halt 仲裁
+# --------------------------------------------------------------------------- #
+@cocotb_test(dut=SIM)
+async def test_lw_misaligned(dut: CpuTop):
+    """lw 地址未对齐：halt=1、cause=4，不写回寄存器。"""
+    await run_one_instruction(
+        dut,
+        assemble("lw x2, 1(x0)"),
+        registers={2: 0x1234_5678},
+        memory={0: 0xAABB_CCDD},
+    )
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_LOAD_ADDR_ERR
+    assert read_pc(dut) == 0
+    assert read_reg(dut, 2) == 0x1234_5678
+
+
+@cocotb_test(dut=SIM)
+async def test_sw_misaligned(dut: CpuTop):
+    """sw 地址未对齐：halt=1、cause=6，不写内存。"""
+    await run_one_instruction(
+        dut,
+        assemble("sw x3, 1(x0)"),
+        registers={3: 0x5566_7788},
+        memory={0: 0xDEAD_BEEF},
+    )
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_STORE_ADDR_ERR
+    assert read_pc(dut) == 0
+    assert read_mem(dut, 0) == 0xDEAD_BEEF
+
+
+@cocotb_test(dut=SIM)
+async def test_jalr_misaligned(dut: CpuTop):
+    """jalr 目标未对齐：halt=1、cause=0，PC 保持。"""
+    await run_one_instruction(dut, assemble("jalr x0, 2(x0)"))
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_INST_ADDR_ERR
+    assert read_pc(dut) == 0
+
+
+@cocotb_test(dut=SIM)
+async def test_branch_misaligned(dut: CpuTop):
+    """beq 目标未对齐：halt=1、cause=0，PC 保持。"""
+    await run_one_instruction(
+        dut,
+        assemble("beq x1, x2, 2"),
+        registers={1: 1, 2: 1},
+    )
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_INST_ADDR_ERR
+    assert read_pc(dut) == 0
+
+
+@cocotb_test(dut=SIM)
+async def test_jal_misaligned(dut: CpuTop):
+    """jal 目标未对齐：halt=1、cause=0，PC 保持。"""
+    await run_one_instruction(dut, assemble("jal x0, 2"))
+
+    assert int(dut.halt.value) == 1
+    assert int(dut.halt_cause.value) == HALT_INST_ADDR_ERR
+    assert read_pc(dut) == 0
 
 
 # --------------------------------------------------------------------------- #

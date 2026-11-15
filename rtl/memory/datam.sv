@@ -8,7 +8,8 @@ module datam
     input  logic  mem_write_en,
     input  word_t addr,
     input  word_t w_data,
-    output word_t r_data
+    output word_t r_data,
+    output logic  addr_err
 );
     word_t mem[0:DMEM_WORDS-1];
 
@@ -27,12 +28,8 @@ module datam
         if ($value$plusargs("data=%s", init_file)) $readmemh(init_file, mem);
     end
 
-    // 仿真断言：本批只支持 4 字节对齐的整字访存。
-    // 放到时钟沿检查，避免组合逻辑在指令切换时出现瞬态毛刺。
-    always_ff @(posedge clk) begin
-        if ((mem_read_en || mem_write_en) && (addr[1:0] != 2'b00))
-            $fatal(1, "datam: unaligned address %0h", addr);
-    end
+    // 地址未对齐只上报；是否真的触发访问故障由 cpu_top 结合读/写意图判断。
+    assign addr_err = (addr[1:0] != 2'b00);
 
     // 读操作：当前仅支持整字访问
     always_comb begin

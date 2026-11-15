@@ -120,6 +120,12 @@ def datam_sim():
 
 
 @pytest.fixture(scope="session")
+def instm_sim():
+    """单元级：instm（指令存储器）。"""
+    return _build("instm", [PKG, RTL / "memory" / "instm.sv"], "instm", "memory")
+
+
+@pytest.fixture(scope="session")
 def npc_sim():
     """单元级：npc（下一 PC，纯组合逻辑）。"""
     return _build("npc", [PKG, RTL / "control" / "npc.sv"], "npc", "control")
@@ -129,6 +135,17 @@ def npc_sim():
 def pc_sim():
     """单元级：pc（程序计数器，带 stall）。"""
     return _build("pc", [PKG, RTL / "control" / "pc.sv"], "pc", "control")
+
+
+@pytest.fixture(scope="session")
+def halt_unit_sim():
+    """单元级：halt_unit（停机仲裁）。"""
+    return _build(
+        "halt_unit",
+        [PKG, RTL / "control" / "halt_unit.sv"],
+        "halt_unit",
+        "control",
+    )
 
 
 @pytest.fixture(scope="session")

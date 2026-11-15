@@ -31,12 +31,14 @@ tests/
 │   ├── test_decoder.py  # decoder 字段 / 立即数 / opcode_err
 │   ├── test_ctrl.py     # ctrl 合法编码 / 控制表 / halt
 │   ├── test_npc.py      # npc 分支 / 跳转
-│   └── test_pc.py       # pc 更新 / 复位 / stall
+│   ├── test_pc.py       # pc 更新 / 复位 / stall
+│   └── test_halt_unit.py # halt 仲裁优先级
 ├── datapath/
 │   ├── test_alu.py      # ADD / EQ / NOP
 │   └── test_regfile.py  # 32x32 寄存器堆
 ├── memory/
-│   └── test_datam.py    # 整字数据存储器
+│   ├── test_datam.py    # 整字数据存储器
+│   └── test_instm.py    # 指令存储器 / inst_addr_err
 └── cpu/
     ├── test_inst.py     # RV32I 单指令 ISA + cpu_top 契约
     └── test_prog.py     # program 级：$readmemh 程序装载
@@ -105,16 +107,18 @@ cocotb 再执行原来的 async 函数。详细注释见
 | :-- | :-- | :-- |
 | `control/test_decoder.py` | RV32I 字段切分、I/S/B/J/U 立即数、opcode_err | 8 |
 | `control/test_ctrl.py` | 12 条指令控制表、合法编码、fence/ecall/ebreak | 18 |
-| `control/test_npc.py` | PLUS4 / BRANCH / JAL / JALR | 7 |
+| `control/test_npc.py` | PLUS4 / BRANCH / JAL / JALR / target_addr_err | 8 |
 | `control/test_pc.py` | PC 更新、复位、stall 保持 | 3 |
+| `control/test_halt_unit.py` | halt 来源与优先级仲裁 | 10 |
 | `datapath/test_alu.py` | ADD / EQ / NOP、32 位回绕 | 6 |
 | `datapath/test_regfile.py` | 读写、x0、双读端口、写禁用 | 5 |
-| `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
+| `memory/test_datam.py` | 整字读写、写/读禁用、addr_err | 5 |
+| `memory/test_instm.py` | 取指与 inst_addr_err | 2 |
 | `utils/test_asm.py` | llvm-mc 封装、golden 和错误输入检查 | 20 |
-| `cpu/test_inst.py` | 12 条单指令 ISA + SYSTEM/停机 + 契约 | 27 |
+| `cpu/test_inst.py` | 12 条单指令 ISA + SYSTEM/地址故障 + 契约 | 32 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **99 个用例**。
+合计 **118 个用例**。
 
 ## 怎么写一个新测试
 

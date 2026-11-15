@@ -47,9 +47,9 @@ fence / ecall / ebreak
   HALT_ECALL          = 4'd11
   ```
 
-- [ ] 严格 4 字节指令对齐，无 C 扩展
-- [ ] `halt` 优先级高于 `redirect`
-- [ ] 更新 `npc` / `ctrl` / `cpu_top` / 测试和探针
+- [x] 严格 4 字节指令对齐，无 C 扩展
+- [x] `halt` 优先级高于 `redirect`
+- [x] 更新 `npc` / `ctrl` / `cpu_top` / 测试和探针
 
 ### M3 · OP / OP-IMM
 
@@ -67,16 +67,15 @@ fence / ecall / ebreak
   - 输出：`redirect`、`redirect_target`
   - `jalr` 跳转目标（`R[rs1] + imm`）由 ALU 计算
   - `jal` / branch 跳转目标（`pc + imm`）由 `pcru` 计算
-- [ ] `npc` 改为：
+- [ ] `npc` 后续只负责 redirect：
 
   ```text
-  next_pc = halt     ? inst_pc :
-            redirect ? redirect_target :
-                       pc_plus4
+  pc_stall = halt
+  next_pc  = redirect ? redirect_target : pc_plus4
   ```
 
 - [ ] `jal` / `jalr` 的 link 保持 `pc_plus4 -> wb_data`
-- [ ] 检查 branch/jal/jalr 目标 4 字节对齐
+- [x] 检查 branch/jal/jalr 目标 4 字节对齐
 - [ ] 更新 `test_bru`、`test_npc`、`test_inst`
 
 ### M5 · Load / Store / LSU
@@ -88,7 +87,7 @@ fence / ecall / ebreak
 - [ ] 小端序
 - [ ] `lb/lh` 符号扩展，`lbu/lhu` 零扩展
 - [ ] `sb/sh` 只写目标字节/半字
-- [ ] `lw/sw` 4 字节对齐；load/store 未对齐分别进入 halt cause
+- [x] `lw/sw` 4 字节对齐；load/store 未对齐分别进入 halt cause
 - [ ] 更新 `datam` 单测、ISA 测试、汇编器和 program 测试
 
 ### M6 · 验证与基线
@@ -130,7 +129,7 @@ fence / ecall / ebreak
 
 - [ ] RV32I 基础指令集全部实现
 - [ ] 单指令、边界、program 级测试通过
-- [ ] `halt` / `halt_cause` 行为稳定
+- [x] `halt` / `halt_cause` 行为稳定
 - [ ] `mycup lint` 0 warning
 - [ ] `mycup test` 全绿
 - [ ] `mycup prog` 通过

@@ -4,7 +4,8 @@ module instm
     import cpu_pkg::*;
 (
     input  word_t inst_addr,
-    output word_t inst
+    output word_t inst,
+    output logic  inst_addr_err
 );
     word_t mem[0:IMEM_WORDS-1];
 
@@ -12,12 +13,12 @@ module instm
     assign mem_addr = inst_addr[IMEM_ADDR_W+1:2];
     assign inst = mem[mem_addr];
 
-    // 仿真断言：取指地址必须 4 字节对齐。
-    // PC 只按 4 递增，正常情况下不会触发；这里用于捕获未来 jalr 等路径的错误。
-    always_comb begin
-        if (inst_addr[1:0] != 2'b00)
-            $fatal(1, "instm: unaligned instruction address %0h", inst_addr);
-    end
+    // 高地址位暂不参与译码；名字含 unused，Verilator 不会告警。
+    logic unused_addr;
+    assign unused_addr = &{1'b0, inst_addr[XLEN-1:IMEM_ADDR_W+2]};
+
+    // 地址错误只上报，不在存储器内部停机；由 cpu_top 统一仲裁。
+    assign inst_addr_err = (inst_addr[1:0] != 2'b00);
 
     // 仿真期程序装载 (仅仿真有效, 综合时忽略)
     // 用法: vvp <target> +inst=<path/to/program.hex>

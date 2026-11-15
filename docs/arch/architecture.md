@@ -48,10 +48,11 @@ fence, ecall, ebreak
 | `npc`     | `npc.sv`     | 计算 `next_pc`，处理分支跳转 |
 | `instm`  | `instm.sv`  | 指令存储器（IMEM），组合读 |
 | `decoder` | `decoder.sv` | RV32I 字段切分、内部 `imm_gen`、`opcode_err` |
-| `ctrl`    | `ctrl.sv`    | 编码合法性检查（`opcode_err` 快速非法）、控制表、译码级 `halt` / `halt_cause` |
+| `ctrl`    | `ctrl.sv`    | 编码合法性检查（`opcode_err` 快速非法）、控制表、`inst_illegal` / `sys_op` |
 | `regfile` | `regfile.sv` | 32×32 寄存器堆；`x0` 恒 0；上升沿写 |
 | `alu`     | `alu.sv`     | `ADD` / `EQ` / `NOP`，输出 `alu_out` 和 `cmp_result` |
 | `datam`   | `datam.sv`   | 数据存储器（DMEM），整字访问，组合读/上升沿写 |
+| `halt_unit` | `halt_unit.sv` | 停机原因仲裁；汇总译码和地址故障 |
 
 > `ext` 和 `cond` 已删除：立即数生成并入 `decoder`，分支比较并入 `alu`。
 
@@ -71,8 +72,13 @@ fence, ecall, ebreak
 
 ```verilog
 assign branch_taken = cmp_result && (ctrl.npc_op == NPC_BRANCH);
-assign halt         = ctrl.halt;
-assign halt_cause   = ctrl.halt_cause;
+halt_unit u_halt_unit (
+    .inst_illegal(ctrl.inst_illegal),
+    .sys_op(ctrl.sys_op),
+    ...
+    .halt(halt),
+    .halt_cause(halt_cause)
+);
 assign pc_stall     = halt;
 assign inst_addr   = curr_pc;
 assign alu_src1     = rs1_data;
@@ -106,8 +112,8 @@ inst_pc / npc_op / branch_taken / pc_offset / jalr_target
 | `mem_write` | 是否写数据存储器    |
 | `wb_sel`    | ALU / 内存 / PC+4 / U 型立即数 / PC+imm |
 | `src2_sel`  | `rs2` / `imm`       |
-| `halt`      | 译码级停机有效位    |
-| `halt_cause`| 停机原因；仅 `halt=1` 时有效 |
+| `inst_illegal` | 完整编码是否非法 |
+| `sys_op`       | `SYS_NONE` / `SYS_ECALL` / `SYS_EBREAK` |
 
 控制表见 [`docs/ctrl/ctrl.md`](../ctrl/ctrl.md)。
 
@@ -158,7 +164,7 @@ uv run mycup clean
 1. 当前实现 RV32I 12 条指令；未实现指令使 `halt=1`、`halt_cause=HALT_ILLEGAL_INST` 并保持 PC。
 2. 单周期关键路径较长；流水线尚未实现，计划在后续版本再议。
 3. `datam` 只支持整字访问，没有字节掩码/子字访存。
-4. 地址对齐用仿真断言检查（`datam` / `instm` / `npc`），本批不 trap。
+4. `instm` / `datam` / `npc` 输出地址错误信号；当前由 `cpu_top` 汇总，后续再扩展为完整 trap。
 5. MIPS 历史文档已随 `v0.3-mips` 归档；当前文档与 v0.3-rv32i 同步。
 
 ---

@@ -28,6 +28,7 @@
 | [units/regfile.md](units/regfile.md) | `regfile` | ✅ |
 | [units/alu.md](units/alu.md) | `alu` | ✅ |
 | [units/datam.md](units/datam.md) | `datam` | ✅ 整字访问；子字访存待 `v0.4.0` M5 |
+| [units/halt_unit.md](units/halt_unit.md) | `halt_unit` | ✅ 已接入 `cpu_top` |
 
 ---
 

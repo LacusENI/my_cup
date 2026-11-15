@@ -18,7 +18,7 @@
 | 指令集 | RV32I 子集（12 条） |
 | 仿真器 | Icarus Verilog (`iverilog` + `vvp`) |
 | 静态检查 | Verilator `--lint-only -Wall` |
-| 测试 | 99 个 cocotb/pytest 用例 |
+| 测试 | 118 个 cocotb/pytest 用例 |
 | CI | GitHub Actions：`code-gen-check` + `mycup lint` + `mycup test` |
 
 ### 已支持指令
@@ -56,7 +56,8 @@ my_cup/
 │   │   ├── pc.sv
 │   │   ├── npc.sv
 │   │   ├── decoder.sv        # 字段 + imm_gen 函数 + opcode_err
-│   │   └── ctrl.sv
+│   │   ├── ctrl.sv
+│   │   └── halt_unit.sv      # 停机原因仲裁
 │   ├── datapath/             # 数据通路
 │   │   ├── alu.sv
 │   │   └── regfile.sv

@@ -60,6 +60,13 @@ package cpu_pkg;
         SRC2_SEL_IMM = 1'b1
     } src2_sel_t;
 
+    // ---- 系统操作 ----
+    typedef enum logic [1:0] {
+        SYS_NONE   = 2'b00,
+        SYS_ECALL  = 2'b01,
+        SYS_EBREAK = 2'b10
+    } sys_op_t;
+
     // ---- 停机原因 ----
     // halt=0 时 halt_cause 无意义；不为“未停机”定义额外哨兵值。
     typedef enum logic [3:0] {
@@ -118,8 +125,8 @@ package cpu_pkg;
         logic        mem_write;
         wb_sel_t     wb_sel;
         src2_sel_t   src2_sel;
-        logic        halt;
-        halt_cause_t halt_cause;
+        logic        inst_illegal;
+        sys_op_t     sys_op;
     } ctrl_t;
 
 endpackage

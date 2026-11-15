@@ -36,6 +36,7 @@ class DatamDut(Protocol):
     addr: Signal
     w_data: Signal
     r_data: Signal
+    addr_err: Signal
     mem: Sequence[Signal]
 
 
@@ -46,6 +47,7 @@ REQUIRED_FIELDS = (
     "addr",
     "w_data",
     "r_data",
+    "addr_err",
     "mem",
 )
 
@@ -97,6 +99,32 @@ async def test_datam_write_disable(dut: DatamDut):
     dut.mem_read_en.value = 1
     await ReadOnly()
     assert int(dut.r_data.value) == 0x1122_3344, "写使能关闭时内存不应改变"
+
+
+@cocotb_test(dut=SIM)
+async def test_datam_addr_err(dut: DatamDut):
+    """addr_err 只反映地址对齐；是否访问由 cpu_top 结合读写意图判断。"""
+    dut.addr.value = ADDR
+    dut.mem_read_en.value = 0
+    dut.mem_write_en.value = 0
+    await settle()
+    assert int(dut.addr_err.value) == 0
+
+    dut.addr.value = ADDR + 1
+    dut.mem_read_en.value = 1
+    dut.mem_write_en.value = 0
+    await settle()
+    assert int(dut.addr_err.value) == 1
+
+    dut.mem_read_en.value = 0
+    dut.mem_write_en.value = 1
+    await settle()
+    assert int(dut.addr_err.value) == 1
+
+    dut.mem_read_en.value = 0
+    dut.mem_write_en.value = 0
+    await settle()
+    assert int(dut.addr_err.value) == 1
 
 
 @cocotb_test(dut=SIM)

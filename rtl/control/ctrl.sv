@@ -17,7 +17,7 @@ module ctrl
     logic legal;
 
     // 先给所有控制信号一个安全默认值，再按 opcode 覆盖。
-    // 非法编码保持这些默认值，同时进入 halt 状态。
+    // 非法编码保持这些默认值，并标记 inst_illegal。
     always_comb begin
         ctrl.npc_op       = NPC_PLUS4;
         ctrl.reg_write    = 1'b0;
@@ -26,14 +26,13 @@ module ctrl
         ctrl.mem_write    = 1'b0;
         ctrl.wb_sel       = WB_SEL_ALU_OUT;
         ctrl.src2_sel     = SRC2_SEL_RS2;
-        ctrl.halt         = 1'b0;
-        ctrl.halt_cause   = HALT_ILLEGAL_INST;
+        ctrl.inst_illegal = 1'b0;
+        ctrl.sys_op       = SYS_NONE;
         legal             = 1'b0;
 
         if (opcode_err) begin
             // decoder 不认识 opcode：ctrl 不再尝试生成正常控制信号。
-            ctrl.halt       = 1'b1;
-            ctrl.halt_cause = HALT_ILLEGAL_INST;
+            ctrl.inst_illegal = 1'b1;
         end else begin
             unique case (opcode)
                 OP_R: begin
@@ -134,10 +133,9 @@ module ctrl
                             ((funct12 == F12_ECALL) ||
                              (funct12 == F12_EBREAK));
                     if (legal) begin
-                        ctrl.halt       = 1'b1;
-                        ctrl.halt_cause = (funct12 == F12_ECALL)
-                                          ? HALT_ECALL
-                                          : HALT_EBREAK;
+                        ctrl.sys_op = (funct12 == F12_ECALL)
+                                      ? SYS_ECALL
+                                      : SYS_EBREAK;
                     end
                 end
 
@@ -145,11 +143,11 @@ module ctrl
             endcase
 
             if (!legal) begin
-                ctrl.reg_write  = 1'b0;
-                ctrl.mem_read   = 1'b0;
-                ctrl.mem_write  = 1'b0;
-                ctrl.halt       = 1'b1;
-                ctrl.halt_cause = HALT_ILLEGAL_INST;
+                ctrl.reg_write    = 1'b0;
+                ctrl.mem_read     = 1'b0;
+                ctrl.mem_write    = 1'b0;
+                ctrl.inst_illegal = 1'b1;
+                ctrl.sys_op       = SYS_NONE;
             end
         end
     end

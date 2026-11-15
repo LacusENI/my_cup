@@ -13,6 +13,7 @@ input
 
 output
 - `inst(32)`：读出的指令
+- `inst_addr_err`：取指地址未对齐标志
 
 ## 行为
 
@@ -21,9 +22,10 @@ output
 - 容量由 `IMEM_WORDS` 决定（默认 2048 字 / 8 KiB）；
 - 当前没有压缩指令，取指固定 32 位。
 
-## 断言
+## 地址错误
 
-- `inst_addr[1:0]` 必须为 0（仿真断言）。
+- `inst_addr[1:0] != 0` 时置 `inst_addr_err`；
+- 模块内部不 `$fatal`，停机由 `cpu_top` 统一处理。
 
 ## 仿真期装载
 

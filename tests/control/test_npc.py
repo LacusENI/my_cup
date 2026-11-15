@@ -33,6 +33,7 @@ class NpcDut(Protocol):
     jalr_target: Signal
     pc_plus4: Signal
     pc_plus_imm: Signal
+    target_addr_err: Signal
     next_pc: Signal
 
 
@@ -44,6 +45,7 @@ REQUIRED_FIELDS = (
     "jalr_target",
     "pc_plus4",
     "pc_plus_imm",
+    "target_addr_err",
     "next_pc",
 )
 
@@ -144,3 +146,28 @@ async def test_npc_jalr(dut: NpcDut):
 
     assert int(dut.pc_plus4.value) == 0x0000_0104
     assert int(dut.next_pc.value) == 0x1234_5678
+
+
+@cocotb_test(dut=SIM)
+async def test_npc_target_addr_err(dut: NpcDut):
+    """branch/jal/jalr 目标 bit1 非零时置 target_addr_err。"""
+    cases = [
+        (NPC_JAL, 0, 2, 0),
+        (NPC_BRANCH, 1, 2, 0),
+        (NPC_BRANCH, 0, 2, 0),
+        (NPC_JALR, 0, 0, 2),
+    ]
+    expected = [1, 1, 0, 1]
+    for (op, taken, offset, target), want in zip(cases, expected):
+        await drive(
+            dut,
+            inst_pc=0x0000_0100,
+            npc_op=op,
+            branch_taken=taken,
+            pc_offset=offset,
+            jalr_target=target,
+        )
+        assert int(dut.target_addr_err.value) == want, (
+            f"target_addr_err 错误: op={op} taken={taken} "
+            f"offset={offset} target={target}"
+        )

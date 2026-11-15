@@ -19,6 +19,12 @@ module cpu_top
     word_t imm;
     logic  opcode_err;
 
+    logic inst_addr_err;
+    logic data_addr_err;
+    logic target_addr_err;
+    logic load_addr_err;
+    logic store_addr_err;
+
     reg_t rs1, rs2, rd;
     word_t rs1_data, rs2_data;
     word_t wb_data;
@@ -35,7 +41,8 @@ module cpu_top
 
     instm u_instm (
         .inst_addr(inst_addr),
-        .inst(inst)
+        .inst(inst),
+        .inst_addr_err(inst_addr_err)
     );
 
     pc u_pc (
@@ -54,6 +61,7 @@ module cpu_top
         .jalr_target(alu_out),
         .pc_plus4(pc_plus4),
         .pc_plus_imm(pc_plus_imm),
+        .target_addr_err(target_addr_err),
         .next_pc(next_pc)
     );
 
@@ -93,7 +101,8 @@ module cpu_top
         .mem_write_en(mem_write_en),
         .addr(addr),
         .w_data(w_data),
-        .r_data(r_data)
+        .r_data(r_data),
+        .addr_err(data_addr_err)
     );
 
     ctrl u_ctrl (
@@ -107,8 +116,20 @@ module cpu_top
         .ctrl(ctrl)
     );
 
-    assign halt         = ctrl.halt;
-    assign halt_cause   = ctrl.halt_cause;
+    assign load_addr_err  = ctrl.mem_read && data_addr_err;
+    assign store_addr_err = ctrl.mem_write && data_addr_err;
+
+    halt_unit u_halt_unit (
+        .inst_illegal(ctrl.inst_illegal),
+        .sys_op(ctrl.sys_op),
+        .inst_addr_err(inst_addr_err),
+        .load_addr_err(load_addr_err),
+        .store_addr_err(store_addr_err),
+        .target_addr_err(target_addr_err),
+        .halt(halt),
+        .halt_cause(halt_cause)
+    );
+
     assign pc_stall     = halt;
     assign reg_write_en = ctrl.reg_write && !rst && !halt;
     assign mem_write_en = ctrl.mem_write && !rst && !halt;
