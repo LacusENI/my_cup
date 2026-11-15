@@ -126,6 +126,12 @@ def npc_sim():
 
 
 @pytest.fixture(scope="session")
+def pc_sim():
+    """单元级：pc（程序计数器，带 stall）。"""
+    return _build("pc", [PKG, RTL / "control" / "pc.sv"], "pc", "control")
+
+
+@pytest.fixture(scope="session")
 def regfile_sim():
     """单元级：regfile（寄存器堆）。"""
     return _build(

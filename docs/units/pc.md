@@ -11,6 +11,7 @@ date: 2026/11/02
 input
 - `clk`：时钟信号
 - `rst`：复位信号
+- `stall`：保持当前 PC；为 1 时不提交 `next_pc`
 - `next_pc(32)`：下一条指令地址
 
 output
@@ -20,9 +21,12 @@ output
 
 ```systemverilog
 always_ff @(posedge clk)
-    if (rst) curr_pc <= '0;
-    else     curr_pc <= next_pc;
+    if (rst)       curr_pc <= '0;
+    else if (stall) curr_pc <= curr_pc;
+    else            curr_pc <= next_pc;
 ```
+
+`rst` 优先级最高；`stall` 用于非法指令、停机或后续流水线停顿。
 
 ## 复位向量
 

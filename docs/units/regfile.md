@@ -14,7 +14,7 @@ input
 - `rs2(5)`：读端口 2 的寄存器号
 - `rd(5)`：写端口寄存器号
 - `wb_data(32)`：写入数据
-- `reg_write`：写使能
+- `reg_write_en`：写使能（来自 `cpu_top` 的最终门控结果）
 
 output
 - `rs1_data(32)`：读端口 1 的数据
@@ -23,6 +23,6 @@ output
 ## 行为
 
 - 组合读；读 `x0` 返回 0；
-- 上升沿写；只有 `reg_write=1` 且 `rd != 0` 时才写入；
+- 上升沿写；只有 `reg_write_en=1` 且 `rd != 0` 时才写入；
 - `jalr rd == rs1` 时，ALU 读取的是写回前的旧值；
 - 复位沿不提交写入，由 `cpu_top` 门控 `reg_write_en`。

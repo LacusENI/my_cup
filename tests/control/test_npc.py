@@ -11,7 +11,8 @@ npc 是纯组合逻辑：
   BRANCH  : taken ? inst_pc + pc_offset : inst_pc + 4
   JAL     : inst_pc + pc_offset
   JALR    : jalr_target & ~1
-  illegal : next_pc = inst_pc（停止）
+
+停机时 PC 由 ``pc.stall`` 保持，NPC 不参与停机判断。
 """
 
 from typing import Protocol
@@ -30,7 +31,6 @@ class NpcDut(Protocol):
     branch_taken: Signal
     pc_offset: Signal
     jalr_target: Signal
-    inst_illegal: Signal
     pc_plus4: Signal
     pc_plus_imm: Signal
     next_pc: Signal
@@ -42,7 +42,6 @@ REQUIRED_FIELDS = (
     "branch_taken",
     "pc_offset",
     "jalr_target",
-    "inst_illegal",
     "pc_plus4",
     "pc_plus_imm",
     "next_pc",
@@ -57,14 +56,12 @@ async def drive(
     branch_taken: int = 0,
     pc_offset: int = 0,
     jalr_target: int = 0,
-    inst_illegal: int = 0,
 ) -> None:
     dut.inst_pc.value = inst_pc
     dut.npc_op.value = npc_op
     dut.branch_taken.value = branch_taken
     dut.pc_offset.value = pc_offset
     dut.jalr_target.value = jalr_target
-    dut.inst_illegal.value = inst_illegal
     await settle()
 
 
@@ -147,19 +144,3 @@ async def test_npc_jalr(dut: NpcDut):
 
     assert int(dut.pc_plus4.value) == 0x0000_0104
     assert int(dut.next_pc.value) == 0x1234_5678
-
-
-@cocotb_test(dut=SIM)
-async def test_npc_illegal_hold(dut: NpcDut):
-    """非法指令优先级最高：PC 保持，不执行 JAL/BRANCH/JALR。"""
-    for op in (NPC_BRANCH, NPC_JAL, NPC_JALR):
-        await drive(
-            dut,
-            inst_pc=0x0000_0200,
-            npc_op=op,
-            branch_taken=1,
-            pc_offset=0x40,
-            jalr_target=0x0000_0300,
-            inst_illegal=1,
-        )
-        assert int(dut.next_pc.value) == 0x0000_0200, f"npc_op={op} 时不应跳转"

@@ -8,7 +8,7 @@ module regfile
     input  reg_t  rs2,
     input  reg_t  rd,
     input  word_t wb_data,
-    input  logic  reg_write,
+    input  logic  reg_write_en,
     output word_t rs1_data,
     output word_t rs2_data
 );
@@ -20,7 +20,7 @@ module regfile
 
     // 写操作：上升沿写入，且不写 x0
     always_ff @(posedge clk) begin
-        if (reg_write && rd != '0) regs[rd] <= wb_data;
+        if (reg_write_en && rd != '0) regs[rd] <= wb_data;
     end
 endmodule
 

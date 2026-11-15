@@ -5,7 +5,7 @@ cocotb 用例和 pytest 入口在同一个文件里，由 ``@cocotb_test`` 连�
 
 regfile 的行为：
   - 读：组合读；读 $0 永远得到 0
-  - 写：时钟上升沿，如果 reg_write=1 且目标不是 $0，就写入
+  - 写：时钟上升沿，如果 reg_write_en=1 且目标不是 $0，就写入
 
 注意：
   - 写是“时钟上升沿”发生的，所以要先设置好 rd/wb_data，再等上升沿；
@@ -30,7 +30,7 @@ class RegfileDut(Protocol):
     rs2: Signal
     rd: Signal
     wb_data: Signal
-    reg_write: Signal
+    reg_write_en: Signal
     rs1_data: Signal
     rs2_data: Signal
     regs: Sequence[Signal]
@@ -42,7 +42,7 @@ REQUIRED_FIELDS = (
     "rs2",
     "rd",
     "wb_data",
-    "reg_write",
+    "reg_write_en",
     "rs1_data",
     "rs2_data",
     "regs",
@@ -61,13 +61,13 @@ async def test_regfile_write_read(dut: RegfileDut):
     await start_clock(dut)
 
     # 写：R5 = 0xDEADBEEF
-    dut.reg_write.value = 1
+    dut.reg_write_en.value = 1
     dut.rd.value = 5
     dut.wb_data.value = 0xDEAD_BEEF
     await RisingEdge(dut.clk)  # 上升沿真正写入
 
     # 关闭写，改读端口，读 R5
-    dut.reg_write.value = 0
+    dut.reg_write_en.value = 0
     dut.rs1.value = 5
     await ReadOnly()
 
@@ -82,13 +82,13 @@ async def test_regfile_zero_register(dut: RegfileDut):
     # 先把内部 x0 预置成已知值，再尝试写入。
     # 直接检查 regs[0] 才能验证“写 x0 被丢弃”；读端口本身会强制返回 0。
     dut.regs[0].value = 0
-    dut.reg_write.value = 1
+    dut.reg_write_en.value = 1
     dut.rd.value = 0
     dut.wb_data.value = 0xFFFF_FFFF
     await RisingEdge(dut.clk)
 
     # 读 $0
-    dut.reg_write.value = 0
+    dut.reg_write_en.value = 0
     dut.rs1.value = 0
     dut.rs2.value = 0
     await ReadOnly()
@@ -104,7 +104,7 @@ async def test_regfile_two_read_ports(dut: RegfileDut):
     await start_clock(dut)
 
     # 写 R3 = 0x11111111
-    dut.reg_write.value = 1
+    dut.reg_write_en.value = 1
     dut.rd.value = 3
     dut.wb_data.value = 0x1111_1111
     await RisingEdge(dut.clk)
@@ -115,7 +115,7 @@ async def test_regfile_two_read_ports(dut: RegfileDut):
     await RisingEdge(dut.clk)
 
     # 同时读 R3 和 R7
-    dut.reg_write.value = 0
+    dut.reg_write_en.value = 0
     dut.rs1.value = 3
     dut.rs2.value = 7
     await ReadOnly()
@@ -126,17 +126,17 @@ async def test_regfile_two_read_ports(dut: RegfileDut):
 
 @cocotb_test(dut=SIM)
 async def test_regfile_write_disable(dut: RegfileDut):
-    """reg_write=0 时，不能改写寄存器。"""
+    """reg_write_en=0 时，不能改写寄存器。"""
     await start_clock(dut)
 
     # 先写 R6 = 0xAAAAAAAA
-    dut.reg_write.value = 1
+    dut.reg_write_en.value = 1
     dut.rd.value = 6
     dut.wb_data.value = 0xAAAA_AAAA
     await RisingEdge(dut.clk)
 
     # 关闭写使能，再给一个新值；这个新值不应该被写进去
-    dut.reg_write.value = 0
+    dut.reg_write_en.value = 0
     dut.wb_data.value = 0xBBBB_BBBB
     await RisingEdge(dut.clk)
 

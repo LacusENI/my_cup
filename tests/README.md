@@ -30,7 +30,8 @@ tests/
 ├── control/
 │   ├── test_decoder.py  # decoder 字段 / 立即数 / 合法编码
 │   ├── test_ctrl.py     # ctrl 控制表 / 非法指令
-│   └── test_npc.py      # npc 分支 / 跳转 / illegal hold
+│   ├── test_npc.py      # npc 分支 / 跳转
+│   └── test_pc.py       # pc 更新 / 复位 / stall
 ├── datapath/
 │   ├── test_alu.py      # ADD / EQ / NOP
 │   └── test_regfile.py  # 32x32 寄存器堆
@@ -104,7 +105,8 @@ cocotb 再执行原来的 async 函数。详细注释见
 | :-- | :-- | :-- |
 | `control/test_decoder.py` | RV32I 字段切分、I/S/B/J/U 立即数、非法编码 | 11 |
 | `control/test_ctrl.py` | 9 条指令控制表、非法指令安全控制 | 11 |
-| `control/test_npc.py` | PLUS4 / BRANCH / JAL / JALR / illegal hold | 8 |
+| `control/test_npc.py` | PLUS4 / BRANCH / JAL / JALR | 7 |
+| `control/test_pc.py` | PC 更新、复位、stall 保持 | 3 |
 | `datapath/test_alu.py` | ADD / EQ / NOP、32 位回绕 | 6 |
 | `datapath/test_regfile.py` | 读写、x0、双读端口、写禁用 | 5 |
 | `memory/test_datam.py` | 整字读写、写禁用、读禁用 | 4 |
@@ -112,7 +114,7 @@ cocotb 再执行原来的 async 函数。详细注释见
 | `cpu/test_inst.py` | 9 条单指令 ISA + 复位写抑制 + 非法停止 + 契约 | 22 |
 | `cpu/test_prog.py` | 程序装载（`$readmemh`） | 1 |
 
-合计 **88 个用例**。
+合计 **90 个用例**。
 
 ## 怎么写一个新测试
 
@@ -148,8 +150,8 @@ class NpcDut(Protocol):
     branch_taken: Signal
     pc_offset: Signal
     jalr_target: Signal
-    inst_illegal: Signal
     pc_plus4: Signal
+    pc_plus_imm: Signal
     next_pc: Signal
 
 
@@ -161,7 +163,6 @@ async def test_npc_plus4(dut: NpcDut):
     dut.branch_taken.value = 0
     dut.pc_offset.value = 0
     dut.jalr_target.value = 0
-    dut.inst_illegal.value = 0
     await settle()
     assert int(dut.next_pc.value) == 0x14
 ```

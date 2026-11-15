@@ -4,8 +4,8 @@ module datam
     import cpu_pkg::*;
 (
     input  logic  clk,
-    input  logic  mem_read,
-    input  logic  mem_write,
+    input  logic  mem_read_en,
+    input  logic  mem_write_en,
     input  word_t addr,
     input  word_t w_data,
     output word_t r_data
@@ -30,19 +30,19 @@ module datam
     // 仿真断言：本批只支持 4 字节对齐的整字访存。
     // 放到时钟沿检查，避免组合逻辑在指令切换时出现瞬态毛刺。
     always_ff @(posedge clk) begin
-        if ((mem_read || mem_write) && (addr[1:0] != 2'b00))
+        if ((mem_read_en || mem_write_en) && (addr[1:0] != 2'b00))
             $fatal(1, "datam: unaligned address %0h", addr);
     end
 
     // 读操作：当前仅支持整字访问
     always_comb begin
-        if (mem_read) r_data = mem[mem_addr];
+        if (mem_read_en) r_data = mem[mem_addr];
         else r_data = '0;
     end
 
     // 写操作：当前仅支持整字访问
     always_ff @(posedge clk) begin
-        if (mem_write) mem[mem_addr] <= w_data;
+        if (mem_write_en) mem[mem_addr] <= w_data;
     end
 endmodule
 

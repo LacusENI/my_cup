@@ -13,20 +13,20 @@ date: 2026/11/02
 
 input
 - `clk`：时钟
-- `mem_read`：读使能
-- `mem_write`：写使能
+- `mem_read_en`：读使能
+- `mem_write_en`：写使能
 - `addr(32)`：目标地址
 - `w_data(32)`：写入数据
 
 output
-- `r_data(32)`：读出数据（`mem_read=0` 时为 0）
+- `r_data(32)`：读出数据（`mem_read_en=0` 时为 0）
 
 ## 行为
 
 - **读**：组合读；`mem_addr = addr[DMEM_ADDR_W+1:2]`，容量由 `DMEM_WORDS` 决定（默认 2048 字 / 8 KiB）。
 - **写**：时钟上升沿写入一个整字；复位沿由 `cpu_top` 门控 `mem_write_en`。
 - `addr[31:13]` 当前未参与译码（地址空间回绕），后续接入总线/控制器时会重新定义。
-- 仿真断言：`mem_read` 或 `mem_write` 有效时，`addr[1:0]` 必须为 0。
+- 仿真断言：`mem_read_en` 或 `mem_write_en` 有效时，`addr[1:0]` 必须为 0。
 
 ## 仿真期装载
 

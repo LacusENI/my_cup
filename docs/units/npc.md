@@ -21,7 +21,6 @@ input
 - `branch_taken`：branch 分支是否跳转
 - `jalr_target(32)`：jalr 指令的寄存器目标（ALU 的 `rs1 + imm`）
 - `pc_offset(32)`：PC 相对偏移（branch / jal / auipc 使用，字节偏移）
-- `inst_illegal`：指令非法；为 1 时保持 PC
 
 output
 - `pc_plus4(32)`：`inst_pc + 4`
@@ -32,5 +31,5 @@ output
 
 - `pc_offset` 已在 decoder 中完成符号扩展，bit0=0；NPC 不再左移。
 - `jalr_target` 由 ALU 计算，NPC 清除 bit0。
-- `inst_illegal` 优先级最高：非法指令时 `next_pc = inst_pc`。
+- NPC 不处理停机；停机时由 `pc.stall` 保持 `curr_pc`。
 - 仿真断言：`jalr_target[1]`、branch/jal 目标 bit1 必须为 0。
